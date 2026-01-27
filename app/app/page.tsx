@@ -1,32 +1,35 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { WeekStrip, DaySection, BlockModal } from '@/components/blocks'
-import { Button } from '@/components/ui'
+import { WeekStrip, BlockModal, BlockRow } from '@/components/blocks'
+import { Button, DropdownMenu } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile } from '@/lib/hooks'
 import {
   getWeekDays,
   formatDateForApi,
-  isSameDayDate,
+  formatDayHeader,
 } from '@/lib/date'
-import { Plus, LogOut, Loader2 } from 'lucide-react'
+import { Plus, Loader2, MoreVertical, User, Settings, LogOut } from 'lucide-react'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
-import type { User } from '@supabase/supabase-js'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+type ViewMode = 'day' | 'week'
 
 export default function AppPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
-  const dayRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Auth check
   useEffect(() => {
@@ -79,20 +82,30 @@ export default function AppPage() {
       grouped.set(dateKey, [])
     })
     blocks.forEach((block) => {
-      const existing = grouped.get(block.date) || []
-      grouped.set(block.date, [...existing, block])
+      if (!block.deleted_at) {
+        const existing = grouped.get(block.date) || []
+        grouped.set(block.date, [...existing, block])
+      }
+    })
+    // Sort blocks within each day
+    grouped.forEach((dayBlocks, key) => {
+      grouped.set(key, dayBlocks.sort((a, b) => {
+        const timeCompare = a.start_time.localeCompare(b.start_time)
+        if (timeCompare !== 0) return timeCompare
+        return a.created_at.localeCompare(b.created_at)
+      }))
     })
     return grouped
   }, [blocks, weekDays])
 
-  // Scroll to selected day
-  useEffect(() => {
-    const dateKey = formatDateForApi(selectedDate)
-    const el = dayRefs.current.get(dateKey)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [selectedDate])
+  // Get blocks for selected date only
+  const selectedDateKey = formatDateForApi(selectedDate)
+  const selectedDayBlocks = blocksByDate.get(selectedDateKey) || []
+
+  // Calculate progress for selected day
+  const completedCount = selectedDayBlocks.filter(b => b.completed_at).length
+  const totalCount = selectedDayBlocks.length
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
   // Handlers
   const handleSelectDate = useCallback((date: Date) => {
@@ -101,6 +114,11 @@ export default function AppPage() {
 
   const handleWeekChange = useCallback((date: Date) => {
     setSelectedDate(date)
+  }, [])
+
+  const handleDayClickFromWeekView = useCallback((date: Date) => {
+    setSelectedDate(date)
+    setViewMode('day')
   }, [])
 
   const handleAddBlock = useCallback((date: Date) => {
@@ -174,34 +192,199 @@ export default function AppPage() {
         selectedDate={selectedDate}
         onSelectDate={handleSelectDate}
         onWeekChange={handleWeekChange}
+        blocksByDate={blocksByDate}
       />
+
+      {/* Top Right Menu */}
+      <div className="fixed top-3 right-3 z-40">
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="p-2 rounded-lg hover:bg-secondary transition-colors"
+        >
+          <MoreVertical className="h-5 w-5 text-muted-foreground" />
+        </button>
+        <DropdownMenu
+          isOpen={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={[
+            {
+              label: 'Account',
+              icon: <User className="h-4 w-4" />,
+              onClick: () => {},
+            },
+            {
+              label: 'Settings',
+              icon: <Settings className="h-4 w-4" />,
+              onClick: () => {},
+            },
+            {
+              label: 'Log out',
+              icon: <LogOut className="h-4 w-4" />,
+              onClick: handleSignOut,
+              variant: 'destructive',
+            },
+          ]}
+        />
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 pb-24 overflow-y-auto">
+        {/* View Toggle */}
+        <div className="px-4 pt-3 pb-2">
+          <div className="inline-flex bg-secondary rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('day')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'day'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Day
+            </button>
+            <button
+              onClick={() => setViewMode('week')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'week'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Week
+            </button>
+          </div>
+        </div>
+
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : viewMode === 'day' ? (
+          /* Day View */
+          <div className="px-4">
+            {/* Day Header */}
+            <div className="py-3">
+              <h2 className="text-lg font-semibold text-foreground">
+                {formatDayHeader(selectedDate)}
+              </h2>
+              {/* Progress Indicator */}
+              {totalCount > 0 && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">
+                      {completedCount}/{totalCount} completed
+                    </span>
+                    <span className="text-muted-foreground">
+                      {Math.round(progressPercent)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Block List or Empty State */}
+            {selectedDayBlocks.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground mb-4">No blocks yet.</p>
+                <Button onClick={() => handleAddBlock(selectedDate)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add block
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-card rounded-xl overflow-hidden border border-border">
+                <div className="divide-y divide-border">
+                  {selectedDayBlocks.map((block) => (
+                    <BlockRow
+                      key={block.id}
+                      block={block}
+                      onToggleComplete={handleToggleComplete}
+                      onEdit={handleEditBlock}
+                      onDuplicate={handleDuplicate}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+                {/* Add block row */}
+                <button
+                  onClick={() => handleAddBlock(selectedDate)}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors border-t border-border"
+                >
+                  <div className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center">
+                    <Plus className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <span className="text-sm text-muted-foreground">Add block</span>
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
-          <div className="pt-2">
+          /* Week View */
+          <div className="px-4 space-y-2">
             {weekDays.map((day) => {
               const dateKey = formatDateForApi(day)
               const dayBlocks = blocksByDate.get(dateKey) || []
+              const dayCompleted = dayBlocks.filter(b => b.completed_at).length
+              const dayTotal = dayBlocks.length
+              const isSelected = dateKey === selectedDateKey
 
               return (
-                <DaySection
+                <button
                   key={dateKey}
-                  ref={(el) => {
-                    if (el) dayRefs.current.set(dateKey, el)
-                  }}
-                  date={day}
-                  blocks={dayBlocks}
-                  onAddBlock={handleAddBlock}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={handleEditBlock}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                />
+                  onClick={() => handleDayClickFromWeekView(day)}
+                  className={`w-full p-3 rounded-xl border transition-colors text-left ${
+                    isSelected
+                      ? 'bg-primary/10 border-primary'
+                      : 'bg-card border-border hover:bg-secondary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground">
+                        {formatDayHeader(day)}
+                      </div>
+                      {dayBlocks.length > 0 ? (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {dayBlocks.slice(0, 3).map((block) => (
+                            <span
+                              key={block.id}
+                              className={`text-xs px-2 py-0.5 rounded bg-secondary ${
+                                block.completed_at ? 'line-through text-muted-foreground' : 'text-foreground'
+                              }`}
+                            >
+                              {block.title || block.block_type}
+                            </span>
+                          ))}
+                          {dayBlocks.length > 3 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{dayBlocks.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          No blocks
+                        </div>
+                      )}
+                    </div>
+                    {dayTotal > 0 && (
+                      <div className="ml-3 text-right flex-shrink-0">
+                        <div className="text-sm font-medium text-foreground">
+                          {dayCompleted}/{dayTotal}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          done
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </button>
               )
             })}
           </div>
@@ -209,7 +392,7 @@ export default function AppPage() {
       </main>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 items-end safe-bottom">
+      <div className="fixed bottom-6 right-6 safe-bottom">
         <Button
           size="icon"
           className="h-14 w-14 rounded-full shadow-lg"
@@ -218,15 +401,6 @@ export default function AppPage() {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
-
-      {/* Sign Out Button - top right on desktop */}
-      <button
-        onClick={handleSignOut}
-        className="fixed top-3 right-3 p-2 rounded-lg hover:bg-secondary transition-colors z-40"
-        title="Sign out"
-      >
-        <LogOut className="h-5 w-5 text-muted-foreground" />
-      </button>
 
       {/* Block Modal */}
       <BlockModal
