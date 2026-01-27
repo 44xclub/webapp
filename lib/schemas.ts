@@ -75,6 +75,15 @@ export const personalSchema = baseBlockSchema.extend({
   payload: z.object({}).optional(),
 })
 
+// Challenge schema
+export const challengeSchema = baseBlockSchema.extend({
+  block_type: z.literal('challenge'),
+  title: z.string().min(1, 'Title is required'),
+  payload: z.object({
+    challenge_id: z.string().optional(),
+  }).optional(),
+})
+
 // Combined block schema (discriminated union)
 export const blockSchema = z.discriminatedUnion('block_type', [
   workoutSchema,
@@ -82,6 +91,7 @@ export const blockSchema = z.discriminatedUnion('block_type', [
   nutritionSchema,
   checkinSchema,
   personalSchema,
+  challengeSchema,
 ])
 
 // Type exports
@@ -90,6 +100,7 @@ export type HabitFormData = z.infer<typeof habitSchema>
 export type NutritionFormData = z.infer<typeof nutritionSchema>
 export type CheckinFormData = z.infer<typeof checkinSchema>
 export type PersonalFormData = z.infer<typeof personalSchema>
+export type ChallengeFormData = z.infer<typeof challengeSchema>
 export type BlockFormData = z.infer<typeof blockSchema>
 
 // Helper to validate block data
