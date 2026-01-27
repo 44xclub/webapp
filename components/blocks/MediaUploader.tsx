@@ -10,7 +10,7 @@ interface MediaUploaderProps {
   blockId: string
   userId: string
   media: BlockMedia[]
-  onUpload: (blockId: string, file: File) => Promise<void>
+  onUpload: (blockId: string, file: File) => Promise<BlockMedia | void>
   onDelete: (mediaId: string) => Promise<void>
 }
 

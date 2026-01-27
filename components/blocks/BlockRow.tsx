@@ -5,7 +5,7 @@ import { cn, blockTypeLabels, blockTypeColors, mealTypeLabels } from '@/lib/util
 import { formatTime } from '@/lib/date'
 import { DropdownMenu } from '@/components/ui'
 import { MoreHorizontal, Check } from 'lucide-react'
-import type { Block, NutritionPayload, CheckinPayload } from '@/lib/types'
+import type { Block, NutritionPayload, CheckinPayload, WorkoutPayload } from '@/lib/types'
 
 interface BlockRowProps {
   block: Block
@@ -47,44 +47,55 @@ export function BlockRow({
 
     // For nutrition, use meal type as title
     if (block.block_type === 'nutrition') {
-      const payload = block.payload as NutritionPayload
+      const payload = block.payload as unknown as NutritionPayload
       return payload?.meal_name || mealTypeLabels[payload?.meal_type] || 'Meal'
     }
 
     // For check-in, show weight
     if (block.block_type === 'checkin') {
-      const payload = block.payload as CheckinPayload
+      const payload = block.payload as unknown as CheckinPayload
       return payload?.weight ? `${payload.weight} kg` : 'Check-in'
     }
 
     return blockTypeLabels[block.block_type]
   }
 
-  const getMetadata = (): string => {
+  // Get secondary metadata based on block type
+  const getSecondaryInfo = (): string[] => {
     const parts: string[] = []
 
-    // Time
+    // Always show time first
     parts.push(formatTime(block.start_time))
-
-    // Type badge
-    parts.push(blockTypeLabels[block.block_type])
 
     // Type-specific metadata
     if (block.block_type === 'nutrition') {
-      const payload = block.payload as NutritionPayload
+      const payload = block.payload as unknown as NutritionPayload
       if (payload?.calories) {
         parts.push(`${payload.calories} cal`)
+      }
+      if (payload?.protein) {
+        parts.push(`${payload.protein}g protein`)
       }
     }
 
     if (block.block_type === 'checkin') {
-      const payload = block.payload as CheckinPayload
+      const payload = block.payload as unknown as CheckinPayload
       if (payload?.body_fat_percent) {
         parts.push(`${payload.body_fat_percent}% BF`)
       }
     }
 
-    return parts.join(' · ')
+    if (block.block_type === 'workout') {
+      const payload = block.payload as unknown as WorkoutPayload
+      if (payload?.duration) {
+        parts.push(`${payload.duration} min`)
+      }
+      if (payload?.rpe) {
+        parts.push(`RPE ${payload.rpe}`)
+      }
+    }
+
+    return parts
   }
 
   return (
@@ -92,7 +103,7 @@ export function BlockRow({
       onClick={() => onEdit(block)}
       className={cn(
         'group flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 cursor-pointer transition-colors',
-        isCompleted && 'opacity-60'
+        isCompleted && 'bg-secondary/20'
       )}
     >
       {/* Checkbox */}
@@ -102,7 +113,7 @@ export function BlockRow({
           'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
           isCompleted
             ? 'bg-primary border-primary'
-            : 'border-muted-foreground/50 hover:border-primary'
+            : 'border-muted-foreground/40 hover:border-primary'
         )}
         disabled={isToggling}
       >
@@ -113,33 +124,34 @@ export function BlockRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
+        {/* Primary: Title - always strongest */}
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-medium truncate',
-              isCompleted && 'line-through text-muted-foreground'
+              'font-semibold text-foreground truncate',
+              isCompleted && 'line-through decoration-muted-foreground/50 text-muted-foreground'
             )}
           >
             {getBlockTitle()}
           </span>
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        {/* Secondary: Type badge + metadata */}
+        <div className="flex items-center gap-2 mt-1">
           <span
             className={cn(
-              'text-xs px-1.5 py-0.5 rounded',
-              blockTypeColors[block.block_type]
+              'text-xs px-1.5 py-0.5 rounded font-medium',
+              blockTypeColors[block.block_type],
+              isCompleted && 'opacity-60'
             )}
           >
             {blockTypeLabels[block.block_type]}
           </span>
-          <span className="text-xs text-muted-foreground">
-            {formatTime(block.start_time)}
+          <span className={cn(
+            'text-xs text-muted-foreground',
+            isCompleted && 'opacity-60'
+          )}>
+            {getSecondaryInfo().join(' · ')}
           </span>
-          {block.block_type === 'nutrition' && (block.payload as NutritionPayload)?.calories && (
-            <span className="text-xs text-muted-foreground">
-              · {(block.payload as NutritionPayload).calories} cal
-            </span>
-          )}
         </div>
       </div>
 

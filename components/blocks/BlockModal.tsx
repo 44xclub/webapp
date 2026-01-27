@@ -18,6 +18,7 @@ import {
   nutritionSchema,
   checkinSchema,
   personalSchema,
+  challengeSchema,
   type BlockFormData,
 } from '@/lib/schemas'
 import { blockTypeLabels } from '@/lib/utils'
@@ -32,7 +33,7 @@ interface BlockModalProps {
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
   userId?: string
-  onMediaUpload?: (blockId: string, file: File) => Promise<void>
+  onMediaUpload?: (blockId: string, file: File) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   userHasHeight?: boolean
 }
@@ -57,6 +58,8 @@ function getSchemaForType(type: BlockType) {
       return checkinSchema
     case 'personal':
       return personalSchema
+    case 'challenge':
+      return challengeSchema
   }
 }
 
@@ -196,6 +199,9 @@ export function BlockModal({
           />
         )
       case 'personal':
+        return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
+      case 'challenge':
+        // Challenge uses the same form as personal (simple title/notes)
         return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
     }
   }

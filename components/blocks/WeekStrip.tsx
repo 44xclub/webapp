@@ -13,17 +13,20 @@ import {
 } from '@/lib/date'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { isToday } from 'date-fns'
+import type { Block } from '@/lib/types'
 
 interface WeekStripProps {
   selectedDate: Date
   onSelectDate: (date: Date) => void
   onWeekChange: (date: Date) => void
+  blocksByDate?: Map<string, Block[]>
 }
 
 export function WeekStrip({
   selectedDate,
   onSelectDate,
   onWeekChange,
+  blocksByDate,
 }: WeekStripProps) {
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
   const today = useMemo(() => new Date(), [])
@@ -41,6 +44,13 @@ export function WeekStrip({
     onWeekChange(today)
   }
 
+  // Get block count for a day
+  const getBlockCount = (dateKey: string): number => {
+    if (!blocksByDate) return 0
+    const blocks = blocksByDate.get(dateKey) || []
+    return blocks.filter((b) => !b.deleted_at).length
+  }
+
   return (
     <div className="bg-card border-b border-border sticky top-0 z-30 safe-top">
       {/* Navigation row */}
@@ -55,7 +65,7 @@ export function WeekStrip({
 
         <button
           onClick={goToToday}
-          className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+          className="px-4 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
         >
           Today
         </button>
@@ -75,6 +85,9 @@ export function WeekStrip({
           const isSelected = isSameDayDate(day, selectedDate)
           const isTodayDate = isToday(day)
           const dateKey = formatDateForApi(day)
+          const dayBlocks = blocksByDate?.get(dateKey) || []
+          const hasBlocks = dayBlocks.length > 0
+          const allCompleted = hasBlocks && dayBlocks.every(b => b.completed_at)
 
           return (
             <button
@@ -97,17 +110,31 @@ export function WeekStrip({
               </span>
               <span
                 className={cn(
-                  'text-lg font-semibold relative',
+                  'text-lg font-semibold',
                   isSelected ? 'text-primary-foreground' : 'text-foreground',
                   isTodayDate && !isSelected && 'text-primary'
                 )}
               >
                 {getDayNumber(day)}
-                {/* Today indicator dot */}
-                {isTodayDate && !isSelected && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                )}
               </span>
+              {/* Block indicator - green when all completed */}
+              <div className="h-1.5 flex items-center justify-center">
+                {hasBlocks && (
+                  <span
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full',
+                      isSelected
+                        ? 'bg-primary-foreground'
+                        : allCompleted
+                        ? 'bg-green-500'
+                        : 'bg-muted-foreground'
+                    )}
+                  />
+                )}
+                {isTodayDate && !isSelected && !hasBlocks && (
+                  <span className="w-1 h-1 bg-primary rounded-full" />
+                )}
+              </div>
             </button>
           )
         })}

@@ -53,19 +53,21 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     async (data: BlockFormData) => {
       if (!userId) throw new Error('Not authenticated')
 
+      const insertData = {
+        user_id: userId,
+        date: data.date,
+        start_time: data.start_time,
+        end_time: data.end_time || null,
+        block_type: data.block_type,
+        title: data.title || null,
+        notes: data.notes || null,
+        payload: data.payload || {},
+        repeat_rule: data.repeat_rule || null,
+      }
+
       const { data: newBlock, error } = await supabase
         .from('blocks')
-        .insert({
-          user_id: userId,
-          date: data.date,
-          start_time: data.start_time,
-          end_time: data.end_time || null,
-          block_type: data.block_type,
-          title: data.title || null,
-          notes: data.notes || null,
-          payload: data.payload || {},
-          repeat_rule: data.repeat_rule || null,
-        })
+        .insert(insertData)
         .select('*, block_media(*)')
         .single()
 
@@ -82,17 +84,19 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     async (blockId: string, data: Partial<BlockFormData>) => {
       if (!userId) throw new Error('Not authenticated')
 
+      const updateData = {
+        date: data.date,
+        start_time: data.start_time,
+        end_time: data.end_time || null,
+        title: data.title || null,
+        notes: data.notes || null,
+        payload: data.payload || {},
+        repeat_rule: data.repeat_rule || null,
+      }
+
       const { data: updatedBlock, error } = await supabase
         .from('blocks')
-        .update({
-          date: data.date,
-          start_time: data.start_time,
-          end_time: data.end_time || null,
-          title: data.title || null,
-          notes: data.notes || null,
-          payload: data.payload || {},
-          repeat_rule: data.repeat_rule || null,
-        })
+        .update(updateData)
         .eq('id', blockId)
         .eq('user_id', userId)
         .select('*, block_media(*)')
@@ -157,19 +161,21 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         newStartTime = incrementTime(newStartTime)
       }
 
+      const insertData = {
+        user_id: userId,
+        date: block.date,
+        start_time: newStartTime,
+        end_time: block.end_time,
+        block_type: block.block_type,
+        title: block.title,
+        notes: block.notes,
+        payload: block.payload,
+        repeat_rule: block.repeat_rule,
+      }
+
       const { data: newBlock, error } = await supabase
         .from('blocks')
-        .insert({
-          user_id: userId,
-          date: block.date,
-          start_time: newStartTime,
-          end_time: block.end_time,
-          block_type: block.block_type,
-          title: block.title,
-          notes: block.notes,
-          payload: block.payload,
-          repeat_rule: block.repeat_rule,
-        })
+        .insert(insertData)
         .select('*, block_media(*)')
         .single()
 

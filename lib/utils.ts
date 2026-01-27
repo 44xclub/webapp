@@ -12,6 +12,7 @@ export const blockTypeLabels: Record<string, string> = {
   nutrition: 'Nutrition',
   checkin: 'Check-in',
   personal: 'Personal',
+  challenge: 'Challenge',
 }
 
 // Block type colors for UI
@@ -21,6 +22,7 @@ export const blockTypeColors: Record<string, string> = {
   nutrition: 'text-blue-400 bg-blue-400/10',
   checkin: 'text-purple-400 bg-purple-400/10',
   personal: 'text-pink-400 bg-pink-400/10',
+  challenge: 'text-yellow-400 bg-yellow-400/10',
 }
 
 // Meal type labels
