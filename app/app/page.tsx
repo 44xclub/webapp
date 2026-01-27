@@ -1,17 +1,21 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { WeekStrip, DaySection, BlockModal } from '@/components/blocks'
+import {
+  WeekStrip,
+  BlockModal,
+  ViewModeToggle,
+  DayView,
+  WeekOverview,
+  TopMenu,
+} from '@/components/blocks'
+import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile } from '@/lib/hooks'
-import {
-  getWeekDays,
-  formatDateForApi,
-  isSameDayDate,
-} from '@/lib/date'
-import { Plus, LogOut, Loader2 } from 'lucide-react'
+import { getWeekDays, formatDateForApi } from '@/lib/date'
+import { Plus, Loader2 } from 'lucide-react'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User } from '@supabase/supabase-js'
@@ -20,18 +24,20 @@ export default function AppPage() {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
 
   const router = useRouter()
   const supabase = createClient()
-  const dayRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Auth check
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
@@ -41,15 +47,15 @@ export default function AppPage() {
     }
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/login')
+      } else if (session?.user) {
+        setUser(session.user)
       }
-    )
+    })
 
     return () => subscription.unsubscribe()
   }, [router, supabase])
@@ -71,13 +77,15 @@ export default function AppPage() {
   // Get week days
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
-  // Group blocks by date
+  // Group blocks by date (includes all fetched blocks, not just current week)
   const blocksByDate = useMemo(() => {
     const grouped = new Map<string, Block[]>()
+    // Initialize all days in the current week
     weekDays.forEach((day) => {
       const dateKey = formatDateForApi(day)
       grouped.set(dateKey, [])
     })
+    // Add all blocks to their respective dates
     blocks.forEach((block) => {
       const existing = grouped.get(block.date) || []
       grouped.set(block.date, [...existing, block])
@@ -85,22 +93,30 @@ export default function AppPage() {
     return grouped
   }, [blocks, weekDays])
 
-  // Scroll to selected day
-  useEffect(() => {
+  // Get blocks for the selected date (for Day View)
+  const selectedDateBlocks = useMemo(() => {
     const dateKey = formatDateForApi(selectedDate)
-    const el = dayRefs.current.get(dateKey)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [selectedDate])
+    return blocksByDate.get(dateKey) || []
+  }, [blocksByDate, selectedDate])
 
   // Handlers
-  const handleSelectDate = useCallback((date: Date) => {
-    setSelectedDate(date)
-  }, [])
+  const handleSelectDate = useCallback(
+    (date: Date) => {
+      setSelectedDate(date)
+      // When selecting a day from week view, switch to day view
+      if (viewMode === 'week') {
+        setViewMode('day')
+      }
+    },
+    [viewMode]
+  )
 
   const handleWeekChange = useCallback((date: Date) => {
     setSelectedDate(date)
+  }, [])
+
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode)
   }, [])
 
   const handleAddBlock = useCallback((date: Date) => {
@@ -169,12 +185,23 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Menu - positioned in top right */}
+      <div className="fixed top-3 right-3 z-40">
+        <TopMenu onSignOut={handleSignOut} />
+      </div>
+
       {/* Week Strip */}
       <WeekStrip
         selectedDate={selectedDate}
         onSelectDate={handleSelectDate}
         onWeekChange={handleWeekChange}
+        blocksByDate={blocksByDate}
       />
+
+      {/* View Mode Toggle */}
+      <div className="px-4 py-3 flex justify-center border-b border-border bg-background">
+        <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
+      </div>
 
       {/* Main Content */}
       <main className="flex-1 pb-24 overflow-y-auto">
@@ -182,28 +209,29 @@ export default function AppPage() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : (
+        ) : viewMode === 'day' ? (
+          // Day View - shows only selected day's blocks
           <div className="pt-2">
-            {weekDays.map((day) => {
-              const dateKey = formatDateForApi(day)
-              const dayBlocks = blocksByDate.get(dateKey) || []
-
-              return (
-                <DaySection
-                  key={dateKey}
-                  ref={(el) => {
-                    if (el) dayRefs.current.set(dateKey, el)
-                  }}
-                  date={day}
-                  blocks={dayBlocks}
-                  onAddBlock={handleAddBlock}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={handleEditBlock}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                />
-              )
-            })}
+            <DayView
+              date={selectedDate}
+              blocks={selectedDateBlocks}
+              onAddBlock={handleAddBlock}
+              onToggleComplete={handleToggleComplete}
+              onEdit={handleEditBlock}
+              onDuplicate={handleDuplicate}
+              onDelete={handleDelete}
+            />
+          </div>
+        ) : (
+          // Week Overview - shows all days compactly
+          <div className="pt-3">
+            <WeekOverview
+              weekDays={weekDays}
+              blocksByDate={blocksByDate}
+              selectedDate={selectedDate}
+              onSelectDay={handleSelectDate}
+              onEditBlock={handleEditBlock}
+            />
           </div>
         )}
       </main>
@@ -218,15 +246,6 @@ export default function AppPage() {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
-
-      {/* Sign Out Button - top right on desktop */}
-      <button
-        onClick={handleSignOut}
-        className="fixed top-3 right-3 p-2 rounded-lg hover:bg-secondary transition-colors z-40"
-        title="Sign out"
-      >
-        <LogOut className="h-5 w-5 text-muted-foreground" />
-      </button>
 
       {/* Block Modal */}
       <BlockModal
