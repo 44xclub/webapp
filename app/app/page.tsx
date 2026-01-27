@@ -18,10 +18,10 @@ import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
-import type { User } from '@supabase/supabase-js'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export default function AppPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
@@ -87,8 +87,18 @@ export default function AppPage() {
     })
     // Add all blocks to their respective dates
     blocks.forEach((block) => {
-      const existing = grouped.get(block.date) || []
-      grouped.set(block.date, [...existing, block])
+      if (!block.deleted_at) {
+        const existing = grouped.get(block.date) || []
+        grouped.set(block.date, [...existing, block])
+      }
+    })
+    // Sort blocks within each day
+    grouped.forEach((dayBlocks, key) => {
+      grouped.set(key, dayBlocks.sort((a, b) => {
+        const timeCompare = a.start_time.localeCompare(b.start_time)
+        if (timeCompare !== 0) return timeCompare
+        return a.created_at.localeCompare(b.created_at)
+      }))
     })
     return grouped
   }, [blocks, weekDays])
@@ -237,7 +247,7 @@ export default function AppPage() {
       </main>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 items-end safe-bottom">
+      <div className="fixed bottom-6 right-6 safe-bottom">
         <Button
           size="icon"
           className="h-14 w-14 rounded-full shadow-lg"

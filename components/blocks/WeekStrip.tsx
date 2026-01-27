@@ -85,8 +85,9 @@ export function WeekStrip({
           const isSelected = isSameDayDate(day, selectedDate)
           const isTodayDate = isToday(day)
           const dateKey = formatDateForApi(day)
-          const blockCount = getBlockCount(dateKey)
-          const hasBlocks = blockCount > 0
+          const dayBlocks = blocksByDate?.get(dateKey) || []
+          const hasBlocks = dayBlocks.length > 0
+          const allCompleted = hasBlocks && dayBlocks.every(b => b.completed_at)
 
           return (
             <button
@@ -116,15 +117,23 @@ export function WeekStrip({
               >
                 {getDayNumber(day)}
               </span>
-              {/* Indicator area - shows today dot or block indicator */}
+              {/* Block indicator - green when all completed */}
               <div className="h-1.5 flex items-center justify-center">
-                {isTodayDate && !isSelected ? (
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full" />
-                ) : hasBlocks && !isSelected ? (
-                  <span className="w-1 h-1 bg-muted-foreground/50 rounded-full" />
-                ) : isSelected && hasBlocks ? (
-                  <span className="w-1 h-1 bg-primary-foreground/60 rounded-full" />
-                ) : null}
+                {hasBlocks && (
+                  <span
+                    className={cn(
+                      'w-1.5 h-1.5 rounded-full',
+                      isSelected
+                        ? 'bg-primary-foreground'
+                        : allCompleted
+                        ? 'bg-green-500'
+                        : 'bg-muted-foreground'
+                    )}
+                  />
+                )}
+                {isTodayDate && !isSelected && !hasBlocks && (
+                  <span className="w-1 h-1 bg-primary rounded-full" />
+                )}
               </div>
             </button>
           )

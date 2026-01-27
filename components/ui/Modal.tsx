@@ -93,6 +93,7 @@ interface DropdownMenuProps {
     label: string
     onClick: () => void
     variant?: 'default' | 'destructive'
+    icon?: ReactNode
   }[]
   className?: string
 }
@@ -116,7 +117,7 @@ export function DropdownMenu({
   return (
     <div
       className={cn(
-        'absolute right-0 top-full mt-1 z-20 min-w-[140px] bg-card border border-border rounded-lg shadow-lg py-1 animate-fadeIn',
+        'absolute right-0 top-full mt-1 z-20 min-w-[160px] bg-card border border-border rounded-lg shadow-lg py-1 animate-fadeIn',
         className
       )}
       onClick={(e) => e.stopPropagation()}
@@ -129,10 +130,11 @@ export function DropdownMenu({
             onClose()
           }}
           className={cn(
-            'w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors',
+            'w-full px-3 py-2 text-left text-sm hover:bg-secondary transition-colors flex items-center gap-2',
             item.variant === 'destructive' && 'text-destructive hover:bg-destructive/10'
           )}
         >
+          {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
           {item.label}
         </button>
       ))}
