@@ -1,39 +1,60 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button, Input } from '@/components/ui'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CheckCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check for auth callback errors
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'auth_callback_error') {
+      setError('Authentication failed. Please try again.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setMessage('')
     setLoading(true)
 
     try {
+      const supabase = createClient()
+
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/app`,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         })
+
         if (error) throw error
-        // For Supabase, signup might require email confirmation
-        // For MVP, we'll just redirect assuming auto-confirm is enabled
-        router.push('/app')
-        router.refresh()
+
+        // Check if email confirmation is required
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          setError('An account with this email already exists.')
+        } else if (data.user && !data.session) {
+          // Email confirmation required
+          setMessage('Check your email for a confirmation link to complete signup.')
+        } else if (data.session) {
+          // Auto-confirmed (email confirmation disabled in Supabase)
+          router.push('/app')
+          router.refresh()
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -58,6 +79,14 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-foreground">44CLUB</h1>
           <p className="text-muted-foreground mt-2">Blocks</p>
         </div>
+
+        {/* Success Message */}
+        {message && (
+          <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-green-500">{message}</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +125,11 @@ export default function LoginPage() {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            onClick={() => {
+              setMode(mode === 'login' ? 'signup' : 'login')
+              setError('')
+              setMessage('')
+            }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {mode === 'login'

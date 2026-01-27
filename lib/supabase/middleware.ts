@@ -1,6 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -8,9 +11,15 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
+  // Skip auth check if env vars not configured - allow access to login page
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables')
+    return response
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
