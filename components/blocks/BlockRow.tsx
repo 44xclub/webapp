@@ -47,13 +47,13 @@ export function BlockRow({
 
     // For nutrition, use meal type as title
     if (block.block_type === 'nutrition') {
-      const payload = block.payload as NutritionPayload
+      const payload = block.payload as unknown as NutritionPayload
       return payload?.meal_name || mealTypeLabels[payload?.meal_type] || 'Meal'
     }
 
     // For check-in, show weight
     if (block.block_type === 'checkin') {
-      const payload = block.payload as CheckinPayload
+      const payload = block.payload as unknown as CheckinPayload
       return payload?.weight ? `${payload.weight} kg` : 'Check-in'
     }
 
@@ -71,14 +71,14 @@ export function BlockRow({
 
     // Type-specific metadata
     if (block.block_type === 'nutrition') {
-      const payload = block.payload as NutritionPayload
+      const payload = block.payload as unknown as NutritionPayload
       if (payload?.calories) {
         parts.push(`${payload.calories} cal`)
       }
     }
 
     if (block.block_type === 'checkin') {
-      const payload = block.payload as CheckinPayload
+      const payload = block.payload as unknown as CheckinPayload
       if (payload?.body_fat_percent) {
         parts.push(`${payload.body_fat_percent}% BF`)
       }
@@ -135,9 +135,9 @@ export function BlockRow({
           <span className="text-xs text-muted-foreground">
             {formatTime(block.start_time)}
           </span>
-          {block.block_type === 'nutrition' && (block.payload as NutritionPayload)?.calories && (
+          {block.block_type === 'nutrition' && (block.payload as unknown as NutritionPayload)?.calories && (
             <span className="text-xs text-muted-foreground">
-              · {(block.payload as NutritionPayload).calories} cal
+              · {(block.payload as unknown as NutritionPayload).calories} cal
             </span>
           )}
         </div>

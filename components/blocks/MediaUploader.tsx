@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
@@ -10,7 +11,7 @@ interface MediaUploaderProps {
   blockId: string
   userId: string
   media: BlockMedia[]
-  onUpload: (blockId: string, file: File) => Promise<void>
+  onUpload: (blockId: string, file: File) => Promise<BlockMedia | void>
   onDelete: (mediaId: string) => Promise<void>
 }
 
@@ -88,10 +89,12 @@ export function MediaUploader({
           {media.map((item) => (
             <div key={item.id} className="relative aspect-square">
               {item.media_type === 'image' ? (
-                <img
+                <Image
                   src={getMediaUrl(item.storage_path)}
                   alt=""
-                  className="w-full h-full object-cover rounded-lg"
+                  fill
+                  sizes="(max-width: 768px) 33vw, 100px"
+                  className="object-cover rounded-lg"
                 />
               ) : (
                 <video

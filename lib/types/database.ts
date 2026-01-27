@@ -6,6 +6,16 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type BlockType = 'workout' | 'habit' | 'nutrition' | 'checkin' | 'personal'
+
+export type RepeatPattern = 'none' | 'daily' | 'weekly' | 'custom'
+
+export interface RepeatRule {
+  pattern: RepeatPattern
+  weekdays?: number[] // 0-6 for Sun-Sat (for weekly)
+  interval?: number // every N days (for custom)
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -28,6 +38,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       blocks: {
         Row: {
@@ -78,6 +89,7 @@ export interface Database {
           updated_at?: string
           deleted_at?: string | null
         }
+        Relationships: []
       }
       block_media: {
         Row: {
@@ -104,19 +116,25 @@ export interface Database {
           media_type?: 'image' | 'video'
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'block_media_block_id_fkey'
+            columns: ['block_id']
+            referencedRelation: 'blocks'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
-}
-
-export type BlockType = 'workout' | 'habit' | 'nutrition' | 'checkin' | 'personal'
-
-export type RepeatPattern = 'none' | 'daily' | 'weekly' | 'custom'
-
-export interface RepeatRule {
-  pattern: RepeatPattern
-  weekdays?: number[] // 0-6 for Sun-Sat (for weekly)
-  interval?: number // every N days (for custom)
 }
 
 // Block type with media relations

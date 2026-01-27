@@ -32,7 +32,7 @@ interface BlockModalProps {
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
   userId?: string
-  onMediaUpload?: (blockId: string, file: File) => Promise<void>
+  onMediaUpload?: (blockId: string, file: File) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   userHasHeight?: boolean
 }
