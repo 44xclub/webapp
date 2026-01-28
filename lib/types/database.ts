@@ -12,31 +12,43 @@ export interface Database {
       profiles: {
         Row: {
           id: string
+          display_name: string | null
           height_cm: number | null
           discipline_score: number
           timezone: string
           is_paused: boolean
           committed_at: string
+          current_streak: number
+          best_streak: number
+          last_resolved_date: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
+          display_name?: string | null
           height_cm?: number | null
           discipline_score?: number
           timezone?: string
           is_paused?: boolean
           committed_at?: string
+          current_streak?: number
+          best_streak?: number
+          last_resolved_date?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
+          display_name?: string | null
           height_cm?: number | null
           discipline_score?: number
           timezone?: string
           is_paused?: boolean
           committed_at?: string
+          current_streak?: number
+          best_streak?: number
+          last_resolved_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -406,11 +418,15 @@ export interface BlockMedia {
 
 export interface Profile {
   id: string
+  display_name: string | null
   height_cm: number | null
   discipline_score: number
   timezone: string
   is_paused: boolean
   committed_at: string
+  current_streak: number
+  best_streak: number
+  last_resolved_date: string | null
   created_at: string
   updated_at: string
 }

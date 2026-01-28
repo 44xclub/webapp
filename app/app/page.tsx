@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useMemo, useCallback } from 'react'
 import {
   WeekStrip,
   BlockModal,
@@ -13,52 +11,21 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
+import { AuthenticatedLayout } from '@/components/AuthenticatedLayout'
+import { useAuth } from '@/lib/contexts'
 import { useBlocks, useBlockMedia, useProfile } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export default function AppPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, signOut } = useAuth()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
-
-  const router = useRouter()
-  const supabase = createClient()
-
-  // Auth check
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-      setUser(user)
-      setAuthLoading(false)
-    }
-    checkAuth()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/login')
-      } else if (session?.user) {
-        setUser(session.user)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router, supabase])
 
   // Data hooks
   const {
@@ -179,25 +146,11 @@ export default function AppPage() {
     [deleteBlock]
   )
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
-  // Loading state
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <AuthenticatedLayout>
       {/* Top Menu - positioned in top right */}
       <div className="fixed top-3 right-3 z-40">
-        <TopMenu onSignOut={handleSignOut} />
+        <TopMenu onSignOut={signOut} />
       </div>
 
       {/* Week Strip */}
@@ -270,6 +223,6 @@ export default function AppPage() {
         onMediaDelete={deleteMedia}
         userHasHeight={hasHeight}
       />
-    </div>
+    </AuthenticatedLayout>
   )
 }

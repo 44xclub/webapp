@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { PWARegister } from '@/components/PWARegister'
+import { AuthProvider } from '@/lib/contexts'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -39,7 +40,9 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <PWARegister />
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

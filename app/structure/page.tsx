@@ -1,52 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronLeft } from 'lucide-react'
+import { AuthenticatedLayout } from '@/components/AuthenticatedLayout'
+import { useAuth } from '@/lib/contexts'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
 import { ProfileCard } from '@/components/structure/ProfileCard'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 type TabType = 'discipline' | 'training'
 
 export default function StructurePage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
 
   const router = useRouter()
-  const supabase = createClient()
-
-  // Auth check
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-      setUser(user)
-      setAuthLoading(false)
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [router, supabase])
 
   // Data hooks
   const { profile, loading: profileLoading } = useProfile(user?.id)
@@ -54,18 +26,10 @@ export default function StructurePage() {
   const { frameworks, activeFramework, todaySubmission, loading: frameworksLoading, activateFramework, submitDailyStatus, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border safe-top">
+    <AuthenticatedLayout>
+      {/* Page Header */}
+      <div className="bg-card border-b border-border">
         <div className="flex items-center px-4 py-3">
           <button
             onClick={() => router.push('/app')}
@@ -101,7 +65,7 @@ export default function StructurePage() {
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="px-4 py-4 pb-24 space-y-4">
@@ -176,6 +140,6 @@ export default function StructurePage() {
           </>
         )}
       </main>
-    </div>
+    </AuthenticatedLayout>
   )
 }
