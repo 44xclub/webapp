@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MoreVertical, User, Settings, LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { MoreVertical, User, Settings, LogOut, LayoutGrid } from 'lucide-react'
 
 interface TopMenuProps {
   onSignOut: () => void
@@ -10,6 +11,7 @@ interface TopMenuProps {
 export function TopMenu({ onSignOut }: TopMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -58,6 +60,17 @@ export function TopMenu({ onSignOut }: TopMenuProps) {
       {isOpen && (
         <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50">
           <div className="py-1">
+            <button
+              onClick={() => {
+                setIsOpen(false)
+                router.push('/structure')
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-secondary transition-colors"
+            >
+              <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+              Structure
+            </button>
+
             <button
               onClick={() => {
                 setIsOpen(false)
