@@ -72,6 +72,7 @@ export interface Database {
           challenge_id: string | null
           programme_template_id: string | null
           programme_session_id: string | null
+          shared_to_feed: boolean
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -94,6 +95,7 @@ export interface Database {
           challenge_id?: string | null
           programme_template_id?: string | null
           programme_session_id?: string | null
+          shared_to_feed?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -116,6 +118,7 @@ export interface Database {
           challenge_id?: string | null
           programme_template_id?: string | null
           programme_session_id?: string | null
+          shared_to_feed?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -364,6 +367,145 @@ export interface Database {
           resolved_at?: string
         }
       }
+      // V3 Tables
+      teams: {
+        Row: {
+          id: string
+          team_number: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_number: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          team_number?: number
+          created_at?: string
+        }
+      }
+      team_members: {
+        Row: {
+          id: string
+          team_id: string
+          user_id: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          user_id: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          user_id?: string
+          joined_at?: string
+        }
+      }
+      team_daily_overviews: {
+        Row: {
+          id: string
+          team_id: string
+          date: string
+          payload: Json
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          date: string
+          payload: Json
+          generated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          date?: string
+          payload?: Json
+          generated_at?: string
+        }
+      }
+      feed_posts: {
+        Row: {
+          id: string
+          user_id: string
+          block_id: string | null
+          title: string
+          body: string | null
+          image_url: string | null
+          created_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          block_id?: string | null
+          title: string
+          body?: string | null
+          image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          block_id?: string | null
+          title?: string
+          body?: string | null
+          image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+        }
+      }
+      feed_respects: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
+      daily_framework_items: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          criteria_id: string
+          completed: boolean
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          criteria_id: string
+          completed?: boolean
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          criteria_id?: string
+          completed?: boolean
+          completed_at?: string | null
+        }
+      }
     }
   }
 }
@@ -401,6 +543,7 @@ export interface Block {
   challenge_id: string | null
   programme_template_id: string | null
   programme_session_id: string | null
+  shared_to_feed: boolean
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -576,6 +719,84 @@ export interface PersonalPayload {
 
 export interface ChallengePayload {
   challenge_id: string
+}
+
+// ============================================
+// V3 Types - Teams, Feed, Framework Items
+// ============================================
+
+// Team
+export interface Team {
+  id: string
+  team_number: number
+  created_at: string
+  members?: TeamMember[]
+}
+
+// Team Member
+export interface TeamMember {
+  id: string
+  team_id: string
+  user_id: string
+  joined_at: string
+  profile?: Profile
+}
+
+// Team Daily Overview
+export interface TeamDailyOverview {
+  id: string
+  team_id: string
+  date: string
+  payload: TeamOverviewPayload
+  generated_at: string
+}
+
+export interface TeamOverviewPayload {
+  members: TeamMemberOverview[]
+}
+
+export interface TeamMemberOverview {
+  user_id: string
+  display_name: string
+  planned: number
+  completed: number
+  missed: number
+  daily_delta: number
+}
+
+// Feed Post
+export interface FeedPost {
+  id: string
+  user_id: string
+  block_id: string | null
+  title: string
+  body: string | null
+  image_url: string | null
+  created_at: string
+  deleted_at: string | null
+  // Joined data
+  profile?: Profile
+  block?: Block
+  respects_count?: number
+  user_has_respected?: boolean
+}
+
+// Feed Respect
+export interface FeedRespect {
+  id: string
+  post_id: string
+  user_id: string
+  created_at: string
+}
+
+// Daily Framework Item (V3 - individual criteria tracking)
+export interface DailyFrameworkItem {
+  id: string
+  user_id: string
+  date: string
+  criteria_id: string
+  completed: boolean
+  completed_at: string | null
 }
 
 // ============================================

@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
-import { BookOpen, Check, Circle, Minus, Search, Loader2 } from 'lucide-react'
-import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus } from '@/lib/types'
+import { BookOpen, Check, Circle, Minus, Search, Loader2, CheckCircle2, Square } from 'lucide-react'
+import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, DailyFrameworkItem, FrameworkSubmissionStatus, FrameworkCriteria } from '@/lib/types'
 
 interface FrameworksSectionProps {
   frameworks: FrameworkTemplate[]
   activeFramework: UserFramework | null
   todaySubmission: DailyFrameworkSubmission | null
+  todayItems?: DailyFrameworkItem[]
   onActivateFramework: (frameworkId: string) => Promise<UserFramework>
   onSubmitStatus: (status: FrameworkSubmissionStatus) => Promise<DailyFrameworkSubmission>
+  onToggleItem?: (criteriaId: string, completed: boolean) => Promise<DailyFrameworkItem>
   onRefetch: () => void
 }
 
@@ -19,8 +21,10 @@ export function FrameworksSection({
   frameworks,
   activeFramework,
   todaySubmission,
+  todayItems = [],
   onActivateFramework,
   onSubmitStatus,
+  onToggleItem,
   onRefetch,
 }: FrameworksSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -29,6 +33,7 @@ export function FrameworksSection({
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [activating, setActivating] = useState(false)
+  const [togglingItem, setTogglingItem] = useState<string | null>(null)
 
   const filteredFrameworks = frameworks.filter((f) =>
     f.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -108,49 +113,118 @@ export function FrameworksSection({
               )}
             </div>
 
-            {/* Daily Status Submission */}
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">Today&apos;s Status</p>
-              {isLocked ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="capitalize">{todaySubmission?.status}</span>
-                  <span className="text-xs">(locked)</span>
+            {/* V3: Live Criteria Checklist */}
+            {activeFramework.framework_template.criteria &&
+             'items' in activeFramework.framework_template.criteria && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-foreground">Today&apos;s Checklist</p>
+                  <TodayStatus
+                    todayItems={todayItems}
+                    totalItems={(activeFramework.framework_template.criteria as FrameworkCriteria).items.length}
+                    submission={todaySubmission}
+                  />
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button
-                    variant={todaySubmission?.status === 'complete' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('complete')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Complete
-                  </Button>
-                  <Button
-                    variant={todaySubmission?.status === 'partial' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('partial')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Circle className="h-4 w-4 mr-1" />
-                    Partial
-                  </Button>
-                  <Button
-                    variant={todaySubmission?.status === 'zero' ? 'destructive' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('zero')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Minus className="h-4 w-4 mr-1" />
-                    Zero
-                  </Button>
+                <div className="space-y-2">
+                  {(activeFramework.framework_template.criteria as FrameworkCriteria).items.map((item) => {
+                    const itemState = todayItems.find(i => i.criteria_id === item.id)
+                    const isCompleted = itemState?.completed ?? false
+                    const isToggling = togglingItem === item.id
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={async () => {
+                          if (!onToggleItem || isLocked) return
+                          setTogglingItem(item.id)
+                          try {
+                            await onToggleItem(item.id, !isCompleted)
+                          } catch (err) {
+                            console.error('Failed to toggle item:', err)
+                          } finally {
+                            setTogglingItem(null)
+                          }
+                        }}
+                        disabled={isLocked || isToggling}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${
+                          isCompleted
+                            ? 'bg-green-500/10 border border-green-500/30'
+                            : 'bg-secondary/50 hover:bg-secondary'
+                        } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        {isToggling ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground flex-shrink-0" />
+                        ) : isCompleted ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <Square className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm ${isCompleted ? 'text-green-500' : 'text-foreground'}`}>
+                            {item.label}
+                          </span>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-              )}
-            </div>
+                {isLocked && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Day locked - no more changes allowed
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Legacy Status Submission (hidden when checklist available) */}
+            {(!activeFramework.framework_template.criteria ||
+              !('items' in activeFramework.framework_template.criteria)) && (
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">Today&apos;s Status</p>
+                {isLocked ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="capitalize">{todaySubmission?.status}</span>
+                    <span className="text-xs">(locked)</span>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant={todaySubmission?.status === 'complete' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSubmitStatus('complete')}
+                      disabled={submitting}
+                      className="flex-1"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Complete
+                    </Button>
+                    <Button
+                      variant={todaySubmission?.status === 'partial' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSubmitStatus('partial')}
+                      disabled={submitting}
+                      className="flex-1"
+                    >
+                      <Circle className="h-4 w-4 mr-1" />
+                      Partial
+                    </Button>
+                    <Button
+                      variant={todaySubmission?.status === 'zero' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSubmitStatus('zero')}
+                      disabled={submitting}
+                      className="flex-1"
+                    >
+                      <Minus className="h-4 w-4 mr-1" />
+                      Zero
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
@@ -297,5 +371,56 @@ export function FrameworksSection({
         </div>
       </Modal>
     </div>
+  )
+}
+
+// Helper component to show computed today status
+function TodayStatus({
+  todayItems,
+  totalItems,
+  submission,
+}: {
+  todayItems: DailyFrameworkItem[]
+  totalItems: number
+  submission: DailyFrameworkSubmission | null
+}) {
+  const completedCount = todayItems.filter(i => i.completed).length
+
+  // If already submitted/locked, show that status
+  if (submission?.status) {
+    const statusColors = {
+      complete: 'text-green-500 bg-green-500/10',
+      partial: 'text-yellow-500 bg-yellow-500/10',
+      zero: 'text-red-500 bg-red-500/10',
+    }
+    return (
+      <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColors[submission.status]}`}>
+        {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+        {submission.locked_at && ' (Locked)'}
+      </span>
+    )
+  }
+
+  // Compute live status
+  if (completedCount === totalItems && totalItems > 0) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded-full text-green-500 bg-green-500/10">
+        {completedCount}/{totalItems} Complete
+      </span>
+    )
+  }
+
+  if (completedCount > 0) {
+    return (
+      <span className="text-xs font-medium px-2 py-1 rounded-full text-yellow-500 bg-yellow-500/10">
+        {completedCount}/{totalItems} Partial
+      </span>
+    )
+  }
+
+  return (
+    <span className="text-xs font-medium px-2 py-1 rounded-full text-muted-foreground bg-secondary">
+      {completedCount}/{totalItems}
+    </span>
   )
 }

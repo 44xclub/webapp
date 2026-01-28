@@ -7,20 +7,20 @@ import {
   ViewModeToggle,
   DayView,
   WeekOverview,
-  TopMenu,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
 import { AuthenticatedLayout } from '@/components/AuthenticatedLayout'
+import { StreakModule, ActiveFrameworkCard } from '@/components/home'
 import { useAuth } from '@/lib/contexts'
-import { useBlocks, useBlockMedia, useProfile } from '@/lib/hooks'
+import { useBlocks, useBlockMedia, useProfile, useFrameworks, useDailyFrameworkItems } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 
 export default function AppPage() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [modalOpen, setModalOpen] = useState(false)
@@ -39,7 +39,9 @@ export default function AppPage() {
   } = useBlocks(selectedDate, user?.id)
 
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
-  const { hasHeight } = useProfile(user?.id)
+  const { profile, hasHeight } = useProfile(user?.id)
+  const { activeFramework, todaySubmission } = useFrameworks(user?.id)
+  const { items: todayFrameworkItems } = useDailyFrameworkItems(user?.id)
 
   // Get week days
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
@@ -148,9 +150,21 @@ export default function AppPage() {
 
   return (
     <AuthenticatedLayout>
-      {/* Top Menu - positioned in top right */}
-      <div className="fixed top-3 right-3 z-40">
-        <TopMenu onSignOut={signOut} />
+      {/* Streak Module */}
+      <div className="px-4 pt-4">
+        <StreakModule
+          currentStreak={profile?.current_streak ?? 0}
+          bestStreak={profile?.best_streak ?? 0}
+        />
+      </div>
+
+      {/* Active Framework Card */}
+      <div className="px-4 pt-3">
+        <ActiveFrameworkCard
+          activeFramework={activeFramework}
+          todaySubmission={todaySubmission}
+          todayItems={todayFrameworkItems}
+        />
       </div>
 
       {/* Week Strip */}
@@ -167,7 +181,7 @@ export default function AppPage() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-24 overflow-y-auto">
+      <main className="flex-1 pb-8 overflow-y-auto">
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -199,8 +213,8 @@ export default function AppPage() {
         )}
       </main>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 safe-bottom">
+      {/* Floating Action Button - positioned above bottom nav */}
+      <div className="fixed bottom-20 right-4 z-40">
         <Button
           size="icon"
           className="h-14 w-14 rounded-full shadow-lg"

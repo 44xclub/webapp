@@ -8,6 +8,7 @@ import type {
   FrameworkTemplate,
   UserFramework,
   DailyFrameworkSubmission,
+  DailyFrameworkItem,
   FrameworkSubmissionStatus,
   Block,
   DailyScore,
@@ -246,4 +247,81 @@ export function useDailyScores(userId: string | undefined, days: number = 7) {
   }, [fetchScores])
 
   return { scores, loading, refetch: fetchScores }
+}
+
+export function useDailyFrameworkItems(userId: string | undefined, date?: Date) {
+  const [items, setItems] = useState<DailyFrameworkItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  const targetDate = date ? formatDateForApi(date) : formatDateForApi(new Date())
+
+  const fetchItems = useCallback(async () => {
+    if (!userId) {
+      setItems([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('daily_framework_items')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', targetDate)
+
+      if (error && error.code !== 'PGRST116') throw error
+
+      setItems((data || []) as DailyFrameworkItem[])
+    } catch (err) {
+      console.error('Failed to fetch daily framework items:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [userId, targetDate, supabase])
+
+  useEffect(() => {
+    fetchItems()
+  }, [fetchItems])
+
+  const toggleItem = useCallback(
+    async (criteriaId: string, completed: boolean) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      const now = completed ? new Date().toISOString() : null
+
+      const { data, error } = await supabase
+        .from('daily_framework_items')
+        .upsert(
+          {
+            user_id: userId,
+            date: targetDate,
+            criteria_id: criteriaId,
+            completed,
+            completed_at: now,
+          },
+          { onConflict: 'user_id,date,criteria_id' }
+        )
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setItems((prev) => {
+        const existing = prev.find((i) => i.criteria_id === criteriaId)
+        if (existing) {
+          return prev.map((i) =>
+            i.criteria_id === criteriaId ? (data as DailyFrameworkItem) : i
+          )
+        }
+        return [...prev, data as DailyFrameworkItem]
+      })
+
+      return data as DailyFrameworkItem
+    },
+    [userId, targetDate, supabase]
+  )
+
+  return { items, loading, toggleItem, refetch: fetchItems }
 }

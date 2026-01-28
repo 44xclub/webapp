@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/contexts'
 import { GlobalHeader } from './GlobalHeader'
+import { BottomNav } from './BottomNav'
 
 interface AuthenticatedLayoutProps {
   children: ReactNode
@@ -31,7 +32,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-16">
       {/* Global Header Strip - always visible */}
       {!profileLoading && profile && (
         <GlobalHeader profile={profile} userEmail={user.email} />
@@ -48,6 +49,9 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
       {/* Page content */}
       {children}
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </div>
   )
 }

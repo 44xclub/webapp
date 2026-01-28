@@ -1,4 +1,5 @@
 export { useBlocks, useBlockMedia } from './useBlocks'
 export { useProfile } from './useProfile'
-export { useCommunityChallenge, useFrameworks, useDailyScores } from './useDiscipline'
+export { useCommunityChallenge, useFrameworks, useDailyScores, useDailyFrameworkItems } from './useDiscipline'
 export { useProgrammes } from './useProgrammes'
+export { useTeam, useFeed } from './useCommunity'
