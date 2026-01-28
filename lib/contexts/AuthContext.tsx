@@ -4,12 +4,14 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode,
 import { useRouter } from 'next/navigation'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 
 interface AuthContextType {
   user: SupabaseUser | null
   profile: Profile | null
   loading: boolean
   profileLoading: boolean
+  error: string | null
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -20,28 +22,36 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-// Check if Supabase is configured
-function isSupabaseConfigured() {
-  return !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-}
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(true)
   const [configured, setConfigured] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
-  const supabaseRef = useRef<ReturnType<typeof import('@/lib/supabase/client').createClient> | null>(null)
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
 
   // Initialize Supabase client only in browser and when configured
   useEffect(() => {
-    if (typeof window !== 'undefined' && isSupabaseConfigured()) {
-      const { createClient } = require('@/lib/supabase/client')
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (!isSupabaseConfigured()) {
+      setError('Supabase is not configured. Please check your environment variables.')
+      setLoading(false)
+      setProfileLoading(false)
+      return
+    }
+
+    try {
       supabaseRef.current = createClient()
       setConfigured(true)
-    } else {
+    } catch (err) {
+      console.error('Failed to initialize Supabase:', err)
+      setError(err instanceof Error ? err.message : 'Failed to initialize Supabase')
       setLoading(false)
       setProfileLoading(false)
     }
@@ -80,10 +90,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!configured || !supabaseRef.current) return
 
     const supabase = supabaseRef.current
+    let timeoutId: NodeJS.Timeout
 
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Auth check timed out'))
+          }, 10000) // 10 second timeout
+        })
+
+        const authPromise = supabase.auth.getUser()
+        const { data: { user } } = await Promise.race([authPromise, timeoutPromise])
+
+        clearTimeout(timeoutId)
 
         if (!user) {
           // No user found - let AuthenticatedLayout handle redirect
@@ -95,7 +116,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(user)
         await fetchProfile(user.id)
         setLoading(false)
-      } catch {
+      } catch (err) {
+        clearTimeout(timeoutId)
+        console.error('Auth check failed:', err)
+        setError(err instanceof Error ? err.message : 'Authentication failed')
         setLoading(false)
         setProfileLoading(false)
       }
@@ -115,7 +139,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [configured, fetchProfile])
 
   const signOut = useCallback(async () => {
@@ -126,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [router])
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, profileLoading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileLoading, error, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

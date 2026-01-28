@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/lib/contexts'
 import { GlobalHeader } from './GlobalHeader'
 import { BottomNav } from './BottomNav'
@@ -12,15 +12,36 @@ interface AuthenticatedLayoutProps {
 }
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
-  const { user, profile, loading, profileLoading } = useAuth()
+  const { user, profile, loading, profileLoading, error } = useAuth()
   const router = useRouter()
 
   // Redirect to login if not authenticated after loading completes
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !error) {
       router.push('/login')
     }
-  }, [loading, user, router])
+  }, [loading, user, error, router])
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Configuration Error</h2>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   // Show loading state while checking auth
   if (loading) {
