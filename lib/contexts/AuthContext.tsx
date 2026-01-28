@@ -90,36 +90,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!configured || !supabaseRef.current) return
 
     const supabase = supabaseRef.current
-    let timeoutId: NodeJS.Timeout
 
     const checkAuth = async () => {
       try {
-        // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error('Auth check timed out'))
-          }, 10000) // 10 second timeout
-        })
+        // Use getSession() first - it checks local storage and doesn't need network
+        // This is faster than getUser() which always makes a network request
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        const authPromise = supabase.auth.getUser()
-        const { data: { user } } = await Promise.race([authPromise, timeoutPromise])
-
-        clearTimeout(timeoutId)
-
-        if (!user) {
-          // No user found - let AuthenticatedLayout handle redirect
+        if (sessionError) {
+          console.error('Session error:', sessionError)
+          // Session error but not fatal - user just needs to log in
           setLoading(false)
           setProfileLoading(false)
           return
         }
 
-        setUser(user)
-        await fetchProfile(user.id)
+        if (!session?.user) {
+          // No session found - user needs to log in
+          setLoading(false)
+          setProfileLoading(false)
+          return
+        }
+
+        // Session exists, set user
+        setUser(session.user)
+        await fetchProfile(session.user.id)
         setLoading(false)
       } catch (err) {
-        clearTimeout(timeoutId)
         console.error('Auth check failed:', err)
-        setError(err instanceof Error ? err.message : 'Authentication failed')
+        // Don't show error for auth check failures - just redirect to login
         setLoading(false)
         setProfileLoading(false)
       }
@@ -140,7 +139,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     )
 
     return () => {
-      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
   }, [configured, fetchProfile])
