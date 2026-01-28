@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types'
 
@@ -33,7 +33,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [configured, setConfigured] = useState(false)
 
   const router = useRouter()
-  const pathname = usePathname()
   const supabaseRef = useRef<ReturnType<typeof import('@/lib/supabase/client').createClient> | null>(null)
 
   // Initialize Supabase client only in browser and when configured
@@ -87,11 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { data: { user } } = await supabase.auth.getUser()
 
         if (!user) {
-          // Only redirect to login for protected routes
-          const protectedRoutes = ['/app', '/structure', '/community', '/profile']
-          if (protectedRoutes.some(route => pathname?.startsWith(route))) {
-            router.push('/login')
-          }
+          // No user found - let AuthenticatedLayout handle redirect
           setLoading(false)
           setProfileLoading(false)
           return
@@ -113,7 +108,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
-          router.push('/login')
         } else if (session?.user) {
           setUser(session.user)
           await fetchProfile(session.user.id)
@@ -122,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     )
 
     return () => subscription.unsubscribe()
-  }, [configured, router, fetchProfile, pathname])
+  }, [configured, fetchProfile])
 
   const signOut = useCallback(async () => {
     if (supabaseRef.current) {
