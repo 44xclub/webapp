@@ -108,13 +108,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const checkAuth = async () => {
       console.log('[Auth] Starting auth check...')
       try {
-        // Use getSession() - checks local storage first
+        // Add timeout to getSession() - it should be instant but sometimes hangs
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<{ data: { session: null }, error: Error }>((resolve) => {
+          setTimeout(() => {
+            console.log('[Auth] getSession() timed out after 3s')
+            resolve({ data: { session: null }, error: new Error('Session check timed out') })
+          }, 3000)
+        })
+
         console.log('[Auth] Calling getSession()...')
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const result = await Promise.race([sessionPromise, timeoutPromise])
+        const { data: { session }, error: sessionError } = result
         console.log('[Auth] getSession() returned, session:', !!session, 'error:', sessionError)
 
         if (sessionError) {
-          console.error('[Auth] Session error:', sessionError)
+          console.log('[Auth] Session error (not fatal):', sessionError.message)
+          // Session error - user just needs to log in
           setLoading(false)
           setProfileLoading(false)
           return
