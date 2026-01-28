@@ -35,11 +35,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize Supabase client only in browser and when configured
   useEffect(() => {
+    console.log('[Auth] Init effect running, window:', typeof window)
+
     if (typeof window === 'undefined') {
+      console.log('[Auth] SSR detected, skipping')
       return
     }
 
-    if (!isSupabaseConfigured()) {
+    const isConfigured = isSupabaseConfigured()
+    console.log('[Auth] Supabase configured:', isConfigured)
+
+    if (!isConfigured) {
+      console.log('[Auth] Supabase not configured, setting error')
       setError('Supabase is not configured. Please check your environment variables.')
       setLoading(false)
       setProfileLoading(false)
@@ -47,10 +54,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
+      console.log('[Auth] Creating Supabase client...')
       supabaseRef.current = createClient()
+      console.log('[Auth] Supabase client created, setting configured=true')
       setConfigured(true)
     } catch (err) {
-      console.error('Failed to initialize Supabase:', err)
+      console.error('[Auth] Failed to initialize Supabase:', err)
       setError(err instanceof Error ? err.message : 'Failed to initialize Supabase')
       setLoading(false)
       setProfileLoading(false)
@@ -87,38 +96,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [user?.id, fetchProfile])
 
   useEffect(() => {
-    if (!configured || !supabaseRef.current) return
+    console.log('[Auth] Auth check effect, configured:', configured, 'supabaseRef:', !!supabaseRef.current)
+
+    if (!configured || !supabaseRef.current) {
+      console.log('[Auth] Not ready, skipping auth check')
+      return
+    }
 
     const supabase = supabaseRef.current
 
     const checkAuth = async () => {
+      console.log('[Auth] Starting auth check...')
       try {
-        // Use getSession() first - it checks local storage and doesn't need network
-        // This is faster than getUser() which always makes a network request
+        // Use getSession() - checks local storage first
+        console.log('[Auth] Calling getSession()...')
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        console.log('[Auth] getSession() returned, session:', !!session, 'error:', sessionError)
 
         if (sessionError) {
-          console.error('Session error:', sessionError)
-          // Session error but not fatal - user just needs to log in
+          console.error('[Auth] Session error:', sessionError)
           setLoading(false)
           setProfileLoading(false)
           return
         }
 
         if (!session?.user) {
-          // No session found - user needs to log in
+          console.log('[Auth] No session found, setting loading=false')
           setLoading(false)
           setProfileLoading(false)
           return
         }
 
-        // Session exists, set user
+        console.log('[Auth] Session found, user:', session.user.id)
         setUser(session.user)
         await fetchProfile(session.user.id)
         setLoading(false)
       } catch (err) {
-        console.error('Auth check failed:', err)
-        // Don't show error for auth check failures - just redirect to login
+        console.error('[Auth] Auth check failed:', err)
         setLoading(false)
         setProfileLoading(false)
       }
