@@ -8,7 +8,9 @@ import type {
   FrameworkTemplate,
   UserFramework,
   DailyFrameworkSubmission,
+  DailyFrameworkItem,
   FrameworkSubmissionStatus,
+  FrameworkCriteria,
   Block,
   DailyScore,
 } from '@/lib/types'
@@ -104,6 +106,7 @@ export function useFrameworks(userId: string | undefined) {
   const [frameworks, setFrameworks] = useState<FrameworkTemplate[]>([])
   const [activeFramework, setActiveFramework] = useState<UserFramework | null>(null)
   const [todaySubmission, setTodaySubmission] = useState<DailyFrameworkSubmission | null>(null)
+  const [todayItems, setTodayItems] = useState<DailyFrameworkItem[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = useMemo(() => createClient(), [])
 
@@ -141,6 +144,15 @@ export function useFrameworks(userId: string | undefined) {
           .single()
 
         setTodaySubmission(submissionData as DailyFrameworkSubmission | null)
+
+        // Fetch today's framework items (live ticking)
+        const { data: itemsData } = await supabase
+          .from('daily_framework_items')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('date', today)
+
+        setTodayItems((itemsData as DailyFrameworkItem[]) || [])
       }
     } catch (err) {
       console.error('Failed to fetch frameworks:', err)
@@ -203,13 +215,67 @@ export function useFrameworks(userId: string | undefined) {
     [userId, supabase]
   )
 
+  // Toggle a framework criterion item
+  const toggleFrameworkItem = useCallback(
+    async (criterionId: string, completed: boolean) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      const today = formatDateForApi(new Date())
+
+      const { data, error } = await supabase
+        .from('daily_framework_items')
+        .upsert(
+          {
+            user_id: userId,
+            date: today,
+            criterion_id: criterionId,
+            completed,
+            completed_at: completed ? new Date().toISOString() : null,
+          },
+          { onConflict: 'user_id,date,criterion_id' }
+        )
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Update local state
+      setTodayItems((prev) => {
+        const existing = prev.find((item) => item.criterion_id === criterionId)
+        if (existing) {
+          return prev.map((item) =>
+            item.criterion_id === criterionId
+              ? { ...item, completed, completed_at: completed ? new Date().toISOString() : null }
+              : item
+          )
+        }
+        return [...prev, data as DailyFrameworkItem]
+      })
+
+      return data as DailyFrameworkItem
+    },
+    [userId, supabase]
+  )
+
+  // Calculate completion count
+  const completionCount = useMemo(() => {
+    if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
+    const criteria = activeFramework.framework_template.criteria as FrameworkCriteria
+    const total = criteria.items?.length || 0
+    const completed = todayItems.filter((item) => item.completed).length
+    return { completed, total }
+  }, [activeFramework, todayItems])
+
   return {
     frameworks,
     activeFramework,
     todaySubmission,
+    todayItems,
+    completionCount,
     loading,
     activateFramework,
     submitDailyStatus,
+    toggleFrameworkItem,
     refetch: fetchFrameworks,
   }
 }

@@ -2,28 +2,66 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Users, Activity, Heart, MessageCircle } from 'lucide-react'
+import { Loader2, Users, Activity, Heart, Trash2, Trophy, Zap, Shield, Award, Crown } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { calculateDisciplineLevel } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import type { DisciplineBadge, ExerciseEntry, Profile, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
 
 type TabType = 'team' | 'feed'
 
 interface FeedPost {
   id: string
   user_id: string
+  block_id: string | null
   title: string
   body: string | null
   media_path: string | null
+  payload: {
+    workout_matrix?: ExerciseEntry[]
+    duration?: number
+    rpe?: number
+  }
   created_at: string
+  deleted_at: string | null
   user_profile?: {
     display_name: string | null
+    avatar_path: string | null
     discipline_score: number
   }
   respect_count?: number
   has_respected?: boolean
+}
+
+interface TeamMemberData {
+  user_id: string
+  role: 'captain' | 'member'
+  joined_at: string
+  profiles: {
+    display_name: string | null
+    avatar_path: string | null
+    discipline_score: number
+  } | null
+}
+
+const badgeIcons: Record<DisciplineBadge, typeof Trophy> = {
+  'Initiated': Shield,
+  'Committed': Zap,
+  'Elite': Award,
+  'Forged': Trophy,
+  '44-Pro': Crown,
+}
+
+const badgeColors: Record<DisciplineBadge, string> = {
+  'Initiated': 'text-slate-400',
+  'Committed': 'text-blue-400',
+  'Elite': 'text-purple-400',
+  'Forged': 'text-amber-400',
+  '44-Pro': 'text-yellow-400',
 }
 
 export default function CommunityPage() {
@@ -90,15 +128,63 @@ export default function CommunityPage() {
     if (!user) return
     setFeedLoading(true)
     try {
-      const { data, error } = await supabase
+      // Fetch posts with profile info
+      const { data: postsData, error: postsError } = await supabase
         .from('feed_posts')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            display_name,
+            avatar_path,
+            discipline_score
+          )
+        `)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) throw error
-      setFeedPosts(data || [])
+      if (postsError) throw postsError
+
+      // Fetch respect counts and user's respects
+      const postIds = postsData?.map((p: any) => p.id) || []
+
+      let respectCounts: Record<string, number> = {}
+      let userRespects: Set<string> = new Set()
+
+      if (postIds.length > 0) {
+        // Get respect counts
+        const { data: countsData } = await supabase
+          .from('feed_respects')
+          .select('post_id')
+          .in('post_id', postIds)
+
+        if (countsData) {
+          countsData.forEach((r: any) => {
+            respectCounts[r.post_id] = (respectCounts[r.post_id] || 0) + 1
+          })
+        }
+
+        // Get user's respects
+        const { data: userRespectsData } = await supabase
+          .from('feed_respects')
+          .select('post_id')
+          .in('post_id', postIds)
+          .eq('user_id', user.id)
+
+        if (userRespectsData) {
+          userRespectsData.forEach((r: any) => userRespects.add(r.post_id))
+        }
+      }
+
+      // Map posts with profile, counts, and user respect status
+      const mappedPosts = (postsData || []).map((post: any) => ({
+        ...post,
+        user_profile: post.profiles,
+        respect_count: respectCounts[post.id] || 0,
+        has_respected: userRespects.has(post.id),
+      }))
+
+      setFeedPosts(mappedPosts)
     } catch (err) {
       console.error('Failed to fetch feed:', err)
     } finally {
@@ -123,7 +209,7 @@ export default function CommunityPage() {
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border">
+      <header className="bg-card border-b border-border">
         <div className="px-4 py-3">
           <h1 className="text-lg font-semibold text-foreground">Community</h1>
         </div>
@@ -180,14 +266,46 @@ export default function CommunityPage() {
 
 // Team Overview Component
 function TeamOverview({ userId, supabase }: { userId: string | undefined; supabase: any }) {
-  const [teamData, setTeamData] = useState<any>(null)
+  const [teamData, setTeamData] = useState<{
+    team: { id: string; team_number: number } | null
+    members: TeamMemberData[]
+    role: 'captain' | 'member'
+    dailyOverview: TeamDailyOverview | null
+  } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (userId) {
       fetchTeamData()
     }
   }, [userId])
+
+  // Fetch signed avatar URLs
+  useEffect(() => {
+    async function fetchAvatarUrls() {
+      if (!teamData?.members) return
+
+      const urls: Record<string, string> = {}
+      for (const member of teamData.members) {
+        if (member.profiles?.avatar_path) {
+          try {
+            const { data } = await supabase.storage
+              .from('avatars')
+              .createSignedUrl(member.profiles.avatar_path, 3600)
+            if (data?.signedUrl) {
+              urls[member.user_id] = data.signedUrl
+            }
+          } catch (err) {
+            console.error('Failed to get avatar URL:', err)
+          }
+        }
+      }
+      setAvatarUrls(urls)
+    }
+
+    fetchAvatarUrls()
+  }, [teamData?.members, supabase])
 
   const fetchTeamData = async () => {
     setLoading(true)
@@ -201,22 +319,37 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         .single()
 
       if (membership?.team_id) {
-        // Fetch team members
+        // Fetch team members with profiles
         const { data: members } = await supabase
           .from('team_members')
-          .select('user_id, role, joined_at, profiles(display_name, discipline_score)')
+          .select('user_id, role, joined_at, profiles(display_name, avatar_path, discipline_score)')
           .eq('team_id', membership.team_id)
           .is('left_at', null)
           .order('role', { ascending: false })
 
+        // Fetch latest daily overview
+        const today = new Date().toISOString().split('T')[0]
+        const { data: overview } = await supabase
+          .from('team_daily_overviews')
+          .select('*')
+          .eq('team_id', membership.team_id)
+          .lte('date', today)
+          .order('date', { ascending: false })
+          .limit(1)
+          .single()
+
         setTeamData({
           team: membership.teams,
-          members: members || [],
+          members: (members || []) as TeamMemberData[],
           role: membership.role,
+          dailyOverview: overview as TeamDailyOverview | null,
         })
+      } else {
+        setTeamData(null)
       }
     } catch (err) {
       console.error('Failed to fetch team:', err)
+      setTeamData(null)
     } finally {
       setLoading(false)
     }
@@ -242,6 +375,12 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     )
   }
 
+  // Calculate team total score
+  const teamTotalScore = teamData.members.reduce(
+    (sum, m) => sum + (m.profiles?.discipline_score || 0),
+    0
+  )
+
   return (
     <div className="space-y-4">
       {/* Team Header */}
@@ -252,41 +391,89 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
             <p className="text-2xl font-bold text-foreground">Team #{teamData.team.team_number}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Members</p>
-            <p className="text-xl font-bold text-foreground">{teamData.members.length}/8</p>
+            <p className="text-sm text-muted-foreground">Total Score</p>
+            <p className="text-xl font-bold text-foreground">{teamTotalScore}</p>
           </div>
         </div>
       </div>
 
+      {/* Daily Overview */}
+      {teamData.dailyOverview && (
+        <div className="bg-card rounded-xl p-4 border border-border">
+          <p className="text-sm text-muted-foreground mb-2">Latest Snapshot ({teamData.dailyOverview.date})</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 bg-secondary rounded-lg">
+              <p className="text-lg font-bold text-foreground">
+                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
+              </p>
+              <p className="text-xs text-muted-foreground">Avg Score</p>
+            </div>
+            <div className="text-center p-3 bg-secondary rounded-lg">
+              <p className="text-lg font-bold text-foreground">
+                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.total_score || 0}
+              </p>
+              <p className="text-xs text-muted-foreground">Total Score</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team Members */}
       <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <h3 className="font-medium text-foreground">Team Members</h3>
+          <span className="text-sm text-muted-foreground">{teamData.members.length}/8</span>
         </div>
         <div className="divide-y divide-border">
-          {teamData.members.map((member: any) => (
-            <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                  <span className="text-sm font-medium text-foreground">
-                    {(member.profiles?.display_name || 'M')[0].toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {member.profiles?.display_name || 'Member'}
-                    {member.role === 'captain' && (
-                      <span className="ml-2 text-xs text-primary">(Captain)</span>
+          {teamData.members.map((member) => {
+            const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
+            const BadgeIcon = badgeIcons[level.badge]
+            const avatarUrl = avatarUrls[member.user_id]
+            const displayName = member.profiles?.display_name || 'Member'
+            const initials = displayName.slice(0, 2).toUpperCase()
+
+            return (
+              <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt={displayName}
+                        fill
+                        className="object-cover"
+                        sizes="40px"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {initials}
+                      </span>
                     )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {displayName}
+                      {member.role === 'captain' && (
+                        <span className="ml-2 text-xs text-primary">(Captain)</span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
+                      <span className={`text-xs ${badgeColors[level.badge]}`}>
+                        Lv.{level.level}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-foreground">
+                    {member.profiles?.discipline_score || 0}
                   </p>
+                  <p className="text-xs text-muted-foreground">pts</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-bold text-foreground">{member.profiles?.discipline_score || 0}</p>
-                <p className="text-xs text-muted-foreground">pts</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
@@ -307,15 +494,77 @@ function FeedView({
   supabase: any
   onRefresh: () => void
 }) {
-  const handleRespect = async (postId: string) => {
+  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  // Fetch avatar URLs for posts
+  useEffect(() => {
+    async function fetchAvatarUrls() {
+      const urls: Record<string, string> = {}
+      const uniquePaths = new Set<string>()
+
+      posts.forEach((post) => {
+        if (post.user_profile?.avatar_path) {
+          uniquePaths.add(post.user_profile.avatar_path)
+        }
+      })
+
+      for (const path of Array.from(uniquePaths)) {
+        try {
+          const { data } = await supabase.storage
+            .from('avatars')
+            .createSignedUrl(path, 3600)
+          if (data?.signedUrl) {
+            urls[path] = data.signedUrl
+          }
+        } catch (err) {
+          console.error('Failed to get avatar URL:', err)
+        }
+      }
+      setAvatarUrls(urls)
+    }
+
+    if (posts.length > 0) {
+      fetchAvatarUrls()
+    }
+  }, [posts, supabase])
+
+  const handleRespect = async (postId: string, hasRespected: boolean) => {
     if (!userId) return
     try {
-      await supabase
-        .from('feed_respects')
-        .upsert({ post_id: postId, user_id: userId })
+      if (hasRespected) {
+        // Remove respect
+        await supabase
+          .from('feed_respects')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', userId)
+      } else {
+        // Add respect
+        await supabase
+          .from('feed_respects')
+          .insert({ post_id: postId, user_id: userId })
+      }
       onRefresh()
     } catch (err) {
-      console.error('Failed to respect post:', err)
+      console.error('Failed to toggle respect:', err)
+    }
+  }
+
+  const handleDelete = async (postId: string) => {
+    if (!userId) return
+    setDeleting(postId)
+    try {
+      await supabase
+        .from('feed_posts')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', postId)
+        .eq('user_id', userId)
+      onRefresh()
+    } catch (err) {
+      console.error('Failed to delete post:', err)
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -341,49 +590,122 @@ function FeedView({
 
   return (
     <div className="space-y-4">
-      {posts.map((post) => (
-        <div key={post.id} className="bg-card rounded-xl border border-border overflow-hidden">
-          {/* Post Header */}
-          <div className="px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                <span className="text-sm font-medium text-foreground">
-                  {(post.user_profile?.display_name || 'M')[0].toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="font-medium text-foreground">
-                  {post.user_profile?.display_name || 'Member'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(post.created_at).toLocaleDateString()}
-                </p>
+      {posts.map((post) => {
+        const avatarUrl = post.user_profile?.avatar_path
+          ? avatarUrls[post.user_profile.avatar_path]
+          : null
+        const displayName = post.user_profile?.display_name || 'Member'
+        const initials = displayName.slice(0, 2).toUpperCase()
+        const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
+        const BadgeIcon = badgeIcons[level.badge]
+        const isOwnPost = post.user_id === userId
+
+        return (
+          <div key={post.id} className="bg-card rounded-xl border border-border overflow-hidden">
+            {/* Post Header */}
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt={displayName}
+                        fill
+                        className="object-cover"
+                        sizes="40px"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {initials}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-foreground">{displayName}</p>
+                      <div className="flex items-center gap-1">
+                        <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
+                        <span className={`text-xs ${badgeColors[level.badge]}`}>Lv.{level.level}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(post.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                </div>
+                {isOwnPost && (
+                  <button
+                    onClick={() => handleDelete(post.id)}
+                    disabled={deleting === post.id}
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    {deleting === post.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Post Content */}
-          <div className="px-4 py-3">
-            <h3 className="font-medium text-foreground mb-2">{post.title}</h3>
-            {post.body && (
-              <p className="text-sm text-muted-foreground">{post.body}</p>
-            )}
-          </div>
+            {/* Post Content */}
+            <div className="px-4 py-3">
+              <h3 className="font-medium text-foreground mb-2">{post.title}</h3>
+              {post.body && (
+                <p className="text-sm text-muted-foreground mb-3">{post.body}</p>
+              )}
 
-          {/* Post Actions */}
-          <div className="px-4 py-3 border-t border-border flex items-center gap-4">
-            <button
-              onClick={() => handleRespect(post.id)}
-              className={`flex items-center gap-2 text-sm ${
-                post.has_respected ? 'text-red-500' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Heart className={`h-4 w-4 ${post.has_respected ? 'fill-current' : ''}`} />
-              <span>{post.respect_count || 0} Respect</span>
-            </button>
+              {/* Workout Matrix */}
+              {post.payload?.workout_matrix && post.payload.workout_matrix.length > 0 && (
+                <div className="mt-3 bg-secondary/50 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Workout Breakdown</p>
+                  <div className="space-y-2">
+                    {post.payload.workout_matrix.map((exercise, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-foreground">{exercise.exercise || 'Exercise'}</span>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          {exercise.sets && <span>{exercise.sets} sets</span>}
+                          {exercise.reps && <span>× {exercise.reps}</span>}
+                          {exercise.weight && <span>@ {exercise.weight}kg</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {post.payload.duration && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Duration: {post.payload.duration} min
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Post Actions */}
+            <div className="px-4 py-3 border-t border-border flex items-center gap-4">
+              <button
+                onClick={() => handleRespect(post.id, post.has_respected || false)}
+                className={`flex items-center gap-2 text-sm transition-colors ${
+                  post.has_respected
+                    ? 'text-red-500'
+                    : 'text-muted-foreground hover:text-red-500'
+                }`}
+              >
+                <Heart
+                  className={`h-4 w-4 ${post.has_respected ? 'fill-current' : ''}`}
+                />
+                <span>{post.respect_count || 0} Respect</span>
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

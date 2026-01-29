@@ -14,10 +14,10 @@ import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile, useFrameworks } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2, Flame, ChevronRight } from 'lucide-react'
+import { Plus, Loader2, Flame, ChevronRight, CheckSquare } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
-import Link from 'next/link'
+import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -30,6 +30,7 @@ export default function AppPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
+  const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -107,7 +108,14 @@ export default function AppPage() {
 
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
-  const { activeFramework, todaySubmission, loading: frameworkLoading } = useFrameworks(user?.id)
+  const {
+    activeFramework,
+    todaySubmission,
+    todayItems,
+    completionCount,
+    loading: frameworkLoading,
+    toggleFrameworkItem,
+  } = useFrameworks(user?.id)
 
   // Get week days
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
@@ -266,28 +274,38 @@ export default function AppPage() {
 
       {/* Active Framework Card - shows in Day View */}
       {viewMode === 'day' && activeFramework?.framework_template && !frameworkLoading && (
-        <Link href="/structure" className="block mx-4 mt-3">
+        <button
+          onClick={() => setFrameworkModalOpen(true)}
+          className="block mx-4 mt-3 w-[calc(100%-2rem)] text-left"
+        >
           <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">Active Framework</p>
                 <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
-                {todaySubmission ? (
-                  <p className={`text-xs mt-1 ${
-                    todaySubmission.status === 'complete' ? 'text-green-500' :
-                    todaySubmission.status === 'partial' ? 'text-yellow-500' :
-                    'text-red-500'
+                <div className="flex items-center gap-2 mt-1">
+                  <CheckSquare className={`h-4 w-4 ${
+                    completionCount.completed === completionCount.total && completionCount.total > 0
+                      ? 'text-green-500'
+                      : completionCount.completed > 0
+                      ? 'text-yellow-500'
+                      : 'text-muted-foreground'
+                  }`} />
+                  <p className={`text-xs ${
+                    completionCount.completed === completionCount.total && completionCount.total > 0
+                      ? 'text-green-500'
+                      : completionCount.completed > 0
+                      ? 'text-yellow-500'
+                      : 'text-muted-foreground'
                   }`}>
-                    Today: {todaySubmission.status.charAt(0).toUpperCase() + todaySubmission.status.slice(1)}
+                    {completionCount.completed} / {completionCount.total} complete
                   </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">Not submitted today</p>
-                )}
+                </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
-        </Link>
+        </button>
       )}
 
       {/* Main Content */}
@@ -349,6 +367,16 @@ export default function AppPage() {
         onMediaUpload={uploadMedia}
         onMediaDelete={deleteMedia}
         userHasHeight={hasHeight}
+      />
+
+      {/* Framework Checklist Modal */}
+      <FrameworkChecklistModal
+        isOpen={frameworkModalOpen}
+        onClose={() => setFrameworkModalOpen(false)}
+        framework={activeFramework?.framework_template}
+        todayItems={todayItems}
+        completionCount={completionCount}
+        onToggleItem={toggleFrameworkItem}
       />
     </div>
   )

@@ -3,15 +3,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CheckSquare, ChevronRight } from 'lucide-react'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
-import { ProfileCard } from '@/components/structure/ProfileCard'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 type TabType = 'discipline' | 'training'
@@ -20,6 +20,7 @@ export default function StructurePage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
+  const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -70,7 +71,18 @@ export default function StructurePage() {
   // Data hooks
   const { profile, loading: profileLoading } = useProfile(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, logChallenge, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
-  const { frameworks, activeFramework, todaySubmission, loading: frameworksLoading, activateFramework, submitDailyStatus, refetch: refetchFrameworks } = useFrameworks(user?.id)
+  const {
+    frameworks,
+    activeFramework,
+    todaySubmission,
+    todayItems,
+    completionCount,
+    loading: frameworksLoading,
+    activateFramework,
+    submitDailyStatus,
+    toggleFrameworkItem,
+    refetch: refetchFrameworks,
+  } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
   if (authLoading) {
@@ -121,13 +133,44 @@ export default function StructurePage() {
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-4">
-        {/* Profile Card - always visible */}
-        {!profileLoading && profile && (
-          <ProfileCard profile={profile} />
-        )}
-
         {activeTab === 'discipline' ? (
           <>
+            {/* Active Framework Quick Card - opens checklist modal */}
+            {activeFramework?.framework_template && !frameworksLoading && (
+              <button
+                onClick={() => setFrameworkModalOpen(true)}
+                className="w-full text-left"
+              >
+                <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Active Framework</p>
+                      <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <CheckSquare className={`h-4 w-4 ${
+                          completionCount.completed === completionCount.total && completionCount.total > 0
+                            ? 'text-green-500'
+                            : completionCount.completed > 0
+                            ? 'text-yellow-500'
+                            : 'text-muted-foreground'
+                        }`} />
+                        <p className={`text-xs ${
+                          completionCount.completed === completionCount.total && completionCount.total > 0
+                            ? 'text-green-500'
+                            : completionCount.completed > 0
+                            ? 'text-yellow-500'
+                            : 'text-muted-foreground'
+                        }`}>
+                          {completionCount.completed} / {completionCount.total} complete
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+              </button>
+            )}
+
             {/* Community Challenge */}
             {challengeLoading ? (
               <div className="bg-card rounded-xl p-4 border border-border">
@@ -144,7 +187,7 @@ export default function StructurePage() {
               />
             )}
 
-            {/* Frameworks */}
+            {/* Frameworks Catalogue */}
             {frameworksLoading ? (
               <div className="bg-card rounded-xl p-4 border border-border">
                 <div className="flex items-center justify-center py-8">
@@ -195,6 +238,16 @@ export default function StructurePage() {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* Framework Checklist Modal */}
+      <FrameworkChecklistModal
+        isOpen={frameworkModalOpen}
+        onClose={() => setFrameworkModalOpen(false)}
+        framework={activeFramework?.framework_template}
+        todayItems={todayItems}
+        completionCount={completionCount}
+        onToggleItem={toggleFrameworkItem}
+      />
     </div>
   )
 }

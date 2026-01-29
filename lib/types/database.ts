@@ -18,6 +18,9 @@ export interface Database {
           is_paused: boolean
           committed_at: string
           display_name: string | null
+          avatar_path: string | null
+          birth_date: string | null
+          weight_kg: number | null
           current_streak: number
           best_streak: number
           last_resolved_date: string | null
@@ -32,6 +35,9 @@ export interface Database {
           is_paused?: boolean
           committed_at?: string
           display_name?: string | null
+          avatar_path?: string | null
+          birth_date?: string | null
+          weight_kg?: number | null
           current_streak?: number
           best_streak?: number
           last_resolved_date?: string | null
@@ -46,6 +52,9 @@ export interface Database {
           is_paused?: boolean
           committed_at?: string
           display_name?: string | null
+          avatar_path?: string | null
+          birth_date?: string | null
+          weight_kg?: number | null
           current_streak?: number
           best_streak?: number
           last_resolved_date?: string | null
@@ -185,6 +194,7 @@ export interface Database {
           title: string
           description: string | null
           criteria: Json
+          image_path: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -194,6 +204,7 @@ export interface Database {
           title: string
           description?: string | null
           criteria?: Json
+          image_path?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -203,6 +214,7 @@ export interface Database {
           title?: string
           description?: string | null
           criteria?: Json
+          image_path?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -261,6 +273,7 @@ export interface Database {
           overview: string | null
           structure: string | null
           equipment: string | null
+          hero_image_path: string | null
           tags: string[]
           is_active: boolean
           created_at: string
@@ -272,6 +285,7 @@ export interface Database {
           overview?: string | null
           structure?: string | null
           equipment?: string | null
+          hero_image_path?: string | null
           tags?: string[]
           is_active?: boolean
           created_at?: string
@@ -283,6 +297,7 @@ export interface Database {
           overview?: string | null
           structure?: string | null
           equipment?: string | null
+          hero_image_path?: string | null
           tags?: string[]
           is_active?: boolean
           created_at?: string
@@ -367,6 +382,159 @@ export interface Database {
           resolved_at?: string
         }
       }
+      daily_framework_items: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          criterion_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          criterion_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          criterion_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      teams: {
+        Row: {
+          id: string
+          team_number: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_number: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          team_number?: number
+          created_at?: string
+        }
+      }
+      team_members: {
+        Row: {
+          id: string
+          team_id: string
+          user_id: string
+          role: 'captain' | 'member'
+          joined_at: string
+          left_at: string | null
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          user_id: string
+          role?: 'captain' | 'member'
+          joined_at?: string
+          left_at?: string | null
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          user_id?: string
+          role?: 'captain' | 'member'
+          joined_at?: string
+          left_at?: string | null
+        }
+      }
+      team_daily_overviews: {
+        Row: {
+          id: string
+          team_id: string
+          date: string
+          snapshot: Json
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          date: string
+          snapshot?: Json
+          generated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          date?: string
+          snapshot?: Json
+          generated_at?: string
+        }
+      }
+      feed_posts: {
+        Row: {
+          id: string
+          user_id: string
+          block_id: string | null
+          title: string
+          body: string | null
+          media_path: string | null
+          payload: Json
+          created_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          block_id?: string | null
+          title: string
+          body?: string | null
+          media_path?: string | null
+          payload?: Json
+          created_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          block_id?: string | null
+          title?: string
+          body?: string | null
+          media_path?: string | null
+          payload?: Json
+          created_at?: string
+          deleted_at?: string | null
+        }
+      }
+      feed_respects: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -428,6 +596,9 @@ export interface Profile {
   is_paused: boolean
   committed_at: string
   display_name: string | null
+  avatar_path: string | null
+  birth_date: string | null
+  weight_kg: number | null
   current_streak: number
   best_streak: number
   last_resolved_date: string | null
@@ -452,6 +623,7 @@ export interface FrameworkTemplate {
   title: string
   description: string | null
   criteria: FrameworkCriteria
+  image_path: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -493,6 +665,7 @@ export interface ProgrammeTemplate {
   overview: string | null
   structure: string | null
   equipment: string | null
+  hero_image_path: string | null
   tags: string[]
   is_active: boolean
   created_at: string
@@ -580,6 +753,97 @@ export interface PersonalPayload {
 
 export interface ChallengePayload {
   challenge_id: string
+}
+
+// ============================================
+// V3 Types - Teams, Feed, Framework Items
+// ============================================
+
+// Daily Framework Item (live ticking)
+export interface DailyFrameworkItem {
+  id: string
+  user_id: string
+  date: string
+  criterion_id: string
+  completed: boolean
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Team
+export interface Team {
+  id: string
+  team_number: number
+  created_at: string
+}
+
+// Team Member
+export interface TeamMember {
+  id: string
+  team_id: string
+  user_id: string
+  role: 'captain' | 'member'
+  joined_at: string
+  left_at: string | null
+  profiles?: Profile
+  teams?: Team
+}
+
+// Team Daily Overview (snapshot)
+export interface TeamDailyOverview {
+  id: string
+  team_id: string
+  date: string
+  snapshot: TeamSnapshot
+  generated_at: string
+}
+
+export interface TeamSnapshot {
+  members: TeamMemberSnapshot[]
+  total_score: number
+  avg_score: number
+}
+
+export interface TeamMemberSnapshot {
+  user_id: string
+  display_name: string | null
+  avatar_path: string | null
+  discipline_score: number
+  daily_delta: number
+  framework_status: FrameworkSubmissionStatus | null
+}
+
+// Feed Post
+export interface FeedPost {
+  id: string
+  user_id: string
+  block_id: string | null
+  title: string
+  body: string | null
+  media_path: string | null
+  payload: FeedPostPayload
+  created_at: string
+  deleted_at: string | null
+  // Joined data
+  user_profile?: Profile
+  respect_count?: number
+  has_respected?: boolean
+  block?: Block
+}
+
+export interface FeedPostPayload {
+  workout_matrix?: ExerciseEntry[]
+  duration?: number
+  rpe?: number
+}
+
+// Feed Respect
+export interface FeedRespect {
+  id: string
+  post_id: string
+  user_id: string
+  created_at: string
 }
 
 // ============================================
