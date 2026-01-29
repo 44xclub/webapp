@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronLeft } from 'lucide-react'
@@ -20,32 +20,49 @@ export default function StructurePage() {
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
 
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   // Auth check
   useEffect(() => {
+    let isMounted = true
+
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (!isMounted) return
+
+        if (error || !user) {
+          router.push('/login')
+          return
+        }
+        setUser(user)
+        setAuthLoading(false)
+      } catch (err) {
+        if (isMounted) {
+          router.push('/login')
+        }
       }
-      setUser(user)
-      setAuthLoading(false)
     }
     checkAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return
+
         if (event === 'SIGNED_OUT') {
           router.push('/login')
         } else if (session?.user) {
           setUser(session.user)
+          setAuthLoading(false)
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [router, supabase])
 
   // Data hooks

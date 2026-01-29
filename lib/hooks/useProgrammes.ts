@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateForApi } from '@/lib/date'
 import { addDays, startOfWeek, getDay } from 'date-fns'
@@ -15,7 +15,7 @@ export function useProgrammes(userId: string | undefined) {
   const [activeProgramme, setActiveProgramme] = useState<UserProgramme | null>(null)
   const [sessions, setSessions] = useState<ProgrammeSession[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchProgrammes = useCallback(async () => {
     setLoading(true)

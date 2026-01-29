@@ -17,6 +17,10 @@ export interface Database {
           timezone: string
           is_paused: boolean
           committed_at: string
+          display_name: string | null
+          current_streak: number
+          best_streak: number
+          last_resolved_date: string | null
           created_at: string
           updated_at: string
         }
@@ -27,6 +31,10 @@ export interface Database {
           timezone?: string
           is_paused?: boolean
           committed_at?: string
+          display_name?: string | null
+          current_streak?: number
+          best_streak?: number
+          last_resolved_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +45,10 @@ export interface Database {
           timezone?: string
           is_paused?: boolean
           committed_at?: string
+          display_name?: string | null
+          current_streak?: number
+          best_streak?: number
+          last_resolved_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -60,6 +72,7 @@ export interface Database {
           challenge_id: string | null
           programme_template_id: string | null
           programme_session_id: string | null
+          shared_to_feed: boolean
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -82,6 +95,7 @@ export interface Database {
           challenge_id?: string | null
           programme_template_id?: string | null
           programme_session_id?: string | null
+          shared_to_feed?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -104,6 +118,7 @@ export interface Database {
           challenge_id?: string | null
           programme_template_id?: string | null
           programme_session_id?: string | null
+          shared_to_feed?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -389,6 +404,7 @@ export interface Block {
   challenge_id: string | null
   programme_template_id: string | null
   programme_session_id: string | null
+  shared_to_feed: boolean
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -411,6 +427,10 @@ export interface Profile {
   timezone: string
   is_paused: boolean
   committed_at: string
+  display_name: string | null
+  current_streak: number
+  best_streak: number
+  last_resolved_date: string | null
   created_at: string
   updated_at: string
 }

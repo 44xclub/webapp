@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getDateRange, incrementTime, formatDateForApi } from '@/lib/date'
 import type { Block, BlockMedia } from '@/lib/types'
@@ -10,11 +10,14 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   // Fetch blocks for the date range
   const fetchBlocks = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -221,7 +224,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
 // Hook for block media operations
 export function useBlockMedia(userId: string | undefined) {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const uploadMedia = useCallback(
     async (blockId: string, file: File) => {

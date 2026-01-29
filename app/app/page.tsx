@@ -30,34 +30,66 @@ export default function AppPage() {
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
 
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   // Auth check
   useEffect(() => {
+    let isMounted = true
+
     const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser()
+
+        if (!isMounted) return
+
+        if (error) {
+          console.error('Auth error:', error)
+          router.push('/login')
+          return
+        }
+
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        setUser(user)
+        setAuthLoading(false)
+      } catch (err) {
+        console.error('Auth check failed:', err)
+        if (isMounted) {
+          router.push('/login')
+        }
       }
-      setUser(user)
-      setAuthLoading(false)
     }
+
     checkAuth()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
+      if (!isMounted) return
+
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
         router.push('/login')
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          setUser(session.user)
+          setAuthLoading(false)
+        }
       } else if (session?.user) {
         setUser(session.user)
+        setAuthLoading(false)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [router, supabase])
 
   // Data hooks

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateForApi } from '@/lib/date'
 import type {
@@ -17,7 +17,7 @@ export function useCommunityChallenge(userId: string | undefined) {
   const [challenge, setChallenge] = useState<CommunityChallenge | null>(null)
   const [todayBlock, setTodayBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchChallenge = useCallback(async () => {
     setLoading(true)
@@ -105,7 +105,7 @@ export function useFrameworks(userId: string | undefined) {
   const [activeFramework, setActiveFramework] = useState<UserFramework | null>(null)
   const [todaySubmission, setTodaySubmission] = useState<DailyFrameworkSubmission | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchFrameworks = useCallback(async () => {
     setLoading(true)
@@ -217,10 +217,13 @@ export function useFrameworks(userId: string | undefined) {
 export function useDailyScores(userId: string | undefined, days: number = 7) {
   const [scores, setScores] = useState<DailyScore[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchScores = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
     try {
