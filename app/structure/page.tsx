@@ -3,13 +3,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, ChevronLeft } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
 import { ProfileCard } from '@/components/structure/ProfileCard'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
+import { HeaderStrip } from '@/components/shared/HeaderStrip'
+import { BottomNav } from '@/components/shared/BottomNav'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 type TabType = 'discipline' | 'training'
@@ -80,17 +82,14 @@ export default function StructurePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border safe-top">
-        <div className="flex items-center px-4 py-3">
-          <button
-            onClick={() => router.push('/app')}
-            className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-          </button>
-          <h1 className="text-lg font-semibold text-foreground ml-2">Structure</h1>
+    <div className="min-h-screen bg-background pb-16">
+      {/* Header Strip */}
+      <HeaderStrip profile={profile} loading={profileLoading} />
+
+      {/* Page Header */}
+      <header className="sticky top-0 z-30 bg-card border-b border-border">
+        <div className="px-4 py-3">
+          <h1 className="text-lg font-semibold text-foreground">Structure</h1>
         </div>
 
         {/* Tab Toggle */}
@@ -121,7 +120,7 @@ export default function StructurePage() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-4 pb-24 space-y-4">
+      <main className="px-4 py-4 space-y-4">
         {/* Profile Card - always visible */}
         {!profileLoading && profile && (
           <ProfileCard profile={profile} />
@@ -193,6 +192,9 @@ export default function StructurePage() {
           </>
         )}
       </main>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </div>
   )
 }
