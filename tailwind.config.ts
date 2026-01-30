@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Montserrat', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -25,11 +28,29 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        // Additional blue accent shades
+        'accent-light': '#60a5fa',
+        'accent-dark': '#1d4ed8',
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        xl: '16px',
+      },
+      boxShadow: {
+        'sm': '0 10px 26px rgba(0,0,0,.36)',
+        'md': '0 18px 50px rgba(0,0,0,.46)',
+        'lg': '0 28px 90px rgba(0,0,0,.62)',
+        'glow': '0 0 20px rgba(59,130,246,.20)',
+        'glow-lg': '0 0 60px rgba(59,130,246,.12)',
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(.2,.8,.2,1)',
+      },
+      transitionDuration: {
+        'fast': '140ms',
+        'med': '220ms',
       },
     },
   },

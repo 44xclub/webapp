@@ -2,36 +2,106 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================
+   44CLUB — Stoic Modern Theme
+   =========================== */
+
 @layer base {
   :root {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 95%;
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    /* Background colors - deep dark blue */
+    --background: 220 31% 4%;
+    --background-alt: 220 33% 3%;
+
+    /* Foreground/text - soft white */
+    --foreground: 226 100% 97%;
+
+    /* Card surfaces - semi-transparent */
+    --card: 220 20% 8%;
+    --card-foreground: 226 100% 97%;
+
+    /* Primary accent - blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 226 100% 97%;
+
+    /* Secondary surface */
+    --secondary: 220 20% 12%;
+    --secondary-foreground: 226 100% 94%;
+
+    /* Muted text */
+    --muted: 220 20% 14%;
+    --muted-foreground: 226 50% 72%;
+
+    /* Accent (same as primary for consistency) */
+    --accent: 217 91% 60%;
+    --accent-foreground: 226 100% 97%;
+
+    /* Destructive/error */
     --destructive: 0 84% 60%;
-    --border: 0 0% 20%;
-    --input: 0 0% 15%;
-    --ring: 262 83% 58%;
-    --radius: 0.75rem;
+
+    /* Borders - subtle white */
+    --border: 220 20% 18%;
+    --input: 220 20% 10%;
+    --ring: 217 91% 60%;
+
+    /* Border radius */
+    --radius: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 10px 26px rgba(0,0,0,.36);
+    --shadow-md: 0 18px 50px rgba(0,0,0,.46);
+    --shadow-lg: 0 28px 90px rgba(0,0,0,.62);
+
+    /* Transitions */
+    --ease: cubic-bezier(.2,.8,.2,1);
+    --fast: 140ms;
+    --med: 220ms;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
   }
+
+  ::selection {
+    background: rgba(59, 130, 246, 0.28);
+  }
+}
+
+/* Background gradient overlay */
+.app-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(1100px 700px at 15% 10%, rgba(96,165,250,.08), transparent 60%),
+    radial-gradient(950px 720px at 85% 18%, rgba(59,130,246,.06), transparent 62%),
+    radial-gradient(900px 820px at 50% 110%, rgba(29,78,216,.08), transparent 65%),
+    linear-gradient(180deg, hsl(220, 33%, 3%) 0%, hsl(220, 28%, 5%) 38%, hsl(220, 30%, 4%) 65%, hsl(220, 33%, 3%) 100%);
+}
+
+.app-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: overlay;
 }
 
 /* Custom scrollbar */
@@ -45,16 +115,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted rounded-full;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/30;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 /* Remove spinner from number inputs */
@@ -93,7 +159,7 @@ input[type="number"] {
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -113,13 +179,95 @@ input[type="number"] {
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.2s var(--ease);
 }
 
 .animate-slideUp {
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.3s var(--ease);
 }
 
 .animate-slideDown {
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.3s var(--ease);
+}
+
+/* Glass card effect */
+.glass-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.028));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+}
+
+/* Primary accent card */
+.accent-card {
+  border: 1px solid rgba(59,130,246,.26);
+  background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(59,130,246,.08));
+  box-shadow: 0 10px 28px rgba(59,130,246,.12);
+}
+
+.accent-card:hover {
+  border-color: rgba(96,165,250,.34);
+  background: linear-gradient(180deg, rgba(96,165,250,.16), rgba(59,130,246,.10));
+}
+
+/* Button base styles */
+.btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(238,242,255,.92);
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease),
+              background var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease);
+}
+
+.btn-base:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.16);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-base:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  border-color: rgba(59,130,246,.26);
+  background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(59,130,246,.08));
+  box-shadow: 0 10px 28px rgba(59,130,246,.12);
+}
+
+.btn-primary:hover {
+  border-color: rgba(96,165,250,.34);
+  background: linear-gradient(180deg, rgba(96,165,250,.16), rgba(59,130,246,.10));
+  box-shadow: 0 12px 34px rgba(59,130,246,.14);
+}
+
+/* Input focus styles */
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(96,165,250,.55);
+  box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+  outline: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
