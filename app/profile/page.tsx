@@ -211,8 +211,10 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="app-shell">
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
+        </div>
       </div>
     )
   }
@@ -221,7 +223,8 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="app-shell">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-20">
       {/* Page Header - No HeaderStrip on Profile page per requirements */}
       <header className="bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 py-4">
@@ -504,6 +507,7 @@ export default function ProfilePage() {
 
       {/* Bottom Navigation */}
       <BottomNav />
+    </div>
     </div>
   )
 }

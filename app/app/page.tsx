@@ -230,14 +230,17 @@ export default function AppPage() {
   // Loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="app-shell">
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-16">
+    <div className="app-shell">
+    <div className="min-h-screen min-h-[100dvh] bg-background flex flex-col pb-16">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
@@ -378,6 +381,7 @@ export default function AppPage() {
         completionCount={completionCount}
         onToggleItem={toggleFrameworkItem}
       />
+    </div>
     </div>
   )
 }

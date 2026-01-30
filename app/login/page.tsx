@@ -72,12 +72,13 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="w-full max-w-sm">
+    <div className="app-shell">
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center px-4 bg-background">
+      <div className="w-full max-w-sm animate-slideUp">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">44CLUB</h1>
-          <p className="text-muted-foreground mt-2">Blocks</p>
+          <h1 className="text-4xl font-black text-foreground tracking-tight">44CLUB</h1>
+          <p className="text-muted-foreground mt-2 text-sm font-medium tracking-wide">BLOCKS</p>
         </div>
 
         {/* Success Message */}
@@ -139,6 +140,7 @@ function LoginForm() {
         </div>
       </div>
     </div>
+    </div>
   )
 }
 
@@ -146,8 +148,10 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="app-shell">
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
+          </div>
         </div>
       }
     >

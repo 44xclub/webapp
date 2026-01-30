@@ -197,14 +197,17 @@ export default function CommunityPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="app-shell">
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="app-shell">
+    <div className="min-h-screen min-h-[100dvh] bg-background pb-20">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
@@ -260,6 +263,7 @@ export default function CommunityPage() {
 
       {/* Bottom Navigation */}
       <BottomNav />
+    </div>
     </div>
   )
 }

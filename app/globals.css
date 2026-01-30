@@ -81,7 +81,10 @@
   }
 }
 
-/* Background gradient overlay */
+/* ===========================
+   Background & Ambient Effects
+   =========================== */
+
 .app-background {
   position: fixed;
   inset: 0;
@@ -104,7 +107,64 @@
   mix-blend-mode: overlay;
 }
 
-/* Custom scrollbar */
+/* ===========================
+   Responsive Container
+   =========================== */
+
+.app-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Desktop: Center content with max width */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 480px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    max-width: 420px;
+  }
+}
+
+/* Full-width wrapper for desktop */
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    align-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.08), transparent),
+      hsl(220, 33%, 3%);
+  }
+
+  .app-shell > * {
+    width: 100%;
+    max-width: 480px;
+    background: hsl(220, 20%, 6%);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.3),
+      0 25px 80px -12px rgba(0,0,0,0.6),
+      0 0 60px -30px rgba(59, 130, 246, 0.15);
+    overflow: hidden;
+  }
+}
+
+/* ===========================
+   Custom Scrollbar
+   =========================== */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -123,7 +183,10 @@
   background: rgba(255, 255, 255, 0.16);
 }
 
-/* Remove spinner from number inputs */
+/* ===========================
+   Form Elements
+   =========================== */
+
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -134,14 +197,22 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Touch improvements for mobile */
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(96,165,250,.55);
+  box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+  outline: none;
+}
+
+/* ===========================
+   Touch & Mobile Improvements
+   =========================== */
+
 @media (hover: none) {
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* Safe area insets for PWA */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
@@ -150,7 +221,10 @@ input[type="number"] {
   padding-top: env(safe-area-inset-top, 0);
 }
 
-/* Animation utilities */
+/* ===========================
+   Animation Keyframes
+   =========================== */
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -178,6 +252,44 @@ input[type="number"] {
   }
 }
 
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.2s var(--ease);
 }
@@ -190,76 +302,390 @@ input[type="number"] {
   animation: slideDown 0.3s var(--ease);
 }
 
-/* Glass card effect */
-.glass-card {
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.028));
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px);
+.animate-scaleIn {
+  animation: scaleIn 0.2s var(--ease);
 }
 
-/* Primary accent card */
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ===========================
+   Glass & Card Effects
+   =========================== */
+
+.glass-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 10px 40px -10px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-card-hover {
+  transition: all var(--fast) var(--ease);
+}
+
+.glass-card-hover:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border-color: rgba(255,255,255,.12);
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 50px -15px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
 .accent-card {
-  border: 1px solid rgba(59,130,246,.26);
-  background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(59,130,246,.08));
-  box-shadow: 0 10px 28px rgba(59,130,246,.12);
+  border: 1px solid rgba(59,130,246,.20);
+  background: linear-gradient(180deg, rgba(59,130,246,.12), rgba(59,130,246,.05));
+  box-shadow:
+    0 10px 40px -10px rgba(59,130,246,.2),
+    inset 0 1px 0 rgba(59,130,246,0.15);
 }
 
 .accent-card:hover {
-  border-color: rgba(96,165,250,.34);
-  background: linear-gradient(180deg, rgba(96,165,250,.16), rgba(59,130,246,.10));
+  border-color: rgba(96,165,250,.30);
+  background: linear-gradient(180deg, rgba(96,165,250,.15), rgba(59,130,246,.08));
+  box-shadow:
+    0 15px 50px -10px rgba(59,130,246,.25),
+    inset 0 1px 0 rgba(96,165,250,0.2);
 }
 
-/* Button base styles */
+/* Elevated card with stronger presence */
+.card-elevated {
+  background: linear-gradient(180deg, hsl(220, 20%, 10%), hsl(220, 20%, 8%));
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.3),
+    0 20px 50px -12px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ===========================
+   Button Styles
+   =========================== */
+
 .btn-base {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 11px 16px;
+  padding: 12px 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
   color: rgba(238,242,255,.92);
-  font-weight: 800;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 14px;
   cursor: pointer;
-  transition: transform var(--fast) var(--ease),
-              background var(--fast) var(--ease),
-              border-color var(--fast) var(--ease),
-              box-shadow var(--fast) var(--ease);
+  transition: all var(--fast) var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-base::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
 }
 
 .btn-base:hover {
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.16);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  border-color: rgba(255,255,255,.15);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,.4);
+}
+
+.btn-base:hover::before {
+  opacity: 1;
 }
 
 .btn-base:active {
-  transform: translateY(1px);
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .btn-primary {
-  border-color: rgba(59,130,246,.26);
-  background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(59,130,246,.08));
-  box-shadow: 0 10px 28px rgba(59,130,246,.12);
+  border-color: rgba(59,130,246,.25);
+  background: linear-gradient(180deg, rgba(59,130,246,.20), rgba(59,130,246,.10));
+  box-shadow:
+    0 10px 30px -10px rgba(59,130,246,.3),
+    inset 0 1px 0 rgba(96,165,250,0.2);
 }
 
 .btn-primary:hover {
-  border-color: rgba(96,165,250,.34);
-  background: linear-gradient(180deg, rgba(96,165,250,.16), rgba(59,130,246,.10));
-  box-shadow: 0 12px 34px rgba(59,130,246,.14);
+  border-color: rgba(96,165,250,.35);
+  background: linear-gradient(180deg, rgba(96,165,250,.25), rgba(59,130,246,.15));
+  box-shadow:
+    0 15px 40px -10px rgba(59,130,246,.4),
+    inset 0 1px 0 rgba(96,165,250,0.3);
 }
 
-/* Input focus styles */
-input:focus, select:focus, textarea:focus {
-  border-color: rgba(96,165,250,.55);
-  box-shadow: 0 0 0 4px rgba(59,130,246,.18);
-  outline: none;
+/* ===========================
+   Stats & Metrics
+   =========================== */
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
 }
 
-/* Reduced motion */
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===========================
+   Progress Bars
+   =========================== */
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 2s infinite;
+  background-size: 200% 100%;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(var(--primary)), #60a5fa);
+  border-radius: 999px;
+  transition: width 0.5s var(--ease);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.8);
+}
+
+/* ===========================
+   Badges & Pills
+   =========================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-primary {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.badge-warning {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+/* ===========================
+   Dividers
+   =========================== */
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+.divider-vertical {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+/* ===========================
+   Focus States
+   =========================== */
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 focus:ring-offset-background;
+}
+
+/* ===========================
+   List Items
+   =========================== */
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  transition: all var(--fast) var(--ease);
+  cursor: pointer;
+}
+
+.list-item:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+.list-item:active {
+  background: rgba(255,255,255,0.06);
+  transform: scale(0.99);
+}
+
+/* ===========================
+   Empty States
+   =========================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* ===========================
+   Skeleton Loading
+   =========================== */
+
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ===========================
+   Header & Navigation
+   =========================== */
+
+.header-blur {
+  background: rgba(7, 9, 13, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  transition: all var(--fast) var(--ease);
+  color: hsl(var(--muted-foreground));
+}
+
+.nav-item:hover {
+  color: hsl(var(--foreground));
+  background: rgba(255,255,255,0.04);
+}
+
+.nav-item.active {
+  color: hsl(var(--primary));
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* ===========================
+   Tooltips
+   =========================== */
+
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: 8px 12px;
+  background: hsl(220, 20%, 12%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--fast) var(--ease);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-12px);
+}
+
+/* ===========================
+   Reduced Motion
+   =========================== */
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
