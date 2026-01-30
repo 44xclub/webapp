@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+// Using native img for signed URLs as they have their own caching
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Heart, Trash2, Trophy, Zap, Shield, Award, Crown } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
@@ -437,12 +437,10 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
                 <div className="flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
                     {avatarUrl ? (
-                      <Image
+                      <img
                         src={avatarUrl}
                         alt={displayName}
-                        fill
-                        className="object-cover"
-                        sizes="40px"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground">
@@ -608,12 +606,10 @@ function FeedView({
                 <div className="flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
                     {avatarUrl ? (
-                      <Image
+                      <img
                         src={avatarUrl}
                         alt={displayName}
-                        fill
-                        className="object-cover"
-                        sizes="40px"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground">
