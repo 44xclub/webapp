@@ -1,41 +1,55 @@
 // 44CLUB Blocks Service Worker
-const CACHE_NAME = '44club-blocks-v2';
+const CACHE_NAME = '44club-blocks-v3';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache on install
+// Assets to cache on install (minimal - only static assets)
 const PRECACHE_ASSETS = [
-  '/',
-  '/app',
-  '/login',
   '/manifest.json',
 ];
 
-// Install event - cache core assets
+// Install event - clear all caches and cache only minimal assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Service Worker: Caching core assets');
-      return cache.addAll(PRECACHE_ASSETS);
+    // Clear ALL caches first
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          console.log('Service Worker: Clearing cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      return caches.open(CACHE_NAME).then((cache) => {
+        console.log('Service Worker: Caching minimal assets');
+        return cache.addAll(PRECACHE_ASSETS);
+      });
     })
   );
+  // Force immediate activation
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
+    // Clear any remaining old caches
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => cacheName !== CACHE_NAME)
-          .map((cacheName) => caches.delete(cacheName))
+          .map((cacheName) => {
+            console.log('Service Worker: Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
       );
+    }).then(() => {
+      console.log('Service Worker: Claiming clients');
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
-// Fetch event - network first, then cache
+// Fetch event - network only for JS bundles, network-first for others
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
@@ -47,7 +61,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip API and auth requests
+  // Skip API, auth, and Supabase requests
   if (
     event.request.url.includes('/api/') ||
     event.request.url.includes('supabase') ||
@@ -56,33 +70,41 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // NEVER cache Next.js JavaScript bundles - always fetch fresh
+  if (event.request.url.includes('/_next/')) {
+    return;
+  }
+
+  // For navigation requests, always go to network
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL);
+      })
+    );
+    return;
+  }
+
+  // For other requests, use network-first strategy
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
-        const responseClone = response.clone();
-
-        // Cache successful responses
-        if (response.status === 200) {
+        // Only cache static assets (images, fonts, etc)
+        if (response.status === 200 &&
+            (event.request.url.includes('/icons/') ||
+             event.request.url.includes('/manifest.json'))) {
+          const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
         }
-
         return response;
       })
       .catch(() => {
-        // Return from cache if available
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-
-          // Return offline page for navigation requests
-          if (event.request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
-
           return new Response('Offline', {
             status: 503,
             statusText: 'Service Unavailable',
