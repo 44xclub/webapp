@@ -20,7 +20,7 @@ export const blockTypeColors: Record<string, string> = {
   workout: 'text-orange-400 bg-orange-400/10',
   habit: 'text-green-400 bg-green-400/10',
   nutrition: 'text-blue-400 bg-blue-400/10',
-  checkin: 'text-purple-400 bg-purple-400/10',
+  checkin: 'text-cyan-400 bg-cyan-400/10',
   personal: 'text-pink-400 bg-pink-400/10',
   challenge: 'text-yellow-400 bg-yellow-400/10',
 }

@@ -20,7 +20,7 @@ const badgeIcons: Record<DisciplineBadge, typeof Trophy> = {
 const badgeColors: Record<DisciplineBadge, string> = {
   'Initiated': 'text-slate-400 bg-slate-400/10',
   'Committed': 'text-blue-400 bg-blue-400/10',
-  'Elite': 'text-purple-400 bg-purple-400/10',
+  'Elite': 'text-cyan-400 bg-cyan-400/10',
   'Forged': 'text-amber-400 bg-amber-400/10',
   '44-Pro': 'text-yellow-400 bg-yellow-400/10',
 }

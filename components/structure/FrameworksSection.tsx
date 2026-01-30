@@ -88,8 +88,8 @@ export function FrameworksSection({
       {/* Active Framework & Daily Submission */}
       <div className="bg-card rounded-xl p-4 border border-border">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-purple-500/10">
-            <BookOpen className="h-5 w-5 text-purple-500" />
+          <div className="p-2 rounded-lg bg-blue-500/10">
+            <BookOpen className="h-5 w-5 text-blue-500" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">Daily Framework</h3>
