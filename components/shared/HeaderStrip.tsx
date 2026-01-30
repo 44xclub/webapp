@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+// Using native img for signed URLs as they have their own caching
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { Profile, DisciplineBadge } from '@/lib/types'
 import { Trophy, Zap, Shield, Award, Crown, User } from 'lucide-react'
@@ -89,12 +89,10 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
           {/* Avatar */}
           <div className="relative h-10 w-10 rounded-full overflow-hidden bg-secondary flex items-center justify-center ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
             {avatarUrl ? (
-              <Image
+              <img
                 src={avatarUrl}
                 alt={displayName}
-                fill
-                className="object-cover"
-                sizes="40px"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
               <span className="text-sm font-semibold text-muted-foreground">

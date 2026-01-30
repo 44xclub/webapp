@@ -217,8 +217,9 @@ export function useFrameworks(userId: string | undefined) {
 
   // Toggle a framework criterion item
   const toggleFrameworkItem = useCallback(
-    async (criterionId: string, completed: boolean) => {
+    async (criteriaKey: string, checked: boolean) => {
       if (!userId) throw new Error('Not authenticated')
+      if (!activeFramework?.framework_template_id) throw new Error('No active framework')
 
       const today = formatDateForApi(new Date())
 
@@ -228,11 +229,12 @@ export function useFrameworks(userId: string | undefined) {
           {
             user_id: userId,
             date: today,
-            criterion_id: criterionId,
-            completed,
-            completed_at: completed ? new Date().toISOString() : null,
+            framework_template_id: activeFramework.framework_template_id,
+            criteria_key: criteriaKey,
+            checked,
+            checked_at: checked ? new Date().toISOString() : null,
           },
-          { onConflict: 'user_id,date,criterion_id' }
+          { onConflict: 'user_id,date,criteria_key' }
         )
         .select()
         .single()
@@ -241,11 +243,11 @@ export function useFrameworks(userId: string | undefined) {
 
       // Update local state
       setTodayItems((prev) => {
-        const existing = prev.find((item) => item.criterion_id === criterionId)
+        const existing = prev.find((item) => item.criteria_key === criteriaKey)
         if (existing) {
           return prev.map((item) =>
-            item.criterion_id === criterionId
-              ? { ...item, completed, completed_at: completed ? new Date().toISOString() : null }
+            item.criteria_key === criteriaKey
+              ? { ...item, checked, checked_at: checked ? new Date().toISOString() : null }
               : item
           )
         }
@@ -254,7 +256,7 @@ export function useFrameworks(userId: string | undefined) {
 
       return data as DailyFrameworkItem
     },
-    [userId, supabase]
+    [userId, activeFramework, supabase]
   )
 
   // Calculate completion count
@@ -262,7 +264,7 @@ export function useFrameworks(userId: string | undefined) {
     if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
     const criteria = activeFramework.framework_template.criteria as FrameworkCriteria
     const total = criteria.items?.length || 0
-    const completed = todayItems.filter((item) => item.completed).length
+    const completed = todayItems.filter((item) => item.checked).length
     return { completed, total }
   }, [activeFramework, todayItems])
 

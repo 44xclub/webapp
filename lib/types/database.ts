@@ -384,34 +384,28 @@ export interface Database {
       }
       daily_framework_items: {
         Row: {
-          id: string
           user_id: string
           date: string
-          criterion_id: string
-          completed: boolean
-          completed_at: string | null
-          created_at: string
-          updated_at: string
+          framework_template_id: string
+          criteria_key: string
+          checked: boolean
+          checked_at: string | null
         }
         Insert: {
-          id?: string
           user_id: string
           date: string
-          criterion_id: string
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          updated_at?: string
+          framework_template_id: string
+          criteria_key: string
+          checked?: boolean
+          checked_at?: string | null
         }
         Update: {
-          id?: string
           user_id?: string
           date?: string
-          criterion_id?: string
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          updated_at?: string
+          framework_template_id?: string
+          criteria_key?: string
+          checked?: boolean
+          checked_at?: string | null
         }
       }
       teams: {
@@ -433,7 +427,6 @@ export interface Database {
       }
       team_members: {
         Row: {
-          id: string
           team_id: string
           user_id: string
           role: 'captain' | 'member'
@@ -441,7 +434,6 @@ export interface Database {
           left_at: string | null
         }
         Insert: {
-          id?: string
           team_id: string
           user_id: string
           role?: 'captain' | 'member'
@@ -449,7 +441,6 @@ export interface Database {
           left_at?: string | null
         }
         Update: {
-          id?: string
           team_id?: string
           user_id?: string
           role?: 'captain' | 'member'
@@ -462,22 +453,25 @@ export interface Database {
           id: string
           team_id: string
           date: string
-          snapshot: Json
-          generated_at: string
+          cutoff_at: string
+          payload: Json
+          created_at: string
         }
         Insert: {
           id?: string
           team_id: string
           date: string
-          snapshot?: Json
-          generated_at?: string
+          cutoff_at: string
+          payload?: Json
+          created_at?: string
         }
         Update: {
           id?: string
           team_id?: string
           date?: string
-          snapshot?: Json
-          generated_at?: string
+          cutoff_at?: string
+          payload?: Json
+          created_at?: string
         }
       }
       feed_posts: {
@@ -517,19 +511,16 @@ export interface Database {
       }
       feed_respects: {
         Row: {
-          id: string
           post_id: string
           user_id: string
           created_at: string
         }
         Insert: {
-          id?: string
           post_id: string
           user_id: string
           created_at?: string
         }
         Update: {
-          id?: string
           post_id?: string
           user_id?: string
           created_at?: string
@@ -761,14 +752,12 @@ export interface ChallengePayload {
 
 // Daily Framework Item (live ticking)
 export interface DailyFrameworkItem {
-  id: string
   user_id: string
   date: string
-  criterion_id: string
-  completed: boolean
-  completed_at: string | null
-  created_at: string
-  updated_at: string
+  framework_template_id: string
+  criteria_key: string
+  checked: boolean
+  checked_at: string | null
 }
 
 // Team
@@ -780,7 +769,6 @@ export interface Team {
 
 // Team Member
 export interface TeamMember {
-  id: string
   team_id: string
   user_id: string
   role: 'captain' | 'member'
@@ -795,8 +783,9 @@ export interface TeamDailyOverview {
   id: string
   team_id: string
   date: string
-  snapshot: TeamSnapshot
-  generated_at: string
+  cutoff_at: string
+  payload: TeamSnapshot
+  created_at: string
 }
 
 export interface TeamSnapshot {
@@ -840,7 +829,6 @@ export interface FeedPostPayload {
 
 // Feed Respect
 export interface FeedRespect {
-  id: string
   post_id: string
   user_id: string
   created_at: string

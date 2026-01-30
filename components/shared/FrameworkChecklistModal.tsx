@@ -16,7 +16,7 @@ interface FrameworkChecklistModalProps {
   framework: FrameworkTemplate | undefined
   todayItems: DailyFrameworkItem[]
   completionCount: { completed: number; total: number }
-  onToggleItem: (criterionId: string, completed: boolean) => Promise<DailyFrameworkItem>
+  onToggleItem: (criteriaKey: string, checked: boolean) => Promise<DailyFrameworkItem>
 }
 
 export function FrameworkChecklistModal({
@@ -35,9 +35,9 @@ export function FrameworkChecklistModal({
   }, [framework])
 
   // Get completion status for each criterion
-  const getItemStatus = (criterionId: string): boolean => {
-    const item = todayItems.find((i) => i.criterion_id === criterionId)
-    return item?.completed ?? false
+  const getItemStatus = (criteriaKey: string): boolean => {
+    const item = todayItems.find((i) => i.criteria_key === criteriaKey)
+    return item?.checked ?? false
   }
 
   // Compute status indicator
@@ -49,9 +49,9 @@ export function FrameworkChecklistModal({
     return { label: 'Complete', color: 'text-green-500', bg: 'bg-green-500/10' }
   }, [completionCount])
 
-  const handleToggle = async (criterionId: string, currentValue: boolean) => {
+  const handleToggle = async (criteriaKey: string, currentValue: boolean) => {
     try {
-      await onToggleItem(criterionId, !currentValue)
+      await onToggleItem(criteriaKey, !currentValue)
     } catch (err) {
       console.error('Failed to toggle item:', err)
     }

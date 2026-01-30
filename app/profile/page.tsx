@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+// Using native img for signed URLs as they have their own caching
 import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
@@ -319,12 +319,10 @@ export default function ProfilePage() {
                 {avatarUploading ? (
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 ) : avatarUrl ? (
-                  <Image
+                  <img
                     src={avatarUrl}
                     alt={displayName}
-                    fill
-                    className="object-cover"
-                    sizes="96px"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-2xl font-bold text-muted-foreground">
