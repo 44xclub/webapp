@@ -1,12 +1,10 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-// Using native img for signed URLs as they have their own caching
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { Profile, DisciplineBadge } from '@/lib/types'
-import { Trophy, Zap, Shield, Award, Crown, User } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Trophy, Zap, Shield, Award, Crown } from 'lucide-react'
 
 interface HeaderStripProps {
   profile: Profile | null
@@ -30,38 +28,10 @@ const badgeColors: Record<DisciplineBadge, string> = {
 }
 
 export function HeaderStrip({ profile, loading }: HeaderStripProps) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const supabase = useMemo(() => createClient(), [])
-
   const disciplineLevel = useMemo(
     () => profile ? calculateDisciplineLevel(profile.discipline_score) : null,
     [profile]
   )
-
-  // Get signed URL for avatar if exists
-  useEffect(() => {
-    async function getAvatarUrl() {
-      if (!profile?.avatar_path) {
-        setAvatarUrl(null)
-        return
-      }
-
-      try {
-        const { data } = await supabase.storage
-          .from('avatars')
-          .createSignedUrl(profile.avatar_path, 3600) // 1 hour expiry
-
-        if (data?.signedUrl) {
-          setAvatarUrl(data.signedUrl)
-        }
-      } catch (err) {
-        console.error('Failed to get avatar URL:', err)
-        setAvatarUrl(null)
-      }
-    }
-
-    getAvatarUrl()
-  }, [profile?.avatar_path, supabase])
 
   if (loading || !profile || !disciplineLevel) {
     return (
@@ -86,19 +56,11 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
       <div className="flex items-center justify-between">
         {/* Left: Avatar + Name */}
         <Link href="/profile" className="flex items-center gap-3 group">
-          {/* Avatar */}
+          {/* Avatar - initials only for now */}
           <div className="relative h-10 w-10 rounded-full overflow-hidden bg-secondary flex items-center justify-center ring-2 ring-transparent group-hover:ring-primary/50 transition-all">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-sm font-semibold text-muted-foreground">
-                {initials}
-              </span>
-            )}
+            <span className="text-sm font-semibold text-muted-foreground">
+              {initials}
+            </span>
           </div>
           {/* Name */}
           <span className="font-medium text-foreground group-hover:text-primary transition-colors">

@@ -1,24 +1,21 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-// Using native img for signed URLs as they have their own caching
 import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
-  Settings,
   LogOut,
   Flame,
   Trophy,
   Calendar,
   Dumbbell,
   User as UserIcon,
-  Camera,
+  Settings,
   Scale,
   Ruler,
   Cake,
   Clock,
-  ChevronRight,
   Check,
   X,
 } from 'lucide-react'
@@ -56,8 +53,6 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [avatarUploading, setAvatarUploading] = useState(false)
   const [checkinBlocks, setCheckinBlocks] = useState<Block[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
 
@@ -118,31 +113,6 @@ export default function ProfilePage() {
 
   // Data hooks
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
-
-  // Get signed URL for avatar
-  useEffect(() => {
-    async function getAvatarUrl() {
-      if (!profile?.avatar_path) {
-        setAvatarUrl(null)
-        return
-      }
-
-      try {
-        const { data } = await supabase.storage
-          .from('avatars')
-          .createSignedUrl(profile.avatar_path, 3600)
-
-        if (data?.signedUrl) {
-          setAvatarUrl(data.signedUrl)
-        }
-      } catch (err) {
-        console.error('Failed to get avatar URL:', err)
-        setAvatarUrl(null)
-      }
-    }
-
-    getAvatarUrl()
-  }, [profile?.avatar_path, supabase])
 
   // Fetch check-in blocks
   useEffect(() => {
@@ -207,49 +177,6 @@ export default function ProfilePage() {
     router.push('/login')
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
-
-    setAvatarUploading(true)
-    try {
-      // Generate unique filename
-      const ext = file.name.split('.').pop()
-      const fileName = `${user.id}/avatar-${Date.now()}.${ext}`
-
-      // Delete old avatar if exists
-      if (profile?.avatar_path) {
-        await supabase.storage.from('avatars').remove([profile.avatar_path])
-      }
-
-      // Upload new avatar
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-        })
-
-      if (uploadError) throw uploadError
-
-      // Update profile with new avatar path
-      await updateProfile({ avatar_path: fileName })
-
-      // Get new signed URL
-      const { data } = await supabase.storage
-        .from('avatars')
-        .createSignedUrl(fileName, 3600)
-
-      if (data?.signedUrl) {
-        setAvatarUrl(data.signedUrl)
-      }
-    } catch (err) {
-      console.error('Failed to upload avatar:', err)
-    } finally {
-      setAvatarUploading(false)
-    }
-  }
-
   const handleSaveProfile = async () => {
     if (!user) return
     setSaving(true)
@@ -310,36 +237,16 @@ export default function ProfilePage() {
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-4">
-        {/* Profile Card with Avatar */}
+        {/* Profile Card */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="p-6 flex flex-col items-center">
-            {/* Avatar with upload */}
-            <div className="relative mb-4">
-              <div className="relative h-24 w-24 rounded-full overflow-hidden bg-secondary flex items-center justify-center ring-4 ring-primary/20">
-                {avatarUploading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                ) : avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl font-bold text-muted-foreground">
-                    {initials}
-                  </span>
-                )}
+            {/* Avatar - initials only for now */}
+            <div className="mb-4">
+              <div className="h-24 w-24 rounded-full bg-secondary flex items-center justify-center ring-4 ring-primary/20">
+                <span className="text-2xl font-bold text-muted-foreground">
+                  {initials}
+                </span>
               </div>
-              <label className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
-                <Camera className="h-4 w-4 text-primary-foreground" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  disabled={avatarUploading}
-                />
-              </label>
             </div>
 
             {/* Name & Email */}

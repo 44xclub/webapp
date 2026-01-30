@@ -273,39 +273,12 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     dailyOverview: TeamDailyOverview | null
   } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (userId) {
       fetchTeamData()
     }
   }, [userId])
-
-  // Fetch signed avatar URLs
-  useEffect(() => {
-    async function fetchAvatarUrls() {
-      if (!teamData?.members) return
-
-      const urls: Record<string, string> = {}
-      for (const member of teamData.members) {
-        if (member.profiles?.avatar_path) {
-          try {
-            const { data } = await supabase.storage
-              .from('avatars')
-              .createSignedUrl(member.profiles.avatar_path, 3600)
-            if (data?.signedUrl) {
-              urls[member.user_id] = data.signedUrl
-            }
-          } catch (err) {
-            console.error('Failed to get avatar URL:', err)
-          }
-        }
-      }
-      setAvatarUrls(urls)
-    }
-
-    fetchAvatarUrls()
-  }, [teamData?.members, supabase])
 
   const fetchTeamData = async () => {
     setLoading(true)
@@ -428,25 +401,16 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
           {teamData.members.map((member) => {
             const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
             const BadgeIcon = badgeIcons[level.badge]
-            const avatarUrl = avatarUrls[member.user_id]
             const displayName = member.profiles?.display_name || 'Member'
             const initials = displayName.slice(0, 2).toUpperCase()
 
             return (
               <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={displayName}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {initials}
-                      </span>
-                    )}
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {initials}
+                    </span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -492,40 +456,7 @@ function FeedView({
   supabase: any
   onRefresh: () => void
 }) {
-  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
   const [deleting, setDeleting] = useState<string | null>(null)
-
-  // Fetch avatar URLs for posts
-  useEffect(() => {
-    async function fetchAvatarUrls() {
-      const urls: Record<string, string> = {}
-      const uniquePaths = new Set<string>()
-
-      posts.forEach((post) => {
-        if (post.user_profile?.avatar_path) {
-          uniquePaths.add(post.user_profile.avatar_path)
-        }
-      })
-
-      for (const path of Array.from(uniquePaths)) {
-        try {
-          const { data } = await supabase.storage
-            .from('avatars')
-            .createSignedUrl(path, 3600)
-          if (data?.signedUrl) {
-            urls[path] = data.signedUrl
-          }
-        } catch (err) {
-          console.error('Failed to get avatar URL:', err)
-        }
-      }
-      setAvatarUrls(urls)
-    }
-
-    if (posts.length > 0) {
-      fetchAvatarUrls()
-    }
-  }, [posts, supabase])
 
   const handleRespect = async (postId: string, hasRespected: boolean) => {
     if (!userId) return
@@ -589,9 +520,6 @@ function FeedView({
   return (
     <div className="space-y-4">
       {posts.map((post) => {
-        const avatarUrl = post.user_profile?.avatar_path
-          ? avatarUrls[post.user_profile.avatar_path]
-          : null
         const displayName = post.user_profile?.display_name || 'Member'
         const initials = displayName.slice(0, 2).toUpperCase()
         const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
@@ -604,18 +532,10 @@ function FeedView({
             <div className="px-4 py-3 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt={displayName}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {initials}
-                      </span>
-                    )}
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {initials}
+                    </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
