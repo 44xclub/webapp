@@ -14,6 +14,11 @@ import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+/*
+  44CLUB Structure Page
+  Discipline & Training. Stoic. Controlled.
+*/
+
 type TabType = 'discipline' | 'training'
 
 export default function StructurePage() {
@@ -54,41 +59,41 @@ export default function StructurePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-16">
+    <div className="min-h-screen bg-canvas pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800">
+      <header className="bg-surface border-b border-border">
         <div className="px-4 py-3">
-          <h1 className="text-lg font-semibold text-zinc-100">Structure</h1>
+          <h1 className="text-page-title font-semibold text-text-primary">Structure</h1>
         </div>
 
         {/* Tab Toggle */}
         <div className="px-4 pb-3">
-          <div className="flex bg-zinc-800 rounded-md p-0.5">
+          <div className="flex bg-canvas-card rounded-[10px] p-1">
             <button
               onClick={() => setActiveTab('discipline')}
-              className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
+              className={`flex-1 py-2 text-secondary font-medium rounded-[8px] transition-colors duration-150 ${
                 activeTab === 'discipline'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-secondary'
               }`}
             >
               Discipline
             </button>
             <button
               onClick={() => setActiveTab('training')}
-              className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
+              className={`flex-1 py-2 text-secondary font-medium rounded-[8px] transition-colors duration-150 ${
                 activeTab === 'training'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-secondary'
               }`}
             >
               Training
@@ -103,41 +108,41 @@ export default function StructurePage() {
           <>
             {activeFramework?.framework_template && !frameworksLoading && (
               <button onClick={() => setFrameworkModalOpen(true)} className="w-full text-left">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-md p-4 hover:border-zinc-700 transition-colors">
+                <div className="bg-surface border border-border rounded-[16px] p-4 hover:border-text-muted transition-colors duration-150">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-zinc-500 mb-1">Active Framework</p>
-                      <p className="font-medium text-zinc-100">{activeFramework.framework_template.title}</p>
+                      <p className="text-meta text-text-muted mb-1">Active Framework</p>
+                      <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <CheckSquare className={`h-4 w-4 ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-emerald-400' : completionCount.completed > 0 ? 'text-amber-400' : 'text-zinc-500'
+                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
                         }`} />
-                        <span className={`text-xs ${
+                        <span className={`text-meta ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-emerald-400' : completionCount.completed > 0 ? 'text-amber-400' : 'text-zinc-500'
+                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
                         }`}>
                           {completionCount.completed}/{completionCount.total} complete
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-zinc-600" />
+                    <ChevronRight className="h-5 w-5 text-text-muted" />
                   </div>
                 </div>
               </button>
             )}
 
             {challengeLoading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : (
               <ChallengeCard challenge={challenge} todayBlock={todayBlock} onLogChallenge={logChallenge} onRefetch={refetchChallenge} />
             )}
 
             {frameworksLoading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : (
               <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
@@ -146,8 +151,8 @@ export default function StructurePage() {
         ) : (
           <>
             {programmesLoading ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : (
               <>

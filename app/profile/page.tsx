@@ -23,8 +23,13 @@ import { useProfile } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
-import type { Profile, DisciplineBadge, Block } from '@/lib/types'
+import type { DisciplineBadge, Block } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+/*
+  44CLUB Profile Page
+  Status. Stats. Settings.
+*/
 
 const TIMEZONES = [
   'Europe/London',
@@ -41,11 +46,11 @@ const TIMEZONES = [
 ]
 
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-slate-400',
-  'Committed': 'text-blue-400',
-  'Elite': 'text-cyan-400',
-  'Forged': 'text-amber-400',
-  '44-Pro': 'text-yellow-400',
+  'Initiated': 'text-text-muted',
+  'Committed': 'text-accent-blue',
+  'Elite': 'text-accent',
+  'Forged': 'text-warning',
+  '44-Pro': 'text-success',
 }
 
 export default function ProfilePage() {
@@ -56,7 +61,6 @@ export default function ProfilePage() {
   const [checkinBlocks, setCheckinBlocks] = useState<Block[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
 
-  // Edit form state
   const [formData, setFormData] = useState({
     display_name: '',
     birth_date: '',
@@ -68,53 +72,30 @@ export default function ProfilePage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  // Auth check
   useEffect(() => {
     let isMounted = true
-
     const checkAuth = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-
         if (!isMounted) return
-
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
+        if (error || !user) { router.push('/login'); return }
         setUser(user)
         setAuthLoading(false)
-      } catch (err) {
-        if (isMounted) {
-          router.push('/login')
-        }
-      }
+      } catch { if (isMounted) router.push('/login') }
     }
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return
+      if (event === 'SIGNED_OUT') router.push('/login')
+      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
+    })
 
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-          setAuthLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
+    return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  // Data hooks
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
 
-  // Fetch check-in blocks
   useEffect(() => {
     async function fetchCheckins() {
       if (!user?.id) return
@@ -128,7 +109,6 @@ export default function ProfilePage() {
           .is('deleted_at', null)
           .order('date', { ascending: false })
           .limit(10)
-
         if (error) throw error
         setCheckinBlocks(data as Block[] || [])
       } catch (err) {
@@ -137,11 +117,9 @@ export default function ProfilePage() {
         setCheckinsLoading(false)
       }
     }
-
     fetchCheckins()
   }, [user?.id, supabase])
 
-  // Set form data when profile loads
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -154,21 +132,15 @@ export default function ProfilePage() {
     }
   }, [profile])
 
-  const disciplineLevel = useMemo(
-    () => profile ? calculateDisciplineLevel(profile.discipline_score) : null,
-    [profile]
-  )
+  const disciplineLevel = useMemo(() => profile ? calculateDisciplineLevel(profile.discipline_score) : null, [profile])
 
-  // Calculate age from birth date
   const age = useMemo(() => {
     if (!profile?.birth_date) return null
     const birthDate = new Date(profile.birth_date)
     const today = new Date()
     let calculatedAge = today.getFullYear() - birthDate.getFullYear()
     const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      calculatedAge--
-    }
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) calculatedAge--
     return calculatedAge
   }, [profile?.birth_date])
 
@@ -211,10 +183,8 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
       </div>
     )
   }
@@ -223,38 +193,28 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] bg-background pb-20">
-      {/* Page Header - No HeaderStrip on Profile page per requirements */}
-      <header className="bg-card border-b border-border">
+    <div className="min-h-screen min-h-[100dvh] bg-canvas pb-20">
+      {/* Page Header */}
+      <header className="bg-surface border-b border-border">
         <div className="flex items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold text-foreground">Profile</h1>
-          <button
-            onClick={handleSignOut}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-          >
+          <h1 className="text-page-title font-semibold text-text-primary">Profile</h1>
+          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-text-muted hover:text-text-secondary hover:bg-canvas-card transition-colors">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="px-4 py-4 space-y-4">
         {/* Profile Card */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
           <div className="p-6 flex flex-col items-center">
-            {/* Avatar - initials only for now */}
             <div className="mb-4">
-              <div className="h-24 w-24 rounded-full bg-secondary flex items-center justify-center ring-4 ring-primary/20">
-                <span className="text-2xl font-bold text-muted-foreground">
-                  {initials}
-                </span>
+              <div className="h-24 w-24 rounded-[16px] bg-canvas-card flex items-center justify-center border border-border">
+                <span className="text-section-title font-semibold text-text-secondary">{initials}</span>
               </div>
             </div>
-
-            {/* Name & Email */}
-            <h2 className="text-xl font-bold text-foreground mb-1">{displayName}</h2>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
+            <h2 className="text-page-title font-semibold text-text-primary mb-1">{displayName}</h2>
+            <p className="text-secondary text-text-muted">{user?.email}</p>
           </div>
 
           {/* Discipline Stats */}
@@ -262,27 +222,22 @@ export default function ProfilePage() {
             <div className="border-t border-border px-6 py-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className={`font-semibold ${badgeColors[disciplineLevel.badge]}`}>
-                    {disciplineLevel.badge}
-                  </span>
-                  <span className="text-sm text-muted-foreground">Level {disciplineLevel.level}</span>
+                  <span className={`text-body font-semibold ${badgeColors[disciplineLevel.badge]}`}>{disciplineLevel.badge}</span>
+                  <span className="text-secondary text-text-muted">Level {disciplineLevel.level}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-lg font-bold text-foreground">{profile?.discipline_score}</span>
-                  <span className="text-sm text-muted-foreground ml-1">pts</span>
+                  <span className="text-body font-bold text-text-primary">{profile?.discipline_score}</span>
+                  <span className="text-secondary text-text-muted ml-1">pts</span>
                 </div>
               </div>
               {disciplineLevel.level < 44 && (
                 <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} to next level</span>
+                  <div className="flex justify-between text-meta text-text-muted">
+                    <span>{disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} to next</span>
                     <span>{Math.round(disciplineLevel.progress)}%</span>
                   </div>
-                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-500"
-                      style={{ width: `${disciplineLevel.progress}%` }}
-                    />
+                  <div className="w-full h-2 bg-canvas-card rounded-full overflow-hidden">
+                    <div className="h-full bg-accent transition-all duration-500" style={{ width: `${disciplineLevel.progress}%` }} />
                   </div>
                 </div>
               )}
@@ -291,169 +246,87 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="font-medium text-foreground">Profile Details</h3>
+            <h3 className="text-body font-medium text-text-primary">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCancelEdit}
-                  className="p-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={handleSaveProfile}
-                  disabled={saving}
-                  className="p-1.5 text-primary hover:text-primary/80"
-                >
+                <button onClick={handleCancelEdit} className="p-1.5 text-text-muted hover:text-text-secondary"><X className="h-4 w-4" /></button>
+                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-accent hover:text-accent/80">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setEditing(true)}
-                className="text-sm text-primary hover:underline"
-              >
-                Edit
-              </button>
+              <button onClick={() => setEditing(true)} className="text-secondary text-accent hover:underline">Edit</button>
             )}
           </div>
 
           <div className="p-4 space-y-4">
             {editing ? (
               <>
-                <Input
-                  label="Display Name"
-                  value={formData.display_name}
-                  onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                  placeholder="Enter your display name"
-                />
-                <Input
-                  label="Birth Date"
-                  type="date"
-                  value={formData.birth_date}
-                  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                />
+                <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
+                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} />
                 <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    label="Height (cm)"
-                    type="number"
-                    value={formData.height_cm}
-                    onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })}
-                    placeholder="180"
-                  />
-                  <Input
-                    label="Weight (kg)"
-                    type="number"
-                    step="0.1"
-                    value={formData.weight_kg}
-                    onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })}
-                    placeholder="75.0"
-                  />
+                  <Input label="Height (cm)" type="number" value={formData.height_cm} onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })} placeholder="180" />
+                  <Input label="Weight (kg)" type="number" step="0.1" value={formData.weight_kg} onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })} placeholder="75.0" />
                 </div>
-                <Select
-                  label="Timezone"
-                  value={formData.timezone}
-                  onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                  options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))}
-                />
+                <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
               </>
             ) : (
               <div className="space-y-3">
-                <ProfileRow
-                  icon={UserIcon}
-                  label="Display Name"
-                  value={profile?.display_name || 'Not set'}
-                />
-                <ProfileRow
-                  icon={Cake}
-                  label="Birth Date"
-                  value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'}
-                />
-                <ProfileRow
-                  icon={Ruler}
-                  label="Height"
-                  value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'}
-                />
-                <ProfileRow
-                  icon={Scale}
-                  label="Weight"
-                  value={profile?.weight_kg ? `${profile.weight_kg} kg` : 'Not set'}
-                />
-                <ProfileRow
-                  icon={Settings}
-                  label="Email"
-                  value={user?.email || 'Not set'}
-                />
-                <ProfileRow
-                  icon={Clock}
-                  label="Timezone"
-                  value={profile?.timezone || 'Europe/London'}
-                />
+                <ProfileRow icon={UserIcon} label="Display Name" value={profile?.display_name || 'Not set'} />
+                <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
+                <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
+                <ProfileRow icon={Scale} label="Weight" value={profile?.weight_kg ? `${profile.weight_kg} kg` : 'Not set'} />
+                <ProfileRow icon={Settings} label="Email" value={user?.email || 'Not set'} />
+                <ProfileRow icon={Clock} label="Timezone" value={profile?.timezone || 'Europe/London'} />
               </div>
             )}
           </div>
         </div>
 
         {/* Streak Stats */}
-        <div className="bg-card rounded-xl border border-border">
+        <div className="bg-surface rounded-[16px] border border-border">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="font-medium text-foreground">Streaks</h3>
+            <h3 className="text-body font-medium text-text-primary">Streaks</h3>
           </div>
           <div className="p-4 grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-secondary rounded-lg">
-              <Flame className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{profile?.current_streak || 0}</p>
-              <p className="text-xs text-muted-foreground">Current Streak</p>
+            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
+              <Flame className="h-8 w-8 text-warning mx-auto mb-2" />
+              <p className="text-section-title font-bold text-text-primary">{profile?.current_streak || 0}</p>
+              <p className="text-meta text-text-muted">Current Streak</p>
             </div>
-            <div className="text-center p-4 bg-secondary rounded-lg">
-              <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{profile?.best_streak || 0}</p>
-              <p className="text-xs text-muted-foreground">Best Streak</p>
+            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
+              <Trophy className="h-8 w-8 text-success mx-auto mb-2" />
+              <p className="text-section-title font-bold text-text-primary">{profile?.best_streak || 0}</p>
+              <p className="text-meta text-text-muted">Best Streak</p>
             </div>
           </div>
         </div>
 
         {/* Check-ins */}
-        <div className="bg-card rounded-xl border border-border">
+        <div className="bg-surface rounded-[16px] border border-border">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="font-medium text-foreground">Recent Check-ins</h3>
+            <h3 className="text-body font-medium text-text-primary">Recent Check-ins</h3>
           </div>
           <div className="divide-y divide-border">
             {checkinsLoading ? (
-              <div className="p-4 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
+              <div className="p-4 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-text-muted" /></div>
             ) : checkinBlocks.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground text-sm">
-                No check-ins recorded yet
-              </div>
+              <div className="p-4 text-center text-text-muted text-secondary">No check-ins recorded yet</div>
             ) : (
               checkinBlocks.map((block) => {
-                const payload = block.payload as any
+                const payload = block.payload as { weight?: number; body_fat_percent?: number }
                 return (
                   <div key={block.id} className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Scale className="h-5 w-5 text-muted-foreground" />
+                      <Scale className="h-5 w-5 text-text-muted" />
                       <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {payload?.weight ? `${payload.weight} kg` : 'Check-in'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(block.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </p>
+                        <p className="text-secondary font-medium text-text-primary">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
+                        <p className="text-meta text-text-muted">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                     </div>
-                    {payload?.body_fat_percent && (
-                      <span className="text-sm text-muted-foreground">
-                        {payload.body_fat_percent}% BF
-                      </span>
-                    )}
+                    {payload?.body_fat_percent && <span className="text-secondary text-text-muted">{payload.body_fat_percent}% BF</span>}
                   </div>
                 )
               })
@@ -462,72 +335,45 @@ export default function ProfilePage() {
         </div>
 
         {/* Statistics */}
-        <div className="bg-card rounded-xl border border-border">
+        <div className="bg-surface rounded-[16px] border border-border">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="font-medium text-foreground">Statistics</h3>
+            <h3 className="text-body font-medium text-text-primary">Statistics</h3>
           </div>
           <div className="divide-y divide-border">
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-foreground">Member since</span>
+                <Calendar className="h-5 w-5 text-text-muted" />
+                <span className="text-secondary text-text-primary">Member since</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {profile?.created_at
-                  ? new Date(profile.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
-                  : '-'}
-              </span>
+              <span className="text-secondary text-text-muted">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
             </div>
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Dumbbell className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-foreground">Total Points</span>
+                <Dumbbell className="h-5 w-5 text-text-muted" />
+                <span className="text-secondary text-text-primary">Total Points</span>
               </div>
-              <span className="text-sm font-medium text-foreground">
-                {profile?.discipline_score || 0}
-              </span>
+              <span className="text-secondary font-medium text-text-primary">{profile?.discipline_score || 0}</span>
             </div>
           </div>
         </div>
 
-        {/* Sign Out Button */}
-        <Button
-          onClick={handleSignOut}
-          variant="secondary"
-          className="w-full"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
+        <Button onClick={handleSignOut} variant="secondary" className="w-full">
+          <LogOut className="h-4 w-4" /> Sign Out
         </Button>
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav />
-    </div>
     </div>
   )
 }
 
-// Helper component for profile rows
-function ProfileRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof UserIcon
-  label: string
-  value: string
-}) {
+function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">
-      <Icon className="h-5 w-5 text-muted-foreground" />
+      <Icon className="h-5 w-5 text-text-muted" />
       <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm text-foreground">{value}</p>
+        <p className="text-meta text-text-muted">{label}</p>
+        <p className="text-secondary text-text-primary">{value}</p>
       </div>
     </div>
   )

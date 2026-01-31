@@ -22,6 +22,11 @@ import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+/*
+  44CLUB App Page
+  The daily command center. Stoic. Controlled.
+*/
+
 export default function AppPage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -35,107 +40,44 @@ export default function AppPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  // Auth check
   useEffect(() => {
     let isMounted = true
-
     const checkAuth = async () => {
       try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser()
-
+        const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
-
-        if (error) {
-          console.error('Auth error:', error)
-          router.push('/login')
-          return
-        }
-
-        if (!user) {
-          router.push('/login')
-          return
-        }
-
+        if (error || !user) { router.push('/login'); return }
         setUser(user)
         setAuthLoading(false)
-      } catch (err) {
-        console.error('Auth check failed:', err)
-        if (isMounted) {
-          router.push('/login')
-        }
-      }
+      } catch { if (isMounted) router.push('/login') }
     }
-
     checkAuth()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return
-
-      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-        router.push('/login')
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session?.user) {
-          setUser(session.user)
-          setAuthLoading(false)
-        }
-      } else if (session?.user) {
-        setUser(session.user)
-        setAuthLoading(false)
-      }
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) router.push('/login')
+      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
     })
 
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
+    return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  // Data hooks
-  const {
-    blocks,
-    loading: blocksLoading,
-    createBlock,
-    updateBlock,
-    toggleComplete,
-    duplicateBlock,
-    deleteBlock,
-  } = useBlocks(selectedDate, user?.id)
-
+  const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
-  const {
-    activeFramework,
-    todaySubmission,
-    todayItems,
-    completionCount,
-    loading: frameworkLoading,
-    toggleFrameworkItem,
-  } = useFrameworks(user?.id)
+  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem } = useFrameworks(user?.id)
 
-  // Get week days
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
-  // Group blocks by date (includes all fetched blocks, not just current week)
   const blocksByDate = useMemo(() => {
     const grouped = new Map<string, Block[]>()
-    // Initialize all days in the current week
-    weekDays.forEach((day) => {
-      const dateKey = formatDateForApi(day)
-      grouped.set(dateKey, [])
-    })
-    // Add all blocks to their respective dates
+    weekDays.forEach((day) => grouped.set(formatDateForApi(day), []))
     blocks.forEach((block) => {
       if (!block.deleted_at) {
         const existing = grouped.get(block.date) || []
         grouped.set(block.date, [...existing, block])
       }
     })
-    // Sort blocks within each day
     grouped.forEach((dayBlocks, key) => {
       grouped.set(key, dayBlocks.sort((a, b) => {
         const timeCompare = a.start_time.localeCompare(b.start_time)
@@ -146,242 +88,115 @@ export default function AppPage() {
     return grouped
   }, [blocks, weekDays])
 
-  // Get blocks for the selected date (for Day View)
-  const selectedDateBlocks = useMemo(() => {
-    const dateKey = formatDateForApi(selectedDate)
-    return blocksByDate.get(dateKey) || []
-  }, [blocksByDate, selectedDate])
+  const selectedDateBlocks = useMemo(() => blocksByDate.get(formatDateForApi(selectedDate)) || [], [blocksByDate, selectedDate])
 
-  // Handlers
-  const handleSelectDate = useCallback(
-    (date: Date) => {
-      setSelectedDate(date)
-      // When selecting a day from week view, switch to day view
-      if (viewMode === 'week') {
-        setViewMode('day')
-      }
-    },
-    [viewMode]
-  )
-
-  const handleWeekChange = useCallback((date: Date) => {
+  const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(date)
-  }, [])
+    if (viewMode === 'week') setViewMode('day')
+  }, [viewMode])
 
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode)
-  }, [])
+  const handleWeekChange = useCallback((date: Date) => setSelectedDate(date), [])
+  const handleViewModeChange = useCallback((mode: ViewMode) => setViewMode(mode), [])
+  const handleAddBlock = useCallback((date: Date) => { setAddingToDate(date); setEditingBlock(null); setModalOpen(true) }, [])
+  const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
+  const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null) }, [])
+  const handleSaveBlock = useCallback(async (data: BlockFormData) => {
+    if (editingBlock) await updateBlock(editingBlock.id, data)
+    else await createBlock(data)
+  }, [editingBlock, createBlock, updateBlock])
+  const handleToggleComplete = useCallback(async (block: Block) => await toggleComplete(block), [toggleComplete])
+  const handleDuplicate = useCallback(async (block: Block) => await duplicateBlock(block), [duplicateBlock])
+  const handleDelete = useCallback(async (block: Block) => await deleteBlock(block.id), [deleteBlock])
 
-  const handleAddBlock = useCallback((date: Date) => {
-    setAddingToDate(date)
-    setEditingBlock(null)
-    setModalOpen(true)
-  }, [])
-
-  const handleEditBlock = useCallback((block: Block) => {
-    setEditingBlock(block)
-    setAddingToDate(null)
-    setModalOpen(true)
-  }, [])
-
-  const handleCloseModal = useCallback(() => {
-    setModalOpen(false)
-    setEditingBlock(null)
-    setAddingToDate(null)
-  }, [])
-
-  const handleSaveBlock = useCallback(
-    async (data: BlockFormData) => {
-      if (editingBlock) {
-        await updateBlock(editingBlock.id, data)
-      } else {
-        await createBlock(data)
-      }
-    },
-    [editingBlock, createBlock, updateBlock]
-  )
-
-  const handleToggleComplete = useCallback(
-    async (block: Block) => {
-      await toggleComplete(block)
-    },
-    [toggleComplete]
-  )
-
-  const handleDuplicate = useCallback(
-    async (block: Block) => {
-      await duplicateBlock(block)
-    },
-    [duplicateBlock]
-  )
-
-  const handleDelete = useCallback(
-    async (block: Block) => {
-      await deleteBlock(block.id)
-    },
-    [deleteBlock]
-  )
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
-  // Loading state
   if (authLoading) {
     return (
-      <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
       </div>
     )
   }
 
   return (
-    <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] bg-background flex flex-col pb-16">
-      {/* Header Strip */}
+    <div className="min-h-screen min-h-[100dvh] bg-canvas flex flex-col pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Streak Module */}
       {profile && (
-        <div className="px-4 py-2 bg-card border-b border-border">
+        <div className="px-4 py-2 bg-surface border-b border-border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" />
+              <Flame className="h-5 w-5 text-warning" />
               <div>
-                <span className="text-lg font-bold text-foreground">{profile.current_streak || 0}</span>
-                <span className="text-xs text-muted-foreground ml-1">day streak</span>
+                <span className="text-body font-bold text-text-primary">{profile.current_streak || 0}</span>
+                <span className="text-meta text-text-muted ml-1">day streak</span>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Best: {profile.best_streak || 0}
-            </div>
+            <div className="text-meta text-text-muted">Best: {profile.best_streak || 0}</div>
           </div>
         </div>
       )}
 
-      {/* Week Strip */}
-      <WeekStrip
-        selectedDate={selectedDate}
-        onSelectDate={handleSelectDate}
-        onWeekChange={handleWeekChange}
-        blocksByDate={blocksByDate}
-      />
+      <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} onWeekChange={handleWeekChange} blocksByDate={blocksByDate} />
 
-      {/* View Mode Toggle */}
-      <div className="px-4 py-3 flex justify-center border-b border-border bg-background">
+      <div className="px-4 py-3 flex justify-center border-b border-border bg-canvas">
         <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
       </div>
 
-      {/* Active Framework Card - shows in Day View */}
+      {/* Active Framework Card */}
       {viewMode === 'day' && activeFramework?.framework_template && !frameworkLoading && (
-        <button
-          onClick={() => setFrameworkModalOpen(true)}
-          className="block mx-4 mt-3 w-[calc(100%-2rem)] text-left"
-        >
-          <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/50 transition-colors">
+        <button onClick={() => setFrameworkModalOpen(true)} className="block mx-4 mt-3 w-[calc(100%-2rem)] text-left">
+          <div className="bg-surface rounded-[16px] p-4 border border-border hover:border-text-muted transition-colors duration-150">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground mb-1">Active Framework</p>
-                <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
+                <p className="text-meta text-text-muted mb-1">Active Framework</p>
+                <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <CheckSquare className={`h-4 w-4 ${
                     completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-green-500'
-                      : completionCount.completed > 0
-                      ? 'text-yellow-500'
-                      : 'text-muted-foreground'
+                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
                   }`} />
-                  <p className={`text-xs ${
+                  <p className={`text-meta ${
                     completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-green-500'
-                      : completionCount.completed > 0
-                      ? 'text-yellow-500'
-                      : 'text-muted-foreground'
+                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
                   }`}>
                     {completionCount.completed} / {completionCount.total} complete
                   </p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-5 w-5 text-text-muted" />
             </div>
           </div>
         </button>
       )}
 
-      {/* Main Content */}
       <main className="flex-1 pb-8 overflow-y-auto">
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
           </div>
         ) : viewMode === 'day' ? (
-          // Day View - shows only selected day's blocks
           <div className="pt-2">
-            <DayView
-              date={selectedDate}
-              blocks={selectedDateBlocks}
-              onAddBlock={handleAddBlock}
-              onToggleComplete={handleToggleComplete}
-              onEdit={handleEditBlock}
-              onDuplicate={handleDuplicate}
-              onDelete={handleDelete}
-            />
+            <DayView date={selectedDate} blocks={selectedDateBlocks} onAddBlock={handleAddBlock} onToggleComplete={handleToggleComplete} onEdit={handleEditBlock} onDuplicate={handleDuplicate} onDelete={handleDelete} />
           </div>
         ) : (
-          // Week Overview - shows all days compactly
           <div className="pt-3">
-            <WeekOverview
-              weekDays={weekDays}
-              blocksByDate={blocksByDate}
-              selectedDate={selectedDate}
-              onSelectDay={handleSelectDate}
-              onEditBlock={handleEditBlock}
-            />
+            <WeekOverview weekDays={weekDays} blocksByDate={blocksByDate} selectedDate={selectedDate} onSelectDay={handleSelectDate} onEditBlock={handleEditBlock} />
           </div>
         )}
       </main>
 
-      {/* Floating Action Button */}
+      {/* FAB */}
       <div className="fixed bottom-20 right-4 z-30">
-        <Button
-          size="icon"
-          className="h-14 w-14 rounded-full shadow-lg"
-          onClick={() => handleAddBlock(selectedDate)}
-        >
+        <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>
           <Plus className="h-6 w-6" />
         </Button>
       </div>
 
-      {/* Bottom Navigation */}
       <BottomNav />
 
-      {/* Block Modal */}
-      <BlockModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSaveBlock}
-        initialDate={addingToDate || selectedDate}
-        editingBlock={editingBlock}
-        blockMedia={editingBlock?.block_media || []}
-        userId={user?.id}
-        onMediaUpload={uploadMedia}
-        onMediaDelete={deleteMedia}
-        userHasHeight={hasHeight}
-      />
+      <BlockModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveBlock} initialDate={addingToDate || selectedDate} editingBlock={editingBlock} blockMedia={editingBlock?.block_media || []} userId={user?.id} onMediaUpload={uploadMedia} onMediaDelete={deleteMedia} userHasHeight={hasHeight} />
 
-      {/* Framework Checklist Modal */}
-      <FrameworkChecklistModal
-        isOpen={frameworkModalOpen}
-        onClose={() => setFrameworkModalOpen(false)}
-        framework={activeFramework?.framework_template}
-        todayItems={todayItems}
-        completionCount={completionCount}
-        onToggleItem={toggleFrameworkItem}
-      />
-    </div>
+      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} />
     </div>
   )
 }
