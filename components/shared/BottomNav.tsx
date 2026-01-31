@@ -21,9 +21,9 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 safe-bottom md:left-1/2 md:-translate-x-1/2 md:max-w-[480px] md:bottom-6 md:px-4">
-      <div className="bg-card/80 backdrop-blur-xl border-t border-white/[0.06] md:border md:rounded-2xl md:shadow-lg">
-        <div className="flex items-center justify-around h-16 md:h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 safe-bottom">
+      <div className="bg-[#0d1117]/95 backdrop-blur-xl border-t border-white/5">
+        <div className="flex items-center justify-around h-16">
           {navItems.map((item) => {
             const isActive = pathname === item.href ||
               (item.href === '/app' && pathname === '/') ||
@@ -34,24 +34,19 @@ export function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-150 ${
+                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 ${
                   isActive
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-blue-400'
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                {/* Active indicator */}
                 {isActive && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full md:hidden" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" />
                 )}
-                <div className={`relative p-1.5 rounded-xl transition-colors ${
-                  isActive ? 'bg-primary/10' : ''
-                }`}>
-                  <Icon className={`h-5 w-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-blue-500/10' : ''}`}>
+                  <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5]' : ''}`} />
                 </div>
-                <span className={`text-[10px] mt-0.5 font-semibold tracking-wide ${
-                  isActive ? 'text-primary' : ''
-                }`}>
+                <span className={`text-[10px] font-semibold ${isActive ? 'text-blue-400' : ''}`}>
                   {item.label}
                 </span>
               </Link>

@@ -35,13 +35,13 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
 
   if (loading || !profile || !disciplineLevel) {
     return (
-      <div className="sticky top-0 z-40 header-blur px-4 py-3">
+      <div className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-white/5 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-white/[0.04] rounded-full skeleton" />
-            <div className="h-4 w-24 bg-white/[0.04] rounded skeleton" />
+            <div className="h-10 w-10 bg-white/5 rounded-full animate-pulse" />
+            <div className="h-4 w-24 bg-white/5 rounded animate-pulse" />
           </div>
-          <div className="h-4 w-20 bg-white/[0.04] rounded skeleton" />
+          <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
         </div>
       </div>
     )
@@ -52,41 +52,36 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="sticky top-0 z-40 header-blur px-4 py-3">
+    <div className="sticky top-0 z-40 bg-card/80 backdrop-blur-xl border-b border-white/5 px-4 py-3">
       <div className="flex items-center justify-between">
         {/* Left: Avatar + Name */}
         <Link href="/profile" className="flex items-center gap-3 group">
-          {/* Avatar - initials only for now */}
-          <div className="relative h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-white/10 to-white/[0.02] flex items-center justify-center ring-2 ring-white/[0.06] group-hover:ring-primary/30 transition-all shadow-inner">
-            <span className="text-sm font-bold text-foreground/80">
+          <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center ring-2 ring-white/10 group-hover:ring-blue-500/30 transition-all">
+            <span className="text-sm font-bold text-white/80">
               {initials}
             </span>
           </div>
-          {/* Name */}
-          <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+          <span className="font-semibold text-foreground group-hover:text-blue-400 transition-colors">
             {displayName}
           </span>
         </Link>
 
         {/* Right: Badge + Score + Progress */}
         <div className="flex items-center gap-3">
-          {/* Level badge */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] ${badgeColors[disciplineLevel.badge]}`}>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 ${badgeColors[disciplineLevel.badge]}`}>
             <BadgeIcon className="h-3.5 w-3.5" />
             <span className="text-xs font-bold">Lv.{disciplineLevel.level}</span>
           </div>
 
-          {/* Score */}
           <div className="text-right">
             <span className="text-sm font-bold text-foreground">{profile.discipline_score}</span>
             <span className="text-xs text-muted-foreground ml-1">pts</span>
           </div>
 
-          {/* Mini progress bar */}
           {disciplineLevel.level < 44 && (
-            <div className="w-12 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="w-12 h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-blue-400 transition-all duration-500 rounded-full"
+                className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
                 style={{ width: `${disciplineLevel.progress}%` }}
               />
             </div>

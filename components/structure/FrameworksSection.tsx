@@ -86,23 +86,23 @@ export function FrameworksSection({
   return (
     <div className="space-y-4">
       {/* Active Framework & Daily Submission */}
-      <div className="bg-card rounded-xl p-4 border border-border">
+      <div className="bg-[#0d1117] rounded-2xl p-5 border border-white/5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-blue-500/10">
-            <BookOpen className="h-5 w-5 text-blue-500" />
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10">
+            <BookOpen className="h-5 w-5 text-blue-400" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Daily Framework</h3>
-            <p className="text-sm text-muted-foreground">Your daily discipline checklist</p>
+            <h3 className="font-semibold text-white">Daily Framework</h3>
+            <p className="text-sm text-gray-500">Your daily discipline checklist</p>
           </div>
         </div>
 
         {activeFramework?.framework_template ? (
           <div className="space-y-4">
-            <div className="p-3 bg-secondary/50 rounded-lg">
-              <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
+            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+              <p className="font-medium text-white">{activeFramework.framework_template.title}</p>
               {activeFramework.framework_template.description && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-gray-400 mt-1">
                   {activeFramework.framework_template.description}
                 </p>
               )}
@@ -110,9 +110,9 @@ export function FrameworksSection({
 
             {/* Daily Status Submission */}
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">Today&apos;s Status</p>
+              <p className="text-sm font-medium text-white mb-3">Today&apos;s Status</p>
               {isLocked ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span className="capitalize">{todaySubmission?.status}</span>
                   <span className="text-xs">(locked)</span>
                 </div>
@@ -153,32 +153,32 @@ export function FrameworksSection({
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500">
             No framework activated. Choose one below to start tracking.
           </p>
         )}
       </div>
 
       {/* Framework List */}
-      <div className="bg-card rounded-xl p-4 border border-border">
-        <h4 className="font-semibold text-foreground mb-3">Available Frameworks</h4>
+      <div className="bg-[#0d1117] rounded-2xl p-5 border border-white/5">
+        <h4 className="font-semibold text-white mb-4">Available Frameworks</h4>
 
         {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input
             type="text"
             placeholder="Search frameworks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary outline-none"
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white/5 text-white placeholder-gray-500 rounded-xl border border-white/5 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
           />
         </div>
 
         {/* Framework List */}
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {filteredFrameworks.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-gray-500 py-4 text-center">
               No frameworks found
             </p>
           ) : (
@@ -191,16 +191,16 @@ export function FrameworksSection({
                     setSelectedFramework(framework)
                     setDetailModalOpen(true)
                   }}
-                  className={`w-full p-3 rounded-lg text-left transition-colors ${
+                  className={`w-full p-4 rounded-xl text-left transition-all ${
                     isActive
-                      ? 'bg-primary/10 border border-primary'
-                      : 'bg-secondary/50 hover:bg-secondary'
+                      ? 'bg-blue-500/10 border border-blue-500/30'
+                      : 'bg-white/5 border border-white/5 hover:border-white/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{framework.title}</span>
+                    <span className="font-medium text-white">{framework.title}</span>
                     {isActive && (
-                      <span className="text-xs text-primary font-medium">Active</span>
+                      <span className="text-xs text-blue-400 font-semibold">Active</span>
                     )}
                   </div>
                 </button>
@@ -219,21 +219,21 @@ export function FrameworksSection({
         {selectedFramework && (
           <div className="p-4 space-y-4">
             {selectedFramework.description && (
-              <p className="text-sm text-muted-foreground">{selectedFramework.description}</p>
+              <p className="text-sm text-gray-400">{selectedFramework.description}</p>
             )}
 
             {/* Criteria List */}
             {selectedFramework.criteria && 'items' in selectedFramework.criteria && (
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Criteria</p>
+                <p className="text-sm font-medium text-white mb-2">Criteria</p>
                 <ul className="space-y-2">
                   {(selectedFramework.criteria as { items: Array<{ id: string; label: string; description?: string }> }).items.map((item) => (
                     <li key={item.id} className="flex items-start gap-2 text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
                       <div>
-                        <span className="text-foreground">{item.label}</span>
+                        <span className="text-white">{item.label}</span>
                         {item.description && (
-                          <p className="text-muted-foreground text-xs">{item.description}</p>
+                          <p className="text-gray-500 text-xs">{item.description}</p>
                         )}
                       </div>
                     </li>
@@ -271,7 +271,7 @@ export function FrameworksSection({
         title="Switch Framework?"
       >
         <div className="p-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-400">
             Switching will deactivate your current framework. Your history will be preserved.
           </p>
           <div className="flex gap-2">

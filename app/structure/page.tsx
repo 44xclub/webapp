@@ -87,45 +87,42 @@ export default function StructurePage() {
 
   if (authLoading) {
     return (
-      <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     )
   }
 
   return (
-    <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] bg-background pb-16">
+    <div className="min-h-screen min-h-[100dvh] bg-[#0a0a0f] pb-20">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border">
+      <header className="sticky top-[52px] z-30 bg-[#0d1117]/95 backdrop-blur-xl border-b border-white/5">
         <div className="px-4 py-3">
-          <h1 className="text-lg font-semibold text-foreground">Structure</h1>
+          <h1 className="text-lg font-semibold text-white">Structure</h1>
         </div>
 
         {/* Tab Toggle */}
         <div className="px-4 pb-3">
-          <div className="inline-flex bg-secondary rounded-lg p-1 w-full">
+          <div className="inline-flex bg-white/5 rounded-xl p-1 w-full">
             <button
               onClick={() => setActiveTab('discipline')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                 activeTab === 'discipline'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                  : 'text-gray-400 hover:text-white'
               }`}
             >
               Discipline
             </button>
             <button
               onClick={() => setActiveTab('training')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                 activeTab === 'training'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                  : 'text-gray-400 hover:text-white'
               }`}
             >
               Training
@@ -144,31 +141,31 @@ export default function StructurePage() {
                 onClick={() => setFrameworkModalOpen(true)}
                 className="w-full text-left"
               >
-                <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/50 transition-colors">
+                <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5 hover:border-blue-500/30 transition-all">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">Active Framework</p>
-                      <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
+                      <p className="text-xs text-gray-500 mb-1">Active Framework</p>
+                      <p className="font-medium text-white">{activeFramework.framework_template.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <CheckSquare className={`h-4 w-4 ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-green-500'
+                            ? 'text-emerald-400'
                             : completionCount.completed > 0
-                            ? 'text-yellow-500'
-                            : 'text-muted-foreground'
+                            ? 'text-yellow-400'
+                            : 'text-gray-500'
                         }`} />
                         <p className={`text-xs ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-green-500'
+                            ? 'text-emerald-400'
                             : completionCount.completed > 0
-                            ? 'text-yellow-500'
-                            : 'text-muted-foreground'
+                            ? 'text-yellow-400'
+                            : 'text-gray-500'
                         }`}>
                           {completionCount.completed} / {completionCount.total} complete
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-gray-500" />
                   </div>
                 </div>
               </button>
@@ -176,9 +173,9 @@ export default function StructurePage() {
 
             {/* Community Challenge */}
             {challengeLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
+              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
                 </div>
               </div>
             ) : (
@@ -192,9 +189,9 @@ export default function StructurePage() {
 
             {/* Frameworks Catalogue */}
             {frameworksLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
+              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
                 </div>
               </div>
             ) : (
@@ -212,9 +209,9 @@ export default function StructurePage() {
           <>
             {/* Active Programme */}
             {programmesLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
+              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
                 </div>
               </div>
             ) : (
@@ -251,7 +248,6 @@ export default function StructurePage() {
         completionCount={completionCount}
         onToggleItem={toggleFrameworkItem}
       />
-    </div>
     </div>
   )
 }
