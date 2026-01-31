@@ -25,104 +25,70 @@ export default function StructurePage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  // Auth check
   useEffect(() => {
     let isMounted = true
-
     const checkAuth = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
-
         if (!isMounted) return
-
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
+        if (error || !user) { router.push('/login'); return }
         setUser(user)
         setAuthLoading(false)
-      } catch (err) {
-        if (isMounted) {
-          router.push('/login')
-        }
-      }
+      } catch { if (isMounted) router.push('/login') }
     }
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return
+      if (event === 'SIGNED_OUT') router.push('/login')
+      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
+    })
 
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-          setAuthLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
+    return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  // Data hooks
   const { profile, loading: profileLoading } = useProfile(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, logChallenge, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
-  const {
-    frameworks,
-    activeFramework,
-    todaySubmission,
-    todayItems,
-    completionCount,
-    loading: frameworksLoading,
-    activateFramework,
-    submitDailyStatus,
-    toggleFrameworkItem,
-    refetch: refetchFrameworks,
-  } = useFrameworks(user?.id)
+  const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#0a0a0f] pb-20">
-      {/* Header Strip */}
+    <div className="min-h-screen bg-zinc-950 pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
-      <header className="sticky top-[52px] z-30 bg-[#0d1117]/95 backdrop-blur-xl border-b border-white/5">
+      <header className="bg-zinc-900 border-b border-zinc-800">
         <div className="px-4 py-3">
-          <h1 className="text-lg font-semibold text-white">Structure</h1>
+          <h1 className="text-lg font-semibold text-zinc-100">Structure</h1>
         </div>
 
         {/* Tab Toggle */}
         <div className="px-4 pb-3">
-          <div className="inline-flex bg-white/5 rounded-xl p-1 w-full">
+          <div className="flex bg-zinc-800 rounded-md p-0.5">
             <button
               onClick={() => setActiveTab('discipline')}
-              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
                 activeTab === 'discipline'
-                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Discipline
             </button>
             <button
               onClick={() => setActiveTab('training')}
-              className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-sm font-medium rounded transition-colors ${
                 activeTab === 'training'
-                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
               Training
@@ -131,115 +97,70 @@ export default function StructurePage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-4 space-y-4">
+      {/* Content */}
+      <main className="p-4 space-y-3">
         {activeTab === 'discipline' ? (
           <>
-            {/* Active Framework Quick Card - opens checklist modal */}
             {activeFramework?.framework_template && !frameworksLoading && (
-              <button
-                onClick={() => setFrameworkModalOpen(true)}
-                className="w-full text-left"
-              >
-                <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5 hover:border-blue-500/30 transition-all">
+              <button onClick={() => setFrameworkModalOpen(true)} className="w-full text-left">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-md p-4 hover:border-zinc-700 transition-colors">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500 mb-1">Active Framework</p>
-                      <p className="font-medium text-white">{activeFramework.framework_template.title}</p>
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-1">Active Framework</p>
+                      <p className="font-medium text-zinc-100">{activeFramework.framework_template.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <CheckSquare className={`h-4 w-4 ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-emerald-400'
-                            : completionCount.completed > 0
-                            ? 'text-yellow-400'
-                            : 'text-gray-500'
+                            ? 'text-emerald-400' : completionCount.completed > 0 ? 'text-amber-400' : 'text-zinc-500'
                         }`} />
-                        <p className={`text-xs ${
+                        <span className={`text-xs ${
                           completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-emerald-400'
-                            : completionCount.completed > 0
-                            ? 'text-yellow-400'
-                            : 'text-gray-500'
+                            ? 'text-emerald-400' : completionCount.completed > 0 ? 'text-amber-400' : 'text-zinc-500'
                         }`}>
-                          {completionCount.completed} / {completionCount.total} complete
-                        </p>
+                          {completionCount.completed}/{completionCount.total} complete
+                        </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-zinc-600" />
                   </div>
                 </div>
               </button>
             )}
 
-            {/* Community Challenge */}
             {challengeLoading ? (
-              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
               </div>
             ) : (
-              <ChallengeCard
-                challenge={challenge}
-                todayBlock={todayBlock}
-                onLogChallenge={logChallenge}
-                onRefetch={refetchChallenge}
-              />
+              <ChallengeCard challenge={challenge} todayBlock={todayBlock} onLogChallenge={logChallenge} onRefetch={refetchChallenge} />
             )}
 
-            {/* Frameworks Catalogue */}
             {frameworksLoading ? (
-              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
               </div>
             ) : (
-              <FrameworksSection
-                frameworks={frameworks}
-                activeFramework={activeFramework}
-                todaySubmission={todaySubmission}
-                onActivateFramework={activateFramework}
-                onSubmitStatus={submitDailyStatus}
-                onRefetch={refetchFrameworks}
-              />
+              <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
           </>
         ) : (
           <>
-            {/* Active Programme */}
             {programmesLoading ? (
-              <div className="bg-[#0d1117] rounded-2xl p-4 border border-white/5">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                </div>
+              <div className="bg-zinc-900 border border-zinc-800 rounded-md p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
               </div>
             ) : (
               <>
-                <ProgrammeSection
-                  activeProgramme={activeProgramme}
-                  sessions={sessions}
-                  onDeactivate={deactivateProgramme}
-                  onScheduleWeek={scheduleWeek}
-                />
-
-                {/* Programme Catalogue */}
-                <ProgrammeCatalogue
-                  programmes={programmes}
-                  activeProgrammeId={activeProgramme?.programme_template_id}
-                  onActivate={activateProgramme}
-                  onRefetch={refetchProgrammes}
-                />
+                <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} />
+                <ProgrammeCatalogue programmes={programmes} activeProgrammeId={activeProgramme?.programme_template_id} onActivate={activateProgramme} onRefetch={refetchProgrammes} />
               </>
             )}
           </>
         )}
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav />
 
-      {/* Framework Checklist Modal */}
       <FrameworkChecklistModal
         isOpen={frameworkModalOpen}
         onClose={() => setFrameworkModalOpen(false)}
