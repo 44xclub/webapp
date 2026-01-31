@@ -5,22 +5,31 @@ import { cn } from '@/lib/utils'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 
+/*
+  44CLUB Button System
+  - Primary: Solid accent, high contrast
+  - Secondary: Muted background
+  - Outline: Border only
+  - Destructive: Red, for dangerous actions
+  - Ghost: Minimal, for tertiary actions
+*/
+
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]',
+  'inline-flex items-center justify-center gap-2 font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
-        default: 'bg-blue-600 text-white hover:bg-blue-500 border border-blue-500',
-        destructive: 'bg-red-600 text-white hover:bg-red-500 border border-red-500',
-        outline: 'bg-transparent text-zinc-300 border border-zinc-700 hover:bg-zinc-800 hover:text-white',
-        secondary: 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white',
-        ghost: 'bg-transparent text-zinc-400 hover:bg-zinc-800 hover:text-white border border-transparent',
+        default: 'bg-accent text-white hover:bg-accent/90',
+        secondary: 'bg-surface text-text-primary hover:bg-surface-elevated',
+        outline: 'bg-transparent text-text-primary border border-border hover:bg-surface/50',
+        destructive: 'bg-danger text-white hover:bg-danger/90',
+        ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface/50',
       },
       size: {
-        default: 'h-10 px-4 text-sm rounded-md',
-        sm: 'h-8 px-3 text-xs rounded',
-        lg: 'h-12 px-6 text-base rounded-md',
-        icon: 'h-10 w-10 rounded-md',
+        default: 'h-10 px-4 text-sm rounded-[10px]',
+        sm: 'h-8 px-3 text-xs rounded-lg',
+        lg: 'h-12 px-6 text-base rounded-[10px]',
+        icon: 'h-10 w-10 rounded-[10px]',
       },
     },
     defaultVariants: {
