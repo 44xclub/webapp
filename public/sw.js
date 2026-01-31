@@ -1,5 +1,5 @@
 // 44CLUB Blocks Service Worker
-const CACHE_NAME = '44club-blocks-v4';
+const CACHE_NAME = '44club-blocks-v5';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache on install (minimal - only static assets)
