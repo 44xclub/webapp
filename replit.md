@@ -1,0 +1,42 @@
+# 44Club Blocks
+
+## Overview
+A Next.js 14 application with Supabase integration for authentication and data storage. Uses TypeScript and Tailwind CSS for styling. Features a stoic, energetic dark UI with greys, blacks, and dark blues.
+
+## Project Structure
+- `app/` - Next.js App Router pages and layouts
+- `components/` - Reusable React components
+  - `ui/` - Core UI components (Button, Input, Modal)
+  - `blocks/` - Block scheduling components
+  - `structure/` - Discipline/training page components
+  - `shared/` - Shared components (HeaderStrip, BottomNav)
+- `lib/` - Utility functions, hooks, and Supabase client
+- `supabase/` - Supabase configuration files
+- `public/` - Static assets
+
+## Tech Stack
+- Next.js 14.1.0
+- React 18
+- TypeScript
+- Tailwind CSS (custom design system)
+- Supabase (Authentication & Database)
+
+## Design System
+- **Colors**: Deep blacks (#08090C), steel greys, dark blues, accent purple (#6366F1)
+- **Components**: Glass cards, glow effects, gradient backgrounds
+- **Typography**: SF Pro Display/Inter, hierarchical type scale
+
+## Development
+- Run: `npm run dev` (port 5000)
+- Build: `npm run build`
+- Start: `npm start`
+
+## Environment Variables Required
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
+
+## Recent Changes
+- Feb 2, 2026: Updated entire UI with energetic stoic styling - greys, blacks, dark blues
+- Feb 2, 2026: Redesigned ProfileCard, HeaderStrip, BottomNav, Button components
+- Feb 2, 2026: Added custom Tailwind color palette and utility classes
+- Feb 2, 2026: Configured for Replit environment (port 5000, dev server settings)

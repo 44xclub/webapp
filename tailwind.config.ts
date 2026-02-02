@@ -9,52 +9,85 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // 44CLUB Color System
-        // Background / Canvas
+        background: '#08090C',
+        foreground: '#F0F2F5',
+        card: {
+          DEFAULT: '#0D1117',
+          hover: '#151B25',
+        },
+        muted: {
+          DEFAULT: '#21262D',
+          foreground: '#8B949E',
+        },
+        primary: {
+          DEFAULT: '#6366F1',
+          foreground: '#FFFFFF',
+          glow: 'rgba(99, 102, 241, 0.25)',
+        },
+        secondary: {
+          DEFAULT: '#1C2128',
+          foreground: '#C9D1D9',
+        },
+        destructive: {
+          DEFAULT: '#F85149',
+          foreground: '#FFFFFF',
+        },
+        border: '#30363D',
+        ring: '#58A6FF',
         canvas: {
-          DEFAULT: '#0A1220',
-          deep: '#060B14',
-          card: '#0F172A',
+          DEFAULT: '#08090C',
+          deep: '#050508',
+          card: '#0D1117',
         },
-        // Surface / Cards
         surface: {
-          DEFAULT: '#121B2E',
-          elevated: '#162038',
+          DEFAULT: '#0D1117',
+          elevated: '#161B22',
+          highlight: '#1C2128',
         },
-        // Borders / Dividers
-        border: {
-          DEFAULT: '#1F2A44',
-        },
-        // Text
         text: {
-          primary: '#E6EAF2',
-          secondary: '#9AA4BF',
-          muted: '#6B7280',
+          primary: '#F0F2F5',
+          secondary: '#8B949E',
+          muted: '#6E7681',
         },
-        // Accents (used sparingly)
         accent: {
-          DEFAULT: '#6D5EF3',  // 44CLUB Purple
-          blue: '#3B82F6',     // Electric Blue
+          DEFAULT: '#6366F1',
+          blue: '#58A6FF',
+          cyan: '#56D4DD',
+          purple: '#A371F7',
         },
-        // Status colors
-        success: '#22C55E',
-        warning: '#F59E0B',
-        danger: '#EF4444',
+        success: '#3FB950',
+        warning: '#D29922',
+        danger: '#F85149',
+        steel: {
+          50: '#F8FAFC',
+          100: '#F1F5F9',
+          200: '#E2E8F0',
+          300: '#CBD5E1',
+          400: '#94A3B8',
+          500: '#64748B',
+          600: '#475569',
+          700: '#334155',
+          800: '#1E293B',
+          900: '#0F172A',
+          950: '#020617',
+        },
       },
       borderRadius: {
-        'card': '16px',
-        'button': '10px',
+        'card': '12px',
+        'button': '8px',
+        'badge': '6px',
       },
       fontSize: {
-        // Type scale
-        'page': ['20px', { lineHeight: '28px', fontWeight: '600' }],
-        'section': ['16px', { lineHeight: '24px', fontWeight: '600' }],
-        'body': ['14px', { lineHeight: '20px', fontWeight: '400' }],
-        'secondary': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+        'display': ['32px', { lineHeight: '40px', fontWeight: '700', letterSpacing: '-0.02em' }],
+        'page': ['24px', { lineHeight: '32px', fontWeight: '600', letterSpacing: '-0.01em' }],
+        'page-title': ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        'section': ['18px', { lineHeight: '26px', fontWeight: '600' }],
+        'body': ['14px', { lineHeight: '22px', fontWeight: '400' }],
+        'secondary': ['13px', { lineHeight: '20px', fontWeight: '400' }],
         'meta': ['12px', { lineHeight: '16px', fontWeight: '500' }],
+        'micro': ['11px', { lineHeight: '14px', fontWeight: '600', letterSpacing: '0.02em' }],
       },
       spacing: {
-        // Spacing scale
         'micro': '4px',
         'tight': '8px',
         'compact': '12px',
@@ -62,6 +95,17 @@ const config: Config = {
         'section': '24px',
         'major': '32px',
         'page': '48px',
+      },
+      boxShadow: {
+        'glow': '0 0 20px rgba(99, 102, 241, 0.15)',
+        'glow-lg': '0 0 40px rgba(99, 102, 241, 0.2)',
+        'card': '0 4px 16px rgba(0, 0, 0, 0.4)',
+        'elevated': '0 8px 32px rgba(0, 0, 0, 0.5)',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-card': 'linear-gradient(180deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%)',
+        'gradient-steel': 'linear-gradient(180deg, #1E293B 0%, #0F172A 100%)',
       },
     },
   },

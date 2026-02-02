@@ -5,31 +5,23 @@ import { cn } from '@/lib/utils'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 
-/*
-  44CLUB Button System
-  - Primary: Solid accent, high contrast
-  - Secondary: Muted background
-  - Outline: Border only
-  - Destructive: Red, for dangerous actions
-  - Ghost: Minimal, for tertiary actions
-*/
-
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent disabled:opacity-50 disabled:pointer-events-none',
+  'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
-        default: 'bg-accent text-white hover:bg-accent/90',
-        secondary: 'bg-surface text-text-primary hover:bg-surface-elevated',
-        outline: 'bg-transparent text-text-primary border border-border hover:bg-surface/50',
-        destructive: 'bg-danger text-white hover:bg-danger/90',
-        ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface/50',
+        default: 'bg-primary text-white hover:bg-primary/90 shadow-[0_4px_12px_rgba(99,102,241,0.25)] hover:shadow-[0_6px_16px_rgba(99,102,241,0.35)]',
+        secondary: 'bg-steel-800 text-foreground border border-steel-700 hover:bg-steel-700 hover:border-steel-600',
+        outline: 'bg-transparent text-foreground border border-border hover:bg-surface hover:border-steel-600',
+        destructive: 'bg-danger text-white hover:bg-danger/90 shadow-[0_4px_12px_rgba(248,81,73,0.25)]',
+        ghost: 'bg-transparent text-text-secondary hover:text-foreground hover:bg-surface',
+        glow: 'bg-primary text-white shadow-glow hover:shadow-glow-lg energy-pulse',
       },
       size: {
-        default: 'h-10 px-4 text-sm rounded-[10px]',
-        sm: 'h-8 px-3 text-xs rounded-lg',
-        lg: 'h-12 px-6 text-base rounded-[10px]',
-        icon: 'h-10 w-10 rounded-[10px]',
+        default: 'h-10 px-5 text-sm rounded-button',
+        sm: 'h-8 px-3 text-xs rounded-button',
+        lg: 'h-12 px-6 text-base rounded-button',
+        icon: 'h-10 w-10 rounded-button',
       },
     },
     defaultVariants: {

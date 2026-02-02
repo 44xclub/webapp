@@ -4,11 +4,6 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Home, Layers, Users, User } from 'lucide-react'
 
-/*
-  44CLUB Bottom Navigation
-  Minimal. Functional. No decoration.
-*/
-
 const navItems = [
   { href: '/app', label: 'Home', icon: Home },
   { href: '/structure', label: 'Structure', icon: Layers },
@@ -20,8 +15,8 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-canvas border-t border-border safe-bottom">
-      <div className="flex h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bottom-nav safe-bottom">
+      <div className="flex h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
             (item.href === '/app' && pathname === '/') ||
@@ -32,12 +27,17 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors duration-150 ${
-                isActive ? 'text-accent' : 'text-text-muted hover:text-text-secondary'
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-200 relative ${
+                isActive ? 'text-primary' : 'text-text-muted hover:text-text-secondary'
               }`}
             >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2 : 1.5} />
-              <span className="text-meta">{item.label}</span>
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />
+              )}
+              <div className={`p-1.5 rounded-badge transition-all duration-200 ${isActive ? 'bg-primary/10' : ''}`}>
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.5} />
+              </div>
+              <span className={`text-micro ${isActive ? 'font-semibold' : ''}`}>{item.label}</span>
             </Link>
           )
         })}
