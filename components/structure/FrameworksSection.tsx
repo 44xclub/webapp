@@ -139,9 +139,9 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {filteredFrameworks.length === 0 ? (
-            <p className="text-secondary text-text-muted py-4 text-center col-span-2">No frameworks found</p>
+            <p className="text-secondary text-text-muted py-4 text-center col-span-4">No frameworks found</p>
           ) : (
             filteredFrameworks.map((framework) => {
               const isActive = activeFramework?.framework_template_id === framework.id
@@ -155,7 +155,7 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
                 <button
                   key={framework.id}
                   onClick={() => { setSelectedFramework(framework); setDetailModalOpen(true) }}
-                  className={`relative overflow-hidden rounded-[10px] h-[90px] text-left transition-all duration-200 ${
+                  className={`relative overflow-hidden rounded-[10px] h-[180px] text-left transition-all duration-200 ${
                     isActive ? 'ring-2 ring-[#3b82f6]' : 'hover:opacity-90'
                   }`}
                 >
