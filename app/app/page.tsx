@@ -110,37 +110,37 @@ export default function AppPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <Loader2 className="h-6 w-6 animate-spin text-[#3b82f6]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-canvas flex flex-col pb-16">
+    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Streak Module */}
       {profile && (
-        <div className="mx-4 mt-3 p-4 bg-gradient-to-r from-steel-900 via-steel-800 to-steel-900 rounded-card border border-steel-700">
+        <div className="mx-4 mt-3 p-4 bg-[#0d1014] rounded-[16px] border border-[rgba(255,255,255,0.10)] shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-card bg-gradient-to-br from-warning/20 to-orange-500/10 flex items-center justify-center border border-warning/30">
-                <Flame className="h-6 w-6 text-warning" />
+              <div className="h-12 w-12 rounded-[14px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
+                <Flame className="h-6 w-6 text-[#f59e0b]" />
               </div>
               <div>
-                <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Current Streak</p>
+                <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Current Streak</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-page font-bold text-foreground">{profile.current_streak || 0}</span>
-                  <span className="text-secondary text-text-secondary">days</span>
+                  <span className="text-[24px] font-bold text-[#eef2ff]">{profile.current_streak || 0}</span>
+                  <span className="text-[13px] text-[rgba(238,242,255,0.72)]">days</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Personal Best</p>
+              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Personal Best</p>
               <div className="flex items-baseline gap-1 justify-end">
-                <span className="text-section font-bold text-accent-cyan">{profile.best_streak || 0}</span>
-                <span className="text-meta text-text-muted">days</span>
+                <span className="text-[18px] font-bold text-[#22d3ee]">{profile.best_streak || 0}</span>
+                <span className="text-[12px] text-[rgba(238,242,255,0.52)]">days</span>
               </div>
             </div>
           </div>
@@ -149,32 +149,32 @@ export default function AppPage() {
 
       <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} onWeekChange={handleWeekChange} blocksByDate={blocksByDate} />
 
-      <div className="px-4 py-3 flex justify-center border-b border-border bg-canvas">
+      <div className="px-4 py-3 flex justify-center border-b border-[rgba(255,255,255,0.07)] bg-[#07090d]">
         <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
       </div>
 
       {/* Active Framework Card */}
       {viewMode === 'day' && activeFramework?.framework_template && !frameworkLoading && (
         <button onClick={() => setFrameworkModalOpen(true)} className="block mx-4 mt-3 w-[calc(100%-2rem)] text-left">
-          <div className="bg-surface rounded-[16px] p-4 border border-border hover:border-text-muted transition-colors duration-150">
+          <div className="bg-[#0d1014] rounded-[16px] p-4 border border-[rgba(255,255,255,0.10)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-[140ms] shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-meta text-text-muted mb-1">Active Framework</p>
-                <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
+                <p className="text-[12px] font-bold text-[rgba(238,242,255,0.52)] mb-1">Active Framework</p>
+                <p className="text-[15px] font-semibold text-[#eef2ff]">{activeFramework.framework_template.title}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <CheckSquare className={`h-4 w-4 ${
                     completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
+                      ? 'text-[#22c55e]' : completionCount.completed > 0 ? 'text-[#f59e0b]' : 'text-[rgba(238,242,255,0.52)]'
                   }`} />
-                  <p className={`text-meta ${
+                  <p className={`text-[12px] font-medium ${
                     completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
+                      ? 'text-[#22c55e]' : completionCount.completed > 0 ? 'text-[#f59e0b]' : 'text-[rgba(238,242,255,0.52)]'
                   }`}>
                     {completionCount.completed} / {completionCount.total} complete
                   </p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-text-muted" />
+              <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
             </div>
           </div>
         </button>

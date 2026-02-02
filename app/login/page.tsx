@@ -71,7 +71,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center px-4 bg-canvas">
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center px-4 bg-[#07090d]">
       <div className="w-full max-w-sm animate-fadeIn">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -85,14 +85,14 @@ function LoginForm() {
               className="object-contain"
             />
           </div>
-          <p className="text-text-muted text-secondary font-medium tracking-widest uppercase">BLOCKS</p>
+          <p className="text-[rgba(238,242,255,0.52)] text-[13px] font-black tracking-[0.2em] uppercase">BLOCKS</p>
         </div>
 
         {/* Success Message */}
         {message && (
-          <div className="mb-4 p-4 bg-success/10 border border-success/20 rounded-[10px] flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-            <p className="text-secondary text-success">{message}</p>
+          <div className="mb-4 p-4 bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.2)] rounded-[14px] flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-[#22c55e] flex-shrink-0 mt-0.5" />
+            <p className="text-[13px] text-[#22c55e]">{message}</p>
           </div>
         )}
 
@@ -119,7 +119,7 @@ function LoginForm() {
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           />
 
-          {error && <p className="text-secondary text-danger">{error}</p>}
+          {error && <p className="text-[13px] text-[#ef4444]">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -132,7 +132,7 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage('') }}
-            className="text-secondary text-text-muted hover:text-text-secondary transition-colors"
+            className="text-[13px] font-medium text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.72)] transition-colors duration-[140ms]"
           >
             {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>
@@ -146,8 +146,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-canvas">
-          <Loader2 className="h-6 w-6 animate-spin text-accent" />
+        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+          <Loader2 className="h-6 w-6 animate-spin text-[#3b82f6]" />
         </div>
       }
     >

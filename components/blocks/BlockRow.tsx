@@ -140,27 +140,27 @@ export function BlockRow({
     <div
       onClick={() => onEdit(block)}
       className={cn(
-        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200',
-        isCompleted && 'bg-secondary/20',
-        isOverdue && !isCompleted && 'bg-red-500/5 hover:bg-red-500/10',
-        !isOverdue && !isCompleted && 'hover:bg-secondary/50'
+        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+        isCompleted && 'bg-[rgba(255,255,255,0.02)]',
+        isOverdue && !isCompleted && 'bg-[rgba(239,68,68,0.06)] hover:bg-[rgba(239,68,68,0.10)]',
+        !isOverdue && !isCompleted && 'hover:bg-[rgba(255,255,255,0.04)]'
       )}
     >
       {/* Checkbox */}
       <button
         onClick={handleToggle}
         className={cn(
-          'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
+          'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-[140ms]',
           isCompleted
-            ? 'bg-primary border-primary'
+            ? 'bg-[#3b82f6] border-[#3b82f6]'
             : isOverdue
-              ? 'border-red-400/60 hover:border-red-400'
-              : 'border-muted-foreground/40 hover:border-primary'
+              ? 'border-[rgba(239,68,68,0.5)] hover:border-[#ef4444]'
+              : 'border-[rgba(255,255,255,0.20)] hover:border-[#3b82f6]'
         )}
         disabled={isToggling}
       >
         {isCompleted && (
-          <Check className="h-4 w-4 text-primary-foreground" strokeWidth={3} />
+          <Check className="h-4 w-4 text-white" strokeWidth={3} />
         )}
       </button>
 
@@ -170,29 +170,29 @@ export function BlockRow({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-semibold truncate',
-              isCompleted && 'line-through decoration-muted-foreground/50 text-muted-foreground',
-              !isCompleted && 'text-foreground'
+              'font-bold text-[15px] truncate',
+              isCompleted && 'line-through decoration-[rgba(238,242,255,0.3)] text-[rgba(238,242,255,0.52)]',
+              !isCompleted && 'text-[#eef2ff]'
             )}
           >
             {getBlockTitle()}
           </span>
           {isOverdue && !isCompleted && (
-            <span className="text-micro text-red-400 font-medium">Overdue</span>
+            <span className="text-[11px] font-bold text-[#ef4444]">Overdue</span>
           )}
         </div>
         {/* Secondary: Type badge + metadata */}
         <div className="flex items-center gap-2 mt-1">
           <span
             className={cn(
-              'text-xs px-1.5 py-0.5 rounded font-medium',
-              isCompleted ? 'text-muted-foreground bg-muted/50 opacity-60' : badgeColors
+              'text-[11px] px-1.5 py-0.5 rounded-[6px] font-bold',
+              isCompleted ? 'text-[rgba(238,242,255,0.52)] bg-[rgba(255,255,255,0.04)] opacity-60' : badgeColors
             )}
           >
             {blockTypeLabels[block.block_type]}
           </span>
           <span className={cn(
-            'text-xs text-muted-foreground',
+            'text-[12px] text-[rgba(238,242,255,0.52)]',
             isCompleted && 'opacity-60'
           )}>
             {getSecondaryInfo().join(' · ')}
@@ -204,9 +204,9 @@ export function BlockRow({
       <div className="relative">
         <button
           onClick={handleMenuClick}
-          className="p-2 rounded-lg hover:bg-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.05)] opacity-0 group-hover:opacity-100 transition-all duration-[140ms]"
         >
-          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+          <MoreHorizontal className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
         </button>
 
         <DropdownMenu

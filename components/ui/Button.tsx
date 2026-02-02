@@ -6,22 +6,22 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none',
+  'inline-flex items-center justify-center gap-2.5 font-extrabold text-[13px] transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] focus:outline-none focus-visible:shadow-focus disabled:opacity-50 disabled:pointer-events-none active:translate-y-[1px]',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-white hover:bg-primary/90 shadow-[0_4px_12px_rgba(99,102,241,0.25)] hover:shadow-[0_6px_16px_rgba(99,102,241,0.35)]',
-        secondary: 'bg-steel-800 text-foreground border border-steel-700 hover:bg-steel-700 hover:border-steel-600',
-        outline: 'bg-transparent text-foreground border border-border hover:bg-surface hover:border-steel-600',
-        destructive: 'bg-danger text-white hover:bg-danger/90 shadow-[0_4px_12px_rgba(248,81,73,0.25)]',
-        ghost: 'bg-transparent text-text-secondary hover:text-foreground hover:bg-surface',
-        glow: 'bg-primary text-white shadow-glow hover:shadow-glow-lg energy-pulse',
+        default: 'bg-gradient-to-b from-[rgba(59,130,246,0.18)] to-[rgba(59,130,246,0.08)] text-[rgba(238,242,255,0.92)] border border-[rgba(59,130,246,0.26)] shadow-glow hover:from-[rgba(96,165,250,0.16)] hover:to-[rgba(59,130,246,0.10)] hover:border-[rgba(96,165,250,0.34)] hover:shadow-glow-lg',
+        secondary: 'bg-[rgba(255,255,255,0.05)] text-[rgba(238,242,255,0.92)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] shadow-sm',
+        outline: 'bg-transparent text-[rgba(238,242,255,0.92)] border border-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.04)]',
+        destructive: 'bg-danger text-white hover:bg-danger/90 shadow-[0_10px_26px_rgba(239,68,68,0.2)]',
+        ghost: 'bg-transparent text-[rgba(238,242,255,0.70)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.04)]',
+        glow: 'bg-gradient-to-b from-[rgba(59,130,246,0.18)] to-[rgba(59,130,246,0.08)] text-white border border-[rgba(59,130,246,0.26)] shadow-glow energy-pulse hover:shadow-glow-lg',
       },
       size: {
-        default: 'h-10 px-5 text-sm rounded-button',
-        sm: 'h-8 px-3 text-xs rounded-button',
-        lg: 'h-12 px-6 text-base rounded-button',
-        icon: 'h-10 w-10 rounded-button',
+        default: 'h-[42px] px-4 rounded-[12px]',
+        sm: 'h-[34px] px-3 text-[12px] rounded-[10px]',
+        lg: 'h-[48px] px-6 text-[14px] rounded-[14px]',
+        icon: 'h-[42px] w-[42px] rounded-[12px]',
       },
     },
     defaultVariants: {

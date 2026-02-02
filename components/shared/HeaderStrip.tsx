@@ -20,19 +20,19 @@ const badgeIcons: Record<DisciplineBadge, typeof Shield> = {
 }
 
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-steel-400',
-  'Committed': 'text-accent-blue',
-  'Elite': 'text-accent-cyan',
-  'Forged': 'text-warning',
-  '44-Pro': 'text-accent-purple',
+  'Initiated': 'text-[rgba(238,242,255,0.60)]',
+  'Committed': 'text-[#60a5fa]',
+  'Elite': 'text-[#22d3ee]',
+  'Forged': 'text-[#f59e0b]',
+  '44-Pro': 'text-[#a78bfa]',
 }
 
 const badgeBgColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'bg-steel-400',
-  'Committed': 'bg-accent-blue',
-  'Elite': 'bg-accent-cyan',
-  'Forged': 'bg-warning',
-  '44-Pro': 'bg-accent-purple',
+  'Initiated': 'bg-[rgba(238,242,255,0.60)]',
+  'Committed': 'bg-[#60a5fa]',
+  'Elite': 'bg-[#22d3ee]',
+  'Forged': 'bg-[#f59e0b]',
+  '44-Pro': 'bg-[#a78bfa]',
 }
 
 export function HeaderStrip({ profile, loading }: HeaderStripProps) {
@@ -43,16 +43,16 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
 
   if (loading || !profile || !disciplineLevel) {
     return (
-      <div className="sticky top-0 z-50 header-gradient border-b border-border/50 px-4 py-3">
+      <div className="sticky top-0 z-50 bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-surface rounded-card animate-pulse" />
+            <div className="h-10 w-10 bg-[rgba(255,255,255,0.045)] rounded-[16px] animate-pulse" />
             <div className="space-y-1">
-              <div className="h-4 w-20 bg-surface rounded animate-pulse" />
-              <div className="h-3 w-16 bg-surface rounded animate-pulse" />
+              <div className="h-4 w-20 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
+              <div className="h-3 w-16 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
             </div>
           </div>
-          <div className="h-8 w-24 bg-surface rounded-button animate-pulse" />
+          <div className="h-8 w-24 bg-[rgba(255,255,255,0.045)] rounded-[12px] animate-pulse" />
         </div>
       </div>
     )
@@ -65,33 +65,33 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
   const badgeBgColor = badgeBgColors[disciplineLevel.badge]
 
   return (
-    <div className="sticky top-0 z-50 bg-surface/95 backdrop-blur-lg border-b border-border/50">
+    <div className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/profile" className="flex items-center gap-3 group">
-            <div className="h-11 w-11 rounded-card bg-gradient-to-br from-steel-700 to-steel-900 border border-steel-600 flex items-center justify-center group-hover:border-primary/50 transition-all duration-200 shadow-card">
-              <span className="text-body text-foreground font-semibold">{initials}</span>
+            <div className="h-11 w-11 rounded-[16px] bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms] shadow-sm">
+              <span className="text-[15px] text-[#eef2ff] font-bold">{initials}</span>
             </div>
             <div>
-              <p className="text-body font-semibold text-foreground group-hover:text-primary transition-colors">
+              <p className="text-[15px] font-bold text-[#eef2ff] group-hover:text-[#60a5fa] transition-colors duration-[140ms]">
                 {displayName}
               </p>
               <div className="flex items-center gap-1.5">
                 <BadgeIcon className={`h-3.5 w-3.5 ${badgeColor}`} />
-                <span className="text-meta text-text-secondary">{disciplineLevel.badge}</span>
+                <span className="text-[12px] font-bold text-[rgba(238,242,255,0.72)] tracking-wide">{disciplineLevel.badge}</span>
               </div>
             </div>
           </Link>
 
           <div className="flex items-center gap-4">
             <div className="text-center min-w-[48px]">
-              <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Level</p>
-              <p className="text-page font-bold text-foreground">{disciplineLevel.level}</p>
+              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Level</p>
+              <p className="text-[24px] font-bold text-[#eef2ff]">{disciplineLevel.level}</p>
             </div>
-            <div className="w-px h-10 bg-border/50" />
+            <div className="w-px h-10 bg-[rgba(255,255,255,0.07)]" />
             <div className="text-center min-w-[52px]">
-              <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Score</p>
-              <p className="text-page font-bold text-primary">{profile.discipline_score}</p>
+              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Score</p>
+              <p className="text-[24px] font-bold text-[#3b82f6]">{profile.discipline_score}</p>
             </div>
           </div>
         </div>
@@ -100,14 +100,14 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
       {/* Progress Bar - only show if not max level */}
       {disciplineLevel.level < 44 && disciplineLevel.toNextLevel > 0 && (
         <div className="px-4 pb-3">
-          <div className="flex items-center justify-between text-micro text-text-muted mb-1.5">
+          <div className="flex items-center justify-between text-[11px] font-bold text-[rgba(238,242,255,0.52)] mb-1.5">
             <span>Level {disciplineLevel.level}</span>
-            <span className="text-text-secondary font-medium">
+            <span className="text-[rgba(238,242,255,0.72)]">
               {disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} pts
             </span>
             <span>Level {disciplineLevel.level + 1}</span>
           </div>
-          <div className="h-2 bg-steel-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${badgeBgColor}`}
               style={{ width: `${Math.min(disciplineLevel.progress, 100)}%` }}
@@ -119,7 +119,7 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
       {/* Max level indicator */}
       {disciplineLevel.level >= 44 && (
         <div className="px-4 pb-3">
-          <div className="text-center text-meta text-accent-purple font-medium">
+          <div className="text-center text-[12px] font-bold text-[#a78bfa] tracking-wide">
             Maximum Level Achieved
           </div>
         </div>

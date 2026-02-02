@@ -22,10 +22,12 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - Supabase (Authentication & Database)
 
 ## Design System
-- **Colors**: Deep black (#0a0a0a), neutral grey (#262626), accent navy blue (#021959)
-- **Components**: Glass cards, glow effects, gradient backgrounds
-- **Typography**: SF Pro Display/Inter, hierarchical type scale
+- **Colors**: Deep black (#07090d), surfaces use semi-transparent white overlays, accent blue (#3b82f6)
+- **Text**: Primary (#eef2ff), Secondary (rgba(238,242,255,0.72)), Muted (rgba(238,242,255,0.52))
+- **Components**: Solid cards (#0d1014), subtle borders, soft shadows
+- **Typography**: Montserrat font, bold weights (700-900), tight letter-spacing
 - **Logo**: 44 Club logo displayed on login page
+- **Style**: Stoic modern theme - dark backgrounds, light readable text, blue accents
 
 ## Development
 - Run: `npm run dev` (port 5000)
@@ -37,7 +39,11 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
-- Feb 2, 2026: Updated color scheme to #0a0a0a (background), #262626 (cards), #021959 (accent)
+- Feb 2, 2026: Complete UI overhaul to match landing page stoic modern theme
+- Feb 2, 2026: Updated colors: #07090d background, semi-transparent surfaces, #3b82f6 accent
+- Feb 2, 2026: Changed font to Montserrat with bold weights throughout
+- Feb 2, 2026: Solid non-transparent cards (#0d1014) for blocks and modals
+- Feb 2, 2026: Light text colors (#eef2ff) for visibility on dark backgrounds
 - Feb 2, 2026: Added 44 Club logo to login page
 - Feb 2, 2026: Redesigned block modal with two-step flow (quick entry + details)
 - Feb 2, 2026: Added duration quick-select chips (15m, 30m, 45m, 1h, 1.5h, 2h)
