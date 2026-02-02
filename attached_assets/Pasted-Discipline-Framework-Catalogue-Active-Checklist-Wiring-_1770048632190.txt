@@ -1,0 +1,170 @@
+Discipline Framework Catalogue + Active Checklist Wiring
+
+Below is the spec you give to your “AI building the webapp”. This is the exact wiring you’re missing.
+
+A) Data model (what to read/write)
+
+Tables involved
+
+framework_templates
+
+Source of truth for admin-defined frameworks
+
+Fields used: id, title, description, criteria (jsonb array), image_path, is_active
+
+user_frameworks
+
+Stores which framework the user has activated
+
+One row per user (PK user_id)
+
+Fields used: user_id, framework_template_id, activated_at
+
+daily_framework_items
+
+Stores the user’s daily tick state
+
+One row per criteria per day
+
+Fields used: user_id, date, framework_template_id, criteria_key, checked, checked_at
+
+RPC
+
+fn_ensure_daily_framework_items(p_date date)
+Creates daily rows from the active template criteria (idempotent).
+
+B) Catalogue UI (Available Frameworks)
+
+Screen location
+
+Structure → Discipline tab
+
+Section: “Available Frameworks”
+
+Query
+
+framework_templates where is_active = true
+
+Display card: background image from image_path (Supabase storage public URL or signed URL), title overlay.
+
+On click (Framework Detail Modal)
+
+Show:
+
+Title
+
+Description
+
+Full criteria list (read-only)
+
+Render from framework_templates.criteria[]
+
+Each line uses label if present, else fallback to key
+
+Primary CTA:
+
+If not active: Activate
+
+If active: Currently Active (disabled)
+
+Activate action
+
+Upsert user_frameworks:
+
+user_id = auth.uid()
+
+framework_template_id = selected_template.id
+
+activated_at = now()
+
+After activation:
+
+Call rpc(fn_ensure_daily_framework_items, { p_date: today_local_date })
+
+Refresh Active Framework card state
+
+C) Active Framework card (Structure + Home)
+
+It must appear in both places
+
+Structure → Discipline tab: under Community Challenge
+
+Home page: directly under week/day strip (as you described)
+
+Card content
+
+Background image from framework_templates.image_path
+
+Title
+
+Progress indicator:
+
+checked_count / total_count
+
+Progress bar
+
+Completion badge for that day:
+
+If checked_count == total_count and total_count > 0 → show “Complete today”
+
+Data load sequence
+
+Determine today_local_date (from profile timezone; UI can compute local date client-side).
+
+Call rpc('fn_ensure_daily_framework_items', { p_date: today_local_date })
+
+Fetch:
+
+active template via join:
+
+user_frameworks.framework_template_id -> framework_templates
+
+daily items:
+
+daily_framework_items filtered by user_id + date = today_local_date
+
+On click (Active Framework Modal)
+
+Show:
+
+Title, description
+
+“Today’s Progress” (x/y)
+
+Checklist (interactive):
+
+For each criteria in template order:
+
+checkbox state comes from daily_framework_items.checked
+
+label from template criteria label if present
+
+Toggling:
+
+Update that row in daily_framework_items:
+
+set checked = true/false
+
+set checked_at = now() when checked, null when unchecked (optional but clean)
+
+After any toggle:
+
+Recompute progress and update card progress bar
+
+Reset behavior
+
+No “reset” SQL needed.
+
+Because the checklist is keyed by date, a new day simply loads a fresh set.
+
+At first open each day, the RPC hydrates missing rows.
+
+D) Cutoff behavior (midday lock)
+
+You said: user can tick/untick visually, but scoring locks at 12:00 midday next day.
+
+Requirement
+
+UI may allow edits after cutoff, but those edits must not affect scoring.
+
+(If you later want a hard lock, add locked_at to daily_framework_items and enforce via RLS. Not required for V3 if scoring already locks elsewhere.)

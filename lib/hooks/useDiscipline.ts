@@ -134,8 +134,14 @@ export function useFrameworks(userId: string | undefined) {
 
         setActiveFramework(userFrameworkData as UserFramework | null)
 
-        // Fetch today's submission
         const today = formatDateForApi(new Date())
+
+        // Ensure daily framework items exist (call RPC to hydrate)
+        if (userFrameworkData) {
+          await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+        }
+
+        // Fetch today's submission
         const { data: submissionData } = await supabase
           .from('daily_framework_submissions')
           .select('*')
@@ -180,6 +186,10 @@ export function useFrameworks(userId: string | undefined) {
         .single()
 
       if (error) throw error
+
+      // Ensure daily framework items exist for today
+      const today = formatDateForApi(new Date())
+      await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
 
       setActiveFramework(data as UserFramework)
       return data as UserFramework
