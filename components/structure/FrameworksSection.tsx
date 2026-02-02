@@ -123,23 +123,43 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
       {/* Detail Modal */}
       <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title={selectedFramework?.title || 'Framework'}>
         {selectedFramework && (
-          <div className="p-4 space-y-4">
-            {selectedFramework.description && <p className="text-secondary text-text-secondary">{selectedFramework.description}</p>}
-            {selectedFramework.criteria && 'items' in selectedFramework.criteria && (
+          <div className="space-y-4">
+            {selectedFramework.description && <p className="text-[14px] text-text-secondary leading-relaxed">{selectedFramework.description}</p>}
+            {selectedFramework.criteria && (
               <div>
-                <p className="text-meta font-medium text-text-primary mb-2">Criteria</p>
-                <ul className="space-y-1">
-                  {(selectedFramework.criteria as { items: Array<{ id: string; label: string }> }).items.map((item) => (
-                    <li key={item.id} className="flex items-center gap-2 text-secondary text-text-secondary">
-                      <span className="w-1 h-1 rounded-full bg-accent" />
-                      {item.label}
-                    </li>
-                  ))}
+                <p className="text-[13px] font-semibold text-text-primary mb-3">Daily Criteria</p>
+                <ul className="space-y-2">
+                  {(() => {
+                    const criteria = selectedFramework.criteria as { items?: Array<{ key?: string; id?: string; label: string; description?: string; target?: number; unit?: string }> }
+                    const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
+                    // Normalize to support both 'key' and legacy 'id'
+                    const items = rawItems.map(item => ({ ...item, key: item.key || item.id || '' }))
+                    return items.map((item) => (
+                      <li key={item.key} className="flex items-start gap-3 p-3 rounded-[10px] bg-canvas-card border border-border">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-[14px] text-text-primary">{item.label}</p>
+                          {item.description && <p className="text-[12px] text-text-muted mt-0.5">{item.description}</p>}
+                          {item.target && item.unit && <p className="text-[12px] text-text-muted mt-0.5">Target: {item.target} {item.unit}</p>}
+                        </div>
+                      </li>
+                    ))
+                  })()}
                 </ul>
               </div>
             )}
-            <Button onClick={() => handleActivate(selectedFramework)} disabled={activating} className="w-full">
-              {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : activeFramework?.framework_template_id === selectedFramework.id ? 'Currently Active' : 'Activate'}
+            <Button 
+              onClick={() => handleActivate(selectedFramework)} 
+              disabled={activating || activeFramework?.framework_template_id === selectedFramework.id} 
+              className="w-full mt-2"
+            >
+              {activating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : activeFramework?.framework_template_id === selectedFramework.id ? (
+                'Currently Active'
+              ) : (
+                'Activate'
+              )}
             </Button>
           </div>
         )}

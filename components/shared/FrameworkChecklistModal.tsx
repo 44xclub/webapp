@@ -6,6 +6,7 @@ import { Check } from 'lucide-react'
 import type {
   FrameworkTemplate,
   FrameworkCriteria,
+  FrameworkCriteriaItem,
   DailyFrameworkItem,
 } from '@/lib/types'
 
@@ -28,9 +29,15 @@ export function FrameworkChecklistModal({
 }: FrameworkChecklistModalProps) {
   const criteriaItems = useMemo(() => {
     if (!framework?.criteria) return []
-    const criteria = framework.criteria as FrameworkCriteria
+    const criteria = framework.criteria as FrameworkCriteria | FrameworkCriteriaItem[]
     // Support both criteria.items array and criteria as direct array
-    const items = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    
+    // Normalize items to use 'key' (support legacy 'id' field)
+    const items = rawItems.map((item: FrameworkCriteriaItem & { id?: string }) => ({
+      ...item,
+      key: item.key || item.id || '',
+    }))
     
     // Debug logging if checklist is empty but should have items
     if (items.length === 0 && framework) {
