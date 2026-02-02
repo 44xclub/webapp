@@ -170,7 +170,7 @@ export function BlockRow({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-bold text-[15px] truncate',
+              'font-semibold text-[15px] truncate',
               isCompleted && 'line-through decoration-[rgba(238,242,255,0.3)] text-[rgba(238,242,255,0.52)]',
               !isCompleted && 'text-[#eef2ff]'
             )}
@@ -178,14 +178,14 @@ export function BlockRow({
             {getBlockTitle()}
           </span>
           {isOverdue && !isCompleted && (
-            <span className="text-[11px] font-bold text-[#ef4444]">Overdue</span>
+            <span className="text-[10px] font-semibold text-[#ef4444]">Overdue</span>
           )}
         </div>
         {/* Secondary: Type badge + metadata */}
         <div className="flex items-center gap-2 mt-1">
           <span
             className={cn(
-              'text-[11px] px-1.5 py-0.5 rounded-[6px] font-bold',
+              'text-[10px] px-1.5 py-0.5 rounded-[6px] font-semibold',
               isCompleted ? 'text-[rgba(238,242,255,0.52)] bg-[rgba(255,255,255,0.04)] opacity-60' : badgeColors
             )}
           >

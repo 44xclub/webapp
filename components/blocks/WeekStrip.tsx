@@ -52,30 +52,30 @@ export function WeekStrip({
   }
 
   return (
-    <div className="bg-card border-b border-border sticky top-0 z-30 safe-top">
+    <div className="bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] sticky top-0 z-30 safe-top">
       {/* Navigation row */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
           onClick={goToPreviousWeek}
-          className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
           aria-label="Previous week"
         >
-          <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+          <ChevronLeft className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
         </button>
 
         <button
           onClick={goToToday}
-          className="px-4 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
+          className="px-4 py-1.5 text-[13px] font-semibold bg-[rgba(59,130,246,0.12)] text-[#3b82f6] hover:bg-[rgba(59,130,246,0.18)] rounded-lg transition-colors"
         >
           Today
         </button>
 
         <button
           onClick={goToNextWeek}
-          className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
           aria-label="Next week"
         >
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
         </button>
       </div>
 
@@ -96,23 +96,23 @@ export function WeekStrip({
               className={cn(
                 'flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl min-w-[44px] transition-all',
                 isSelected
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-secondary'
+                  ? 'bg-[#3b82f6] text-white'
+                  : 'hover:bg-[rgba(255,255,255,0.04)]'
               )}
             >
               <span
                 className={cn(
-                  'text-xs font-medium',
-                  isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
+                  'text-[11px] font-medium',
+                  isSelected ? 'text-white' : 'text-[rgba(238,242,255,0.52)]'
                 )}
               >
                 {getShortDayName(day)}
               </span>
               <span
                 className={cn(
-                  'text-lg font-semibold',
-                  isSelected ? 'text-primary-foreground' : 'text-foreground',
-                  isTodayDate && !isSelected && 'text-primary'
+                  'text-[18px] font-medium',
+                  isSelected ? 'text-white' : 'text-[#eef2ff]',
+                  isTodayDate && !isSelected && 'text-[#3b82f6]'
                 )}
               >
                 {getDayNumber(day)}
@@ -124,15 +124,15 @@ export function WeekStrip({
                     className={cn(
                       'w-1.5 h-1.5 rounded-full',
                       isSelected
-                        ? 'bg-primary-foreground'
+                        ? 'bg-white'
                         : allCompleted
-                        ? 'bg-green-500'
-                        : 'bg-muted-foreground'
+                        ? 'bg-[#22c55e]'
+                        : 'bg-[#3b82f6]'
                     )}
                   />
                 )}
                 {isTodayDate && !isSelected && !hasBlocks && (
-                  <span className="w-1 h-1 bg-primary rounded-full" />
+                  <span className="w-1 h-1 bg-[#3b82f6] rounded-full" />
                 )}
               </div>
             </button>

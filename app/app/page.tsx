@@ -122,24 +122,24 @@ export default function AppPage() {
 
       {/* Streak Module */}
       {profile && (
-        <div className="mx-4 mt-3 p-4 bg-[#0d1014] rounded-[16px] border border-[rgba(255,255,255,0.10)] shadow-sm">
+        <div className="mx-4 mt-2 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-[14px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
-                <Flame className="h-6 w-6 text-[#f59e0b]" />
+              <div className="h-10 w-10 rounded-[12px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
+                <Flame className="h-5 w-5 text-[#f59e0b]" />
               </div>
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Current Streak</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Current Streak</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[24px] font-bold text-[#eef2ff]">{profile.current_streak || 0}</span>
-                  <span className="text-[13px] text-[rgba(238,242,255,0.72)]">days</span>
+                  <span className="text-[20px] font-semibold text-[#eef2ff]">{profile.current_streak || 0}</span>
+                  <span className="text-[13px] text-[rgba(238,242,255,0.60)]">days</span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Personal Best</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Personal Best</p>
               <div className="flex items-baseline gap-1 justify-end">
-                <span className="text-[18px] font-bold text-[#22d3ee]">{profile.best_streak || 0}</span>
+                <span className="text-[16px] font-semibold text-[#22d3ee]">{profile.best_streak || 0}</span>
                 <span className="text-[12px] text-[rgba(238,242,255,0.52)]">days</span>
               </div>
             </div>

@@ -78,20 +78,20 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
               </p>
               <div className="flex items-center gap-1.5">
                 <BadgeIcon className={`h-3.5 w-3.5 ${badgeColor}`} />
-                <span className="text-[12px] font-bold text-[rgba(238,242,255,0.72)] tracking-wide">{disciplineLevel.badge}</span>
+                <span className="text-[12px] font-medium text-[rgba(238,242,255,0.60)]">{disciplineLevel.badge}</span>
               </div>
             </div>
           </Link>
 
           <div className="flex items-center gap-4">
             <div className="text-center min-w-[48px]">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Level</p>
-              <p className="text-[24px] font-bold text-[#eef2ff]">{disciplineLevel.level}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Level</p>
+              <p className="text-[22px] font-semibold text-[#eef2ff]">{disciplineLevel.level}</p>
             </div>
             <div className="w-px h-10 bg-[rgba(255,255,255,0.07)]" />
             <div className="text-center min-w-[52px]">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Score</p>
-              <p className="text-[24px] font-bold text-[#3b82f6]">{profile.discipline_score}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Score</p>
+              <p className="text-[22px] font-semibold text-[#3b82f6]">{profile.discipline_score}</p>
             </div>
           </div>
         </div>
@@ -100,14 +100,14 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
       {/* Progress Bar - only show if not max level */}
       {disciplineLevel.level < 44 && disciplineLevel.toNextLevel > 0 && (
         <div className="px-4 pb-3">
-          <div className="flex items-center justify-between text-[11px] font-bold text-[rgba(238,242,255,0.52)] mb-1.5">
+          <div className="flex items-center justify-between text-[10px] font-medium text-[rgba(238,242,255,0.52)] mb-1.5">
             <span>Level {disciplineLevel.level}</span>
-            <span className="text-[rgba(238,242,255,0.72)]">
+            <span className="text-[rgba(238,242,255,0.60)]">
               {disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} pts
             </span>
             <span>Level {disciplineLevel.level + 1}</span>
           </div>
-          <div className="h-2 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${badgeBgColor}`}
               style={{ width: `${Math.min(disciplineLevel.progress, 100)}%` }}
@@ -119,7 +119,7 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
       {/* Max level indicator */}
       {disciplineLevel.level >= 44 && (
         <div className="px-4 pb-3">
-          <div className="text-center text-[12px] font-bold text-[#a78bfa] tracking-wide">
+          <div className="text-center text-[12px] font-medium text-[#a78bfa]">
             Maximum Level Achieved
           </div>
         </div>

@@ -43,24 +43,24 @@ export function WorkoutForm({ form }: WorkoutFormProps) {
 
       {/* Exercise Matrix */}
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">
+        <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
           Exercises
         </label>
         <div className="space-y-3">
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="p-3 bg-secondary/50 rounded-lg space-y-3"
+              className="p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-[13px] font-medium text-[rgba(238,242,255,0.52)]">
                   Exercise {index + 1}
                 </span>
                 {fields.length > 1 && (
                   <button
                     type="button"
                     onClick={() => remove(index)}
-                    className="p-1 text-muted-foreground hover:text-destructive"
+                    className="p-1 text-[rgba(238,242,255,0.52)] hover:text-[#ef4444]"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -110,7 +110,7 @@ export function WorkoutForm({ form }: WorkoutFormProps) {
           </Button>
         </div>
         {errors.payload?.exercise_matrix?.message && (
-          <p className="mt-1 text-xs text-destructive">
+          <p className="mt-1 text-[12px] text-[#ef4444]">
             {errors.payload.exercise_matrix.message}
           </p>
         )}

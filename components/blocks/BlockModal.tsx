@@ -327,10 +327,10 @@ export function BlockModal({
                   type="button"
                   onClick={() => handleBlockTypeChange(option.value as BlockType)}
                   className={cn(
-                    'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 border',
+                    'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
                     isSelected
                       ? `${optionAccent.bg} text-white border-transparent`
-                      : 'bg-steel-800 text-text-secondary border-steel-700 hover:border-steel-600'
+                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
                   )}
                 >
                   {option.label}
@@ -354,27 +354,27 @@ export function BlockModal({
           </div>
 
           {/* Date Row */}
-          <div className="flex items-center justify-between p-3 bg-steel-800/50 rounded-card border border-steel-700">
+          <div className="flex items-center justify-between p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)]">
             <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-primary" />
-              <span className="text-body text-foreground">{formatDisplayDate(dateValue)}</span>
+              <Calendar className="h-5 w-5 text-[#3b82f6]" />
+              <span className="text-[15px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
             </div>
             {isToday(dateValue) && (
-              <span className="text-meta text-primary font-medium">Today</span>
+              <span className="text-[12px] text-[#3b82f6] font-medium">Today</span>
             )}
           </div>
 
           {/* Time Section */}
           <div>
-            <label className="block text-meta font-medium text-text-secondary mb-2">Time</label>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Time</label>
             <div className="flex items-center gap-3">
               <Input
                 type="time"
                 {...form.register('start_time')}
                 className="flex-1"
               />
-              <span className="text-text-muted">–</span>
-              <div className="flex-1 p-3 bg-steel-800/50 rounded-button border border-steel-700 text-body text-foreground text-center">
+              <span className="text-[rgba(238,242,255,0.40)]">–</span>
+              <div className="flex-1 h-[44px] flex items-center justify-center bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] text-[15px] text-[#eef2ff]">
                 {endTime ? formatDisplayTime(endTime) : '--:--'}
               </div>
             </div>
@@ -382,7 +382,7 @@ export function BlockModal({
 
           {/* Duration Quick Select */}
           <div>
-            <label className="block text-meta font-medium text-text-secondary mb-2">Duration</label>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Duration</label>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {durationOptions.map((option) => (
                 <button
@@ -390,10 +390,10 @@ export function BlockModal({
                   type="button"
                   onClick={() => setSelectedDuration(option.value)}
                   className={cn(
-                    'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
+                    'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
                     selectedDuration === option.value
                       ? `${accent.bg} text-white border-transparent`
-                      : 'bg-steel-800 text-text-secondary border-steel-700 hover:border-steel-600'
+                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
                   )}
                 >
                   {option.label}
