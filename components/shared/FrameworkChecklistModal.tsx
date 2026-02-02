@@ -90,8 +90,8 @@ export function FrameworkChecklistModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
-      <div className="space-y-4 px-1">
-        <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] border border-[rgba(255,255,255,0.08)]">
+      <div className="space-y-4 px-2">
+        <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] border border-[rgba(255,255,255,0.08)] mx-1">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted mb-1">Today&apos;s Progress</p>
             <div className="flex items-baseline gap-1">
@@ -163,15 +163,14 @@ export function FrameworkChecklistModal({
         </div>
 
         {onDeactivate && (
-          <div className="pt-2 border-t border-[rgba(255,255,255,0.06)]">
-            <Button
-              variant="outline"
+          <div className="pt-4 mt-2 border-t border-[rgba(255,255,255,0.06)]">
+            <button
               onClick={handleDeactivate}
               disabled={deactivating}
-              className="w-full text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+              className="w-full py-3 px-4 rounded-[12px] bg-rose-500/20 text-rose-400 font-semibold text-[14px] hover:bg-rose-500/30 transition-colors disabled:opacity-50"
             >
-              {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
-            </Button>
+              {deactivating ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Deactivate Framework'}
+            </button>
           </div>
         )}
       </div>
