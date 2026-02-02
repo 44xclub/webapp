@@ -122,16 +122,27 @@ export default function AppPage() {
 
       {/* Streak Module */}
       {profile && (
-        <div className="px-4 py-2 bg-surface border-b border-border">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-warning" />
+        <div className="mx-4 mt-3 p-4 bg-gradient-to-r from-steel-900 via-steel-800 to-steel-900 rounded-card border border-steel-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-card bg-gradient-to-br from-warning/20 to-orange-500/10 flex items-center justify-center border border-warning/30">
+                <Flame className="h-6 w-6 text-warning" />
+              </div>
               <div>
-                <span className="text-body font-bold text-text-primary">{profile.current_streak || 0}</span>
-                <span className="text-meta text-text-muted ml-1">day streak</span>
+                <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Current Streak</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-page font-bold text-foreground">{profile.current_streak || 0}</span>
+                  <span className="text-secondary text-text-secondary">days</span>
+                </div>
               </div>
             </div>
-            <div className="text-meta text-text-muted">Best: {profile.best_streak || 0}</div>
+            <div className="text-right">
+              <p className="text-micro uppercase tracking-wider text-text-muted mb-0.5">Personal Best</p>
+              <div className="flex items-baseline gap-1 justify-end">
+                <span className="text-section font-bold text-accent-cyan">{profile.best_streak || 0}</span>
+                <span className="text-meta text-text-muted">days</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

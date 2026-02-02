@@ -21,7 +21,7 @@ import {
   challengeSchema,
   type BlockFormData,
 } from '@/lib/schemas'
-import { blockTypeLabels } from '@/lib/utils'
+import { blockTypeLabels, blockTypeAccentColors, calculateDuration } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
 import type { Block, BlockType, BlockMedia } from '@/lib/types'
 
@@ -94,6 +94,7 @@ export function BlockModal({
     editingBlock?.block_type || 'workout'
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [calculatedDuration, setCalculatedDuration] = useState<number | null>(null)
 
   const schema = useMemo(() => getSchemaForType(blockType), [blockType])
 
@@ -127,6 +128,21 @@ export function BlockModal({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as BlockFormData,
   })
+
+  // Watch start and end times for auto-calculation
+  const startTime = form.watch('start_time')
+  const endTime = form.watch('end_time')
+
+  // Calculate duration when times change
+  useEffect(() => {
+    const duration = calculateDuration(startTime, endTime ?? null)
+    setCalculatedDuration(duration)
+    
+    // Auto-fill duration for workout blocks
+    if (duration && blockType === 'workout') {
+      form.setValue('payload.duration', duration)
+    }
+  }, [startTime, endTime, blockType, form])
 
   // Reset form when modal opens or block type changes
   useEffect(() => {
@@ -216,20 +232,24 @@ export function BlockModal({
         {/* Block Type Selector - only for new blocks */}
         {!editingBlock && (
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            {blockTypeOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleBlockTypeChange(option.value as BlockType)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  blockType === option.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+            {blockTypeOptions.map((option) => {
+              const isSelected = blockType === option.value
+              const accent = blockTypeAccentColors[option.value]
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleBlockTypeChange(option.value as BlockType)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 border ${
+                    isSelected
+                      ? `${accent.bg} text-white border-transparent`
+                      : `bg-steel-800 text-text-secondary border-steel-700 hover:border-steel-600`
+                  }`}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -249,12 +269,19 @@ export function BlockModal({
           />
         </div>
 
-        <Input
-          type="time"
-          label="End Time (optional)"
-          {...form.register('end_time')}
-          error={form.formState.errors.end_time?.message}
-        />
+        <div className="space-y-2">
+          <Input
+            type="time"
+            label="End Time (optional)"
+            {...form.register('end_time')}
+            error={form.formState.errors.end_time?.message}
+          />
+          {calculatedDuration !== null && calculatedDuration > 0 && (
+            <p className="text-meta text-text-secondary">
+              Duration: <span className="text-primary font-medium">{calculatedDuration} min</span>
+            </p>
+          )}
+        </div>
 
         {/* Type-specific Form */}
         {renderForm()}

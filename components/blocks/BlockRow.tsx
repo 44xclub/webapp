@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { cn, blockTypeLabels, blockTypeColors, mealTypeLabels } from '@/lib/utils'
-import { formatTime } from '@/lib/date'
+import { useState, useCallback, useMemo } from 'react'
+import { cn, blockTypeLabels, mealTypeLabels } from '@/lib/utils'
+import { formatTime, formatDateForApi } from '@/lib/date'
 import { DropdownMenu } from '@/components/ui'
 import { MoreHorizontal, Check } from 'lucide-react'
 import type { Block, NutritionPayload, CheckinPayload, WorkoutPayload } from '@/lib/types'
@@ -15,6 +15,16 @@ interface BlockRowProps {
   onDelete: (block: Block) => void
 }
 
+// Static badge color classes for each block type
+const blockTypeBadgeColors: Record<string, string> = {
+  workout: 'text-orange-400 bg-orange-400/10',
+  habit: 'text-emerald-400 bg-emerald-400/10',
+  nutrition: 'text-sky-400 bg-sky-400/10',
+  checkin: 'text-violet-400 bg-violet-400/10',
+  personal: 'text-rose-400 bg-rose-400/10',
+  challenge: 'text-amber-400 bg-amber-400/10',
+}
+
 export function BlockRow({
   block,
   onToggleComplete,
@@ -25,6 +35,32 @@ export function BlockRow({
   const [menuOpen, setMenuOpen] = useState(false)
   const [isToggling, setIsToggling] = useState(false)
   const isCompleted = !!block.completed_at
+
+  // Check if block is past its end time (overdue)
+  const isOverdue = useMemo(() => {
+    if (isCompleted) return false
+    
+    const now = new Date()
+    const todayStr = formatDateForApi(now)
+    const blockDateStr = block.date
+    
+    // If block is from a past date, it's overdue
+    if (blockDateStr < todayStr) return true
+    
+    // If block is from today, check the time
+    if (blockDateStr === todayStr) {
+      const endTime = block.end_time || block.start_time
+      const [hours, minutes] = endTime.split(':').map(Number)
+      const nowHours = now.getHours()
+      const nowMinutes = now.getMinutes()
+      
+      // Compare times
+      if (nowHours > hours) return true
+      if (nowHours === hours && nowMinutes > minutes) return true
+    }
+    
+    return false
+  }, [block, isCompleted])
 
   const handleToggle = useCallback(
     async (e: React.MouseEvent) => {
@@ -98,12 +134,16 @@ export function BlockRow({
     return parts
   }
 
+  const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-muted-foreground bg-muted/50'
+
   return (
     <div
       onClick={() => onEdit(block)}
       className={cn(
-        'group flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 cursor-pointer transition-colors',
-        isCompleted && 'bg-secondary/20'
+        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-200',
+        isCompleted && 'bg-secondary/20',
+        isOverdue && !isCompleted && 'bg-red-500/5 hover:bg-red-500/10',
+        !isOverdue && !isCompleted && 'hover:bg-secondary/50'
       )}
     >
       {/* Checkbox */}
@@ -113,7 +153,9 @@ export function BlockRow({
           'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all',
           isCompleted
             ? 'bg-primary border-primary'
-            : 'border-muted-foreground/40 hover:border-primary'
+            : isOverdue
+              ? 'border-red-400/60 hover:border-red-400'
+              : 'border-muted-foreground/40 hover:border-primary'
         )}
         disabled={isToggling}
       >
@@ -128,20 +170,23 @@ export function BlockRow({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-semibold text-foreground truncate',
-              isCompleted && 'line-through decoration-muted-foreground/50 text-muted-foreground'
+              'font-semibold truncate',
+              isCompleted && 'line-through decoration-muted-foreground/50 text-muted-foreground',
+              !isCompleted && 'text-foreground'
             )}
           >
             {getBlockTitle()}
           </span>
+          {isOverdue && !isCompleted && (
+            <span className="text-micro text-red-400 font-medium">Overdue</span>
+          )}
         </div>
         {/* Secondary: Type badge + metadata */}
         <div className="flex items-center gap-2 mt-1">
           <span
             className={cn(
               'text-xs px-1.5 py-0.5 rounded font-medium',
-              blockTypeColors[block.block_type],
-              isCompleted && 'opacity-60'
+              isCompleted ? 'text-muted-foreground bg-muted/50 opacity-60' : badgeColors
             )}
           >
             {blockTypeLabels[block.block_type]}
