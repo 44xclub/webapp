@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, CheckSquare, ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
+import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
@@ -106,32 +107,7 @@ export default function StructurePage() {
       <main className="p-4 space-y-3">
         {activeTab === 'discipline' ? (
           <>
-            {activeFramework?.framework_template && !frameworksLoading && (
-              <button onClick={() => setFrameworkModalOpen(true)} className="w-full text-left">
-                <div className="bg-surface border border-border rounded-[16px] p-4 hover:border-text-muted transition-colors duration-150">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-meta text-text-muted mb-1">Active Framework</p>
-                      <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <CheckSquare className={`h-4 w-4 ${
-                          completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
-                        }`} />
-                        <span className={`text-meta ${
-                          completionCount.completed === completionCount.total && completionCount.total > 0
-                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
-                        }`}>
-                          {completionCount.completed}/{completionCount.total} complete
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-text-muted" />
-                  </div>
-                </div>
-              </button>
-            )}
-
+            {/* 1. Community Challenge - shown first */}
             {challengeLoading ? (
               <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
@@ -140,6 +116,17 @@ export default function StructurePage() {
               <ChallengeCard challenge={challenge} todayBlock={todayBlock} onLogChallenge={logChallenge} onRefetch={refetchChallenge} />
             )}
 
+            {/* 2. Active Framework - shown second */}
+            {!frameworksLoading && (
+              <ActiveFrameworkCard
+                activeFramework={activeFramework}
+                todaySubmission={todaySubmission}
+                completionCount={completionCount}
+                onOpenChecklist={() => setFrameworkModalOpen(true)}
+              />
+            )}
+
+            {/* 3. Available Frameworks Catalogue - shown third */}
             {frameworksLoading ? (
               <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-text-muted" />

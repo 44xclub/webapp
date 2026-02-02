@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
-import { BookOpen, Check, Circle, Minus, Search, Loader2 } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus } from '@/lib/types'
 
 /*
@@ -25,7 +25,6 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
   const [selectedFramework, setSelectedFramework] = useState<FrameworkTemplate | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [activating, setActivating] = useState(false)
 
   const filteredFrameworks = frameworks.filter((f) => f.title.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -63,68 +62,8 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
     }
   }
 
-  const handleSubmitStatus = async (status: FrameworkSubmissionStatus) => {
-    setSubmitting(true)
-    try {
-      await onSubmitStatus(status)
-      onRefetch()
-    } catch (err) {
-      console.error('Failed to submit:', err)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const isLocked = todaySubmission?.locked_at != null
-
   return (
-    <div className="space-y-3">
-      {/* Active Framework */}
-      <div className="bg-surface border border-border rounded-[16px] p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-[10px] bg-accent/10 border border-accent/20">
-            <BookOpen className="h-5 w-5 text-accent" />
-          </div>
-          <div>
-            <h3 className="text-body font-semibold text-text-primary">Daily Framework</h3>
-            <p className="text-secondary text-text-muted">Your discipline checklist</p>
-          </div>
-        </div>
-
-        {activeFramework?.framework_template ? (
-          <div className="space-y-4">
-            <div className="p-3 bg-canvas-card rounded-[10px] border border-border">
-              <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
-              {activeFramework.framework_template.description && (
-                <p className="text-secondary text-text-secondary mt-1">{activeFramework.framework_template.description}</p>
-              )}
-            </div>
-
-            <div>
-              <p className="text-meta font-medium text-text-secondary mb-2">Today&apos;s Status</p>
-              {isLocked ? (
-                <p className="text-secondary text-text-muted capitalize">{todaySubmission?.status} (locked)</p>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant={todaySubmission?.status === 'complete' ? 'default' : 'outline'} size="sm" onClick={() => handleSubmitStatus('complete')} disabled={submitting} className="flex-1">
-                    <Check className="h-4 w-4" /> Complete
-                  </Button>
-                  <Button variant={todaySubmission?.status === 'partial' ? 'default' : 'outline'} size="sm" onClick={() => handleSubmitStatus('partial')} disabled={submitting} className="flex-1">
-                    <Circle className="h-4 w-4" /> Partial
-                  </Button>
-                  <Button variant={todaySubmission?.status === 'zero' ? 'destructive' : 'outline'} size="sm" onClick={() => handleSubmitStatus('zero')} disabled={submitting} className="flex-1">
-                    <Minus className="h-4 w-4" /> Zero
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <p className="text-secondary text-text-muted">No framework active. Choose one below.</p>
-        )}
-      </div>
-
-      {/* Framework List */}
+    <div id="available-frameworks" className="space-y-3">
       <div className="bg-surface border border-border rounded-[16px] p-4">
         <h4 className="text-body font-semibold text-text-primary mb-3">Available Frameworks</h4>
 
