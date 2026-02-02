@@ -90,7 +90,7 @@ export function FrameworkChecklistModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
-      <div className="space-y-5">
+      <div className="space-y-4 px-1">
         <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] border border-[rgba(255,255,255,0.08)]">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-text-muted mb-1">Today&apos;s Progress</p>
