@@ -123,21 +123,21 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
       {/* Detail Modal */}
       <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title={selectedFramework?.title || 'Framework'}>
         {selectedFramework && (
-          <div className="space-y-5">
+          <div className="space-y-5 px-2">
             {selectedFramework.description && (
-              <p className="text-[14px] text-text-secondary leading-relaxed">{selectedFramework.description}</p>
+              <p className="text-[14px] text-text-primary leading-relaxed px-1">{selectedFramework.description}</p>
             )}
             {selectedFramework.criteria && (
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-text-muted mb-3">Daily Criteria</p>
+                <p className="text-[11px] uppercase tracking-wide text-text-muted mb-3 px-1">Daily Criteria</p>
                 <div className="space-y-2">
                   {(() => {
                     const criteria = selectedFramework.criteria as { items?: Array<{ key?: string; id?: string; label: string; description?: string; target?: number; unit?: string }> }
                     const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
                     const items = rawItems.map(item => ({ ...item, key: item.key || item.id || '' }))
                     return items.map((item) => (
-                      <div key={item.key} className="flex items-start gap-4 p-4 rounded-[12px] bg-[#0d1014] border border-[rgba(255,255,255,0.08)]">
-                        <div className="w-6 h-6 rounded-[6px] border-2 border-[rgba(255,255,255,0.25)] flex-shrink-0" />
+                      <div key={item.key} className="flex items-start gap-3 p-4 rounded-[12px] bg-[#0d1014]">
+                        <span className="w-2 h-2 rounded-full bg-[#3b82f6] mt-1.5 flex-shrink-0" />
                         <div className="flex-1">
                           <p className="text-[15px] font-medium text-text-primary">{item.label}</p>
                           {item.description && <p className="text-[12px] text-text-muted mt-1">{item.description}</p>}
@@ -151,19 +151,21 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
                 </div>
               </div>
             )}
-            <Button 
-              onClick={() => handleActivate(selectedFramework)} 
-              disabled={activating || activeFramework?.framework_template_id === selectedFramework.id} 
-              className="w-full"
-            >
-              {activating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : activeFramework?.framework_template_id === selectedFramework.id ? (
-                'Currently Active'
-              ) : (
-                'Activate Framework'
-              )}
-            </Button>
+            <div className="pt-2 pb-2">
+              <Button 
+                onClick={() => handleActivate(selectedFramework)} 
+                disabled={activating || activeFramework?.framework_template_id === selectedFramework.id} 
+                className="w-full"
+              >
+                {activating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : activeFramework?.framework_template_id === selectedFramework.id ? (
+                  'Currently Active'
+                ) : (
+                  'Activate Framework'
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </Modal>
