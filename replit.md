@@ -36,6 +36,11 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
+- Feb 2, 2026: Added progress bar to HeaderStrip showing level-up progress with score breakdown
+- Feb 2, 2026: Redesigned streak section with gradient card, professional typography
+- Feb 2, 2026: Added overdue detection (red tint + "Overdue" label) for past-time blocks
+- Feb 2, 2026: Added distinct colors to block type selector (orange/emerald/sky/violet/rose)
+- Feb 2, 2026: Auto-calculate duration when start/end times entered in block modal
 - Feb 2, 2026: Updated entire UI with energetic stoic styling - greys, blacks, dark blues
 - Feb 2, 2026: Redesigned ProfileCard, HeaderStrip, BottomNav, Button components
 - Feb 2, 2026: Added custom Tailwind color palette and utility classes
