@@ -139,22 +139,24 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {filteredFrameworks.length === 0 ? (
             <p className="text-secondary text-text-muted py-4 text-center col-span-2">No frameworks found</p>
           ) : (
             filteredFrameworks.map((framework) => {
               const isActive = activeFramework?.framework_template_id === framework.id
               const imageUrl = framework.image_path 
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${framework.image_path}`
+                ? framework.image_path.startsWith('http') 
+                  ? framework.image_path 
+                  : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${framework.image_path}`
                 : null
               
               return (
                 <button
                   key={framework.id}
                   onClick={() => { setSelectedFramework(framework); setDetailModalOpen(true) }}
-                  className={`relative overflow-hidden rounded-[14px] aspect-[4/3] text-left transition-all duration-200 ${
-                    isActive ? 'ring-2 ring-[#3b82f6] ring-offset-2 ring-offset-[#07090d]' : 'hover:scale-[1.02]'
+                  className={`relative overflow-hidden rounded-[10px] h-[90px] text-left transition-all duration-200 ${
+                    isActive ? 'ring-2 ring-[#3b82f6]' : 'hover:opacity-90'
                   }`}
                 >
                   {imageUrl ? (
@@ -165,12 +167,12 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-[#1e293b] to-[#0f172a]" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  <div className="absolute inset-0 p-3 flex flex-col justify-end">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
                     {isActive && (
-                      <span className="absolute top-2 left-2 text-[10px] font-semibold text-white bg-[#3b82f6] px-2 py-0.5 rounded-full">Active</span>
+                      <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold text-white bg-[#3b82f6] px-1.5 py-0.5 rounded-full">Active</span>
                     )}
-                    <p className="text-[14px] font-semibold text-white leading-tight">{framework.title}</p>
+                    <p className="text-[12px] font-semibold text-white leading-tight">{framework.title}</p>
                   </div>
                 </button>
               )
