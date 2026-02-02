@@ -273,7 +273,9 @@ export function useFrameworks(userId: string | undefined) {
   const completionCount = useMemo(() => {
     if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
     const criteria = activeFramework.framework_template.criteria as FrameworkCriteria
-    const total = criteria.items?.length || 0
+    // Support both criteria.items array and criteria as direct array
+    const items = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    const total = items.length
     const completed = todayItems.filter((item) => item.checked).length
     return { completed, total }
   }, [activeFramework, todayItems])

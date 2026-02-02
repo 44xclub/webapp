@@ -29,8 +29,22 @@ export function FrameworkChecklistModal({
   const criteriaItems = useMemo(() => {
     if (!framework?.criteria) return []
     const criteria = framework.criteria as FrameworkCriteria
-    return criteria.items || []
-  }, [framework])
+    // Support both criteria.items array and criteria as direct array
+    const items = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    
+    // Debug logging if checklist is empty but should have items
+    if (items.length === 0 && framework) {
+      console.warn('[FrameworkChecklist] Empty criteria debug:', {
+        framework_template_id: framework.id,
+        criteria_raw: framework.criteria,
+        criteria_items_length: items.length,
+        today_items_count: todayItems.length,
+        today_date: new Date().toISOString().split('T')[0],
+      })
+    }
+    
+    return items
+  }, [framework, todayItems])
 
   const getItemStatus = (criteriaKey: string): boolean => {
     const item = todayItems.find((i) => i.criteria_key === criteriaKey)
@@ -85,11 +99,11 @@ export function FrameworkChecklistModal({
               </p>
             ) : (
               criteriaItems.map((item) => {
-                const isCompleted = getItemStatus(item.id)
+                const isCompleted = getItemStatus(item.key)
                 return (
                   <button
-                    key={item.id}
-                    onClick={() => handleToggle(item.id, isCompleted)}
+                    key={item.key}
+                    onClick={() => handleToggle(item.key, isCompleted)}
                     className={`w-full flex items-center gap-3 p-3 min-h-[44px] rounded-[10px] border transition-colors text-left ${
                       isCompleted
                         ? 'bg-emerald-500/10 border-emerald-500/30'
