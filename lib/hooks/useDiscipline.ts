@@ -244,7 +244,7 @@ export function useFrameworks(userId: string | undefined) {
             checked,
             checked_at: checked ? new Date().toISOString() : null,
           },
-          { onConflict: 'user_id,date,criteria_key' }
+          { onConflict: 'user_id,date,framework_template_id,criteria_key' }
         )
         .select()
         .single()
