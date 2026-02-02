@@ -151,14 +151,19 @@ export function useFrameworks(userId: string | undefined) {
 
         setTodaySubmission(submissionData as DailyFrameworkSubmission | null)
 
-        // Fetch today's framework items (live ticking)
-        const { data: itemsData } = await supabase
-          .from('daily_framework_items')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('date', today)
+        // Fetch today's framework items for the active framework only
+        if (userFrameworkData?.framework_template_id) {
+          const { data: itemsData } = await supabase
+            .from('daily_framework_items')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('date', today)
+            .eq('framework_template_id', userFrameworkData.framework_template_id)
 
-        setTodayItems((itemsData as DailyFrameworkItem[]) || [])
+          setTodayItems((itemsData as DailyFrameworkItem[]) || [])
+        } else {
+          setTodayItems([])
+        }
       }
     } catch (err) {
       console.error('Failed to fetch frameworks:', err)
@@ -191,6 +196,15 @@ export function useFrameworks(userId: string | undefined) {
       const today = formatDateForApi(new Date())
       await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
 
+      // Fetch fresh items for the new framework
+      const { data: itemsData } = await supabase
+        .from('daily_framework_items')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .eq('framework_template_id', frameworkTemplateId)
+
+      setTodayItems((itemsData as DailyFrameworkItem[]) || [])
       setActiveFramework(data as UserFramework)
       return data as UserFramework
     },
