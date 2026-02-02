@@ -320,7 +320,13 @@ export function BlockModal({
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
             {blockTypeOptions.map((option) => {
               const isSelected = blockType === option.value
-              const optionAccent = blockTypeAccentColors[option.value]
+              const colorMap: Record<string, string> = {
+                workout: '#f97316',
+                habit: '#10b981',
+                nutrition: '#0ea5e9',
+                checkin: '#8b5cf6',
+                personal: '#f43f5e',
+              }
               return (
                 <button
                   key={option.value}
@@ -329,9 +335,10 @@ export function BlockModal({
                   className={cn(
                     'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
                     isSelected
-                      ? `${optionAccent.bg} text-white border-transparent`
+                      ? 'text-white border-transparent'
                       : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
                   )}
+                  style={isSelected ? { backgroundColor: colorMap[option.value] } : undefined}
                 >
                   {option.label}
                 </button>
@@ -366,16 +373,18 @@ export function BlockModal({
 
           {/* Time Section */}
           <div>
-            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Time</label>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Start Time</label>
             <div className="flex items-center gap-3">
-              <Input
-                type="time"
-                {...form.register('start_time')}
-                className="flex-1"
-              />
-              <span className="text-[rgba(238,242,255,0.40)]">–</span>
-              <div className="flex-1 h-[44px] flex items-center justify-center bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] text-[15px] text-[#eef2ff]">
-                {endTime ? formatDisplayTime(endTime) : '--:--'}
+              <div className="flex-1 relative">
+                <Input
+                  type="time"
+                  {...form.register('start_time')}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-[14px] text-[rgba(238,242,255,0.52)]">
+                <span>to</span>
+                <span className="text-[#eef2ff] font-medium">{endTime ? formatDisplayTime(endTime) : '--:--'}</span>
               </div>
             </div>
           </div>
