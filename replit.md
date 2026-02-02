@@ -22,9 +22,10 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - Supabase (Authentication & Database)
 
 ## Design System
-- **Colors**: Deep blacks (#08090C), steel greys, dark blues, accent purple (#6366F1)
+- **Colors**: Deep black (#0a0a0a), neutral grey (#262626), accent navy blue (#021959)
 - **Components**: Glass cards, glow effects, gradient backgrounds
 - **Typography**: SF Pro Display/Inter, hierarchical type scale
+- **Logo**: 44 Club logo displayed on login page
 
 ## Development
 - Run: `npm run dev` (port 5000)
@@ -36,6 +37,8 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
+- Feb 2, 2026: Updated color scheme to #0a0a0a (background), #262626 (cards), #021959 (accent)
+- Feb 2, 2026: Added 44 Club logo to login page
 - Feb 2, 2026: Redesigned block modal with two-step flow (quick entry + details)
 - Feb 2, 2026: Added duration quick-select chips (15m, 30m, 45m, 1h, 1.5h, 2h)
 - Feb 2, 2026: Added progress bar to HeaderStrip showing level-up progress with score breakdown

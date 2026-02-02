@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button, Input } from '@/components/ui'
 import { Loader2, CheckCircle } from 'lucide-react'
+import Image from 'next/image'
 
 /*
   44CLUB Login Page
@@ -74,8 +75,17 @@ function LoginForm() {
       <div className="w-full max-w-sm animate-fadeIn">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-[32px] font-black text-text-primary tracking-tight">44CLUB</h1>
-          <p className="text-text-muted mt-2 text-secondary font-medium tracking-wide">BLOCKS</p>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo.png"
+              alt="44 Club"
+              width={180}
+              height={180}
+              priority
+              className="object-contain"
+            />
+          </div>
+          <p className="text-text-muted text-secondary font-medium tracking-widest uppercase">BLOCKS</p>
         </div>
 
         {/* Success Message */}
