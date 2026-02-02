@@ -66,7 +66,7 @@ export default function AppPage() {
   const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
-  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem } = useFrameworks(user?.id)
+  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -193,7 +193,7 @@ export default function AppPage() {
 
       <BlockModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveBlock} initialDate={addingToDate || selectedDate} editingBlock={editingBlock} blockMedia={editingBlock?.block_media || []} userId={user?.id} onMediaUpload={uploadMedia} onMediaDelete={deleteMedia} userHasHeight={hasHeight} />
 
-      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} />
+      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
     </div>
   )
 }

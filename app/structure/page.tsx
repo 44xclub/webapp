@@ -55,7 +55,7 @@ export default function StructurePage() {
 
   const { profile, loading: profileLoading } = useProfile(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, logChallenge, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
-  const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
+  const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
   if (authLoading) {
@@ -160,6 +160,7 @@ export default function StructurePage() {
         todayItems={todayItems}
         completionCount={completionCount}
         onToggleItem={toggleFrameworkItem}
+        onDeactivate={deactivateFramework}
       />
     </div>
   )

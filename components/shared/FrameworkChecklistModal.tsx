@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Modal } from '@/components/ui'
-import { Check } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Modal, Button } from '@/components/ui'
+import { Check, Loader2 } from 'lucide-react'
 import type {
   FrameworkTemplate,
   FrameworkCriteria,
@@ -17,6 +17,7 @@ interface FrameworkChecklistModalProps {
   todayItems: DailyFrameworkItem[]
   completionCount: { completed: number; total: number }
   onToggleItem: (criteriaKey: string, checked: boolean) => Promise<DailyFrameworkItem>
+  onDeactivate?: () => Promise<void>
 }
 
 export function FrameworkChecklistModal({
@@ -26,133 +27,151 @@ export function FrameworkChecklistModal({
   todayItems,
   completionCount,
   onToggleItem,
+  onDeactivate,
 }: FrameworkChecklistModalProps) {
+  const [togglingKey, setTogglingKey] = useState<string | null>(null)
+  const [deactivating, setDeactivating] = useState(false)
+
   const criteriaItems = useMemo(() => {
     if (!framework?.criteria) return []
     const criteria = framework.criteria as FrameworkCriteria | FrameworkCriteriaItem[]
-    // Support both criteria.items array and criteria as direct array
     const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
     
-    // Normalize items to use 'key' (support legacy 'id' field)
     const items = rawItems.map((item: FrameworkCriteriaItem & { id?: string }) => ({
       ...item,
       key: item.key || item.id || '',
     }))
     
-    // Debug logging if checklist is empty but should have items
     if (items.length === 0 && framework) {
-      console.warn('[FrameworkChecklist] Empty criteria debug:', {
+      console.warn('[FrameworkChecklist] Empty criteria:', {
         framework_template_id: framework.id,
         criteria_raw: framework.criteria,
-        criteria_items_length: items.length,
-        today_items_count: todayItems.length,
-        today_date: new Date().toISOString().split('T')[0],
       })
     }
     
     return items
-  }, [framework, todayItems])
+  }, [framework])
 
   const getItemStatus = (criteriaKey: string): boolean => {
     const item = todayItems.find((i) => i.criteria_key === criteriaKey)
     return item?.checked ?? false
   }
 
-  const statusIndicator = useMemo(() => {
-    const { completed, total } = completionCount
-    if (total === 0) return { label: 'No items', color: 'text-text-muted', bg: 'bg-canvas-card' }
-    if (completed === 0) return { label: 'Not started', color: 'text-rose-400', bg: 'bg-rose-500/10' }
-    if (completed < total) return { label: 'In progress', color: 'text-amber-400', bg: 'bg-amber-500/10' }
-    return { label: 'Complete', color: 'text-emerald-400', bg: 'bg-emerald-500/10' }
-  }, [completionCount])
-
   const handleToggle = async (criteriaKey: string, currentValue: boolean) => {
+    setTogglingKey(criteriaKey)
     try {
+      console.log('[FrameworkChecklist] Toggling:', { criteriaKey, newValue: !currentValue })
       await onToggleItem(criteriaKey, !currentValue)
+      console.log('[FrameworkChecklist] Toggle success')
     } catch (err) {
-      console.error('Failed to toggle item:', err)
+      console.error('[FrameworkChecklist] Toggle failed:', err)
+    } finally {
+      setTogglingKey(null)
+    }
+  }
+
+  const handleDeactivate = async () => {
+    if (!onDeactivate) return
+    setDeactivating(true)
+    try {
+      await onDeactivate()
+      onClose()
+    } catch (err) {
+      console.error('Failed to deactivate:', err)
+    } finally {
+      setDeactivating(false)
     }
   }
 
   if (!framework) return null
 
   const progressPercent = completionCount.total > 0 ? (completionCount.completed / completionCount.total) * 100 : 0
+  const isComplete = completionCount.completed === completionCount.total && completionCount.total > 0
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 rounded-[10px] bg-canvas-card border border-border">
+      <div className="space-y-5">
+        <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] border border-[rgba(255,255,255,0.08)]">
           <div>
-            <p className="text-[12px] text-text-muted">Today&apos;s Progress</p>
-            <p className="text-[18px] font-semibold text-text-primary">
-              {completionCount.completed} / {completionCount.total}
-            </p>
+            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-1">Today&apos;s Progress</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[28px] font-bold text-text-primary">{completionCount.completed}</span>
+              <span className="text-[16px] text-text-muted">/ {completionCount.total}</span>
+            </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${statusIndicator.color} ${statusIndicator.bg}`}>
-            {statusIndicator.label}
-          </span>
+          <div className={`px-4 py-2 rounded-full text-[12px] font-semibold ${
+            isComplete 
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+              : completionCount.completed > 0
+              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+              : 'bg-[#1a1d21] text-text-muted border border-[rgba(255,255,255,0.08)]'
+          }`}>
+            {isComplete ? 'Complete' : completionCount.completed > 0 ? 'In Progress' : 'Not Started'}
+          </div>
         </div>
 
-        {framework.description && (
-          <p className="text-[13px] text-text-secondary">{framework.description}</p>
-        )}
+        <div className="h-2 bg-[#1a1d21] rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-500 ease-out ${
+              isComplete ? 'bg-emerald-500' : completionCount.completed > 0 ? 'bg-amber-500' : ''
+            }`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
 
         <div className="space-y-2">
-          <h4 className="text-[13px] font-medium text-text-primary">Daily Checklist</h4>
-          <div className="space-y-2">
-            {criteriaItems.length === 0 ? (
-              <p className="text-[13px] text-text-muted py-4 text-center">
-                No criteria defined for this framework
-              </p>
-            ) : (
-              criteriaItems.map((item) => {
-                const isCompleted = getItemStatus(item.key)
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => handleToggle(item.key, isCompleted)}
-                    className={`w-full flex items-center gap-3 p-3 min-h-[44px] rounded-[10px] border transition-colors text-left ${
-                      isCompleted
-                        ? 'bg-emerald-500/10 border-emerald-500/30'
-                        : 'bg-canvas-card border-border hover:border-accent/50'
-                    }`}
-                  >
-                    <div
-                      className={`flex-shrink-0 w-5 h-5 rounded-[5px] flex items-center justify-center transition-colors ${
-                        isCompleted
-                          ? 'bg-emerald-500 text-white'
-                          : 'border-2 border-text-muted/40'
-                      }`}
-                    >
-                      {isCompleted && <Check className="h-3 w-3" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-[14px] font-medium ${isCompleted ? 'text-emerald-400' : 'text-text-primary'}`}>
-                        {item.label}
-                      </p>
-                      {item.description && (
-                        <p className="text-[12px] text-text-muted mt-0.5">{item.description}</p>
-                      )}
-                    </div>
-                  </button>
-                )
-              })
-            )}
-          </div>
+          {criteriaItems.map((item) => {
+            const isCompleted = getItemStatus(item.key)
+            const isToggling = togglingKey === item.key
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleToggle(item.key, isCompleted)}
+                disabled={isToggling}
+                className={`w-full flex items-center gap-4 p-4 rounded-[12px] border transition-all duration-200 text-left ${
+                  isCompleted
+                    ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15'
+                    : 'bg-[#0d1014] border-[rgba(255,255,255,0.08)] hover:border-[#3b82f6]/50 hover:bg-[#0f1216]'
+                }`}
+              >
+                <div
+                  className={`flex-shrink-0 w-6 h-6 rounded-[6px] flex items-center justify-center transition-all duration-200 ${
+                    isCompleted
+                      ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                      : 'border-2 border-[rgba(255,255,255,0.25)] bg-transparent'
+                  }`}
+                >
+                  {isToggling ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                  ) : isCompleted ? (
+                    <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                  ) : null}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[15px] font-medium leading-tight ${
+                    isCompleted ? 'text-emerald-400' : 'text-text-primary'
+                  }`}>
+                    {item.label}
+                  </p>
+                  {item.description && (
+                    <p className="text-[12px] text-text-muted mt-1">{item.description}</p>
+                  )}
+                </div>
+              </button>
+            )
+          })}
         </div>
 
-        {completionCount.total > 0 && (
-          <div className="h-2 bg-canvas-card rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 ${
-                completionCount.completed === completionCount.total
-                  ? 'bg-emerald-500'
-                  : completionCount.completed > 0
-                  ? 'bg-amber-500'
-                  : 'bg-text-muted/30'
-              }`}
-              style={{ width: `${progressPercent}%` }}
-            />
+        {onDeactivate && (
+          <div className="pt-2 border-t border-[rgba(255,255,255,0.06)]">
+            <Button
+              variant="outline"
+              onClick={handleDeactivate}
+              disabled={deactivating}
+              className="w-full text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+            >
+              {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
+            </Button>
           </div>
         )}
       </div>

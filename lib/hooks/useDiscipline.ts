@@ -269,6 +269,21 @@ export function useFrameworks(userId: string | undefined) {
     [userId, activeFramework, supabase]
   )
 
+  // Deactivate framework
+  const deactivateFramework = useCallback(async () => {
+    if (!userId) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('user_frameworks')
+      .delete()
+      .eq('user_id', userId)
+
+    if (error) throw error
+
+    setActiveFramework(null)
+    setTodayItems([])
+  }, [userId, supabase])
+
   // Calculate completion count
   const completionCount = useMemo(() => {
     if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
@@ -288,6 +303,7 @@ export function useFrameworks(userId: string | undefined) {
     completionCount,
     loading,
     activateFramework,
+    deactivateFramework,
     submitDailyStatus,
     toggleFrameworkItem,
     refetch: fetchFrameworks,
