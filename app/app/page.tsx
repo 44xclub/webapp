@@ -154,7 +154,7 @@ export default function AppPage() {
         <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
       </div>
 
-      {/* Active Framework Card - compact version with image background */}
+      {/* Active Framework Card - same as Structure page */}
       {viewMode === 'day' && !frameworkLoading && (
         <div className="mx-4 mt-3">
           <ActiveFrameworkCard
@@ -162,7 +162,6 @@ export default function AppPage() {
             todaySubmission={null}
             completionCount={completionCount}
             onOpenChecklist={() => setFrameworkModalOpen(true)}
-            compact
           />
         </div>
       )}
