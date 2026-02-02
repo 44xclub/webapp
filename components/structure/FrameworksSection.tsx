@@ -123,20 +123,20 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
       {/* Detail Modal */}
       <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title={selectedFramework?.title || 'Framework'}>
         {selectedFramework && (
-          <div className="space-y-5 px-2">
+          <div className="space-y-4 px-2">
             {selectedFramework.description && (
-              <p className="text-[14px] text-text-primary leading-relaxed px-1">{selectedFramework.description}</p>
+              <p className="text-[17px] text-text-primary leading-relaxed px-1 pt-2">{selectedFramework.description}</p>
             )}
             {selectedFramework.criteria && (
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-text-muted mb-3 px-1">Daily Criteria</p>
-                <div className="space-y-2">
+                <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2 px-1">Daily Criteria</p>
+                <div className="space-y-1">
                   {(() => {
                     const criteria = selectedFramework.criteria as { items?: Array<{ key?: string; id?: string; label: string; description?: string; target?: number; unit?: string }> }
                     const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
                     const items = rawItems.map(item => ({ ...item, key: item.key || item.id || '' }))
                     return items.map((item) => (
-                      <div key={item.key} className="flex items-start gap-3 p-4 rounded-[12px] bg-[#0d1014]">
+                      <div key={item.key} className="flex items-start gap-3 py-2.5 px-3 rounded-[10px] bg-[#0d1014]">
                         <span className="w-2 h-2 rounded-full bg-[#3b82f6] mt-1.5 flex-shrink-0" />
                         <div className="flex-1">
                           <p className="text-[15px] font-medium text-text-primary">{item.label}</p>
