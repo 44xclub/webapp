@@ -39,20 +39,14 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
+- Feb 2, 2026: Structure page optimization - reordered Discipline tab (Challenge → Active Framework → Available Frameworks)
+- Feb 2, 2026: New ActiveFrameworkCard component with image background, gradient overlay, and progress bar
+- Feb 2, 2026: Compact ActiveFrameworkCard added to Home page below day selector
+- Feb 2, 2026: Updated FrameworkChecklistModal with dark theme styling (emerald/amber/rose status colors)
+- Feb 2, 2026: Framework catalogue cards: 4-column grid, 180px height, image backgrounds
+- Feb 2, 2026: Edge case handling: "No framework activated" state with CTA link
 - Feb 2, 2026: Complete UI overhaul to match landing page stoic modern theme
 - Feb 2, 2026: Updated colors: #07090d background, semi-transparent surfaces, #3b82f6 accent
-- Feb 2, 2026: Changed font to Montserrat with bold weights throughout
+- Feb 2, 2026: Changed font to Montserrat with semibold weights throughout
 - Feb 2, 2026: Solid non-transparent cards (#0d1014) for blocks and modals
 - Feb 2, 2026: Light text colors (#eef2ff) for visibility on dark backgrounds
-- Feb 2, 2026: Added 44 Club logo to login page
-- Feb 2, 2026: Redesigned block modal with two-step flow (quick entry + details)
-- Feb 2, 2026: Added duration quick-select chips (15m, 30m, 45m, 1h, 1.5h, 2h)
-- Feb 2, 2026: Added progress bar to HeaderStrip showing level-up progress with score breakdown
-- Feb 2, 2026: Redesigned streak section with gradient card, professional typography
-- Feb 2, 2026: Added overdue detection (red tint + "Overdue" label) for past-time blocks
-- Feb 2, 2026: Added distinct colors to block type selector (orange/emerald/sky/violet/rose)
-- Feb 2, 2026: Auto-calculate duration when start/end times entered in block modal
-- Feb 2, 2026: Updated entire UI with energetic stoic styling - greys, blacks, dark blues
-- Feb 2, 2026: Redesigned ProfileCard, HeaderStrip, BottomNav, Button components
-- Feb 2, 2026: Added custom Tailwind color palette and utility classes
-- Feb 2, 2026: Configured for Replit environment (port 5000, dev server settings)
