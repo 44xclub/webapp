@@ -195,7 +195,7 @@ function getBlockDotColor(blockType: string): string {
     workout: '#fb923c', // orange-400
     habit: '#4ade80', // green-400
     nutrition: '#60a5fa', // blue-400
-    checkin: '#c084fc', // purple-400
+    checkin: '#22d3ee', // cyan-400
     personal: '#f472b6', // pink-400
   }
   return colors[blockType] || '#9ca3af'

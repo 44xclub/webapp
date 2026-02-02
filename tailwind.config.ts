@@ -9,27 +9,59 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        card: 'hsl(var(--card))',
-        'card-foreground': 'hsl(var(--card-foreground))',
-        primary: 'hsl(var(--primary))',
-        'primary-foreground': 'hsl(var(--primary-foreground))',
-        secondary: 'hsl(var(--secondary))',
-        'secondary-foreground': 'hsl(var(--secondary-foreground))',
-        muted: 'hsl(var(--muted))',
-        'muted-foreground': 'hsl(var(--muted-foreground))',
-        accent: 'hsl(var(--accent))',
-        'accent-foreground': 'hsl(var(--accent-foreground))',
-        destructive: 'hsl(var(--destructive))',
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        // 44CLUB Color System
+        // Background / Canvas
+        canvas: {
+          DEFAULT: '#0A1220',
+          deep: '#060B14',
+          card: '#0F172A',
+        },
+        // Surface / Cards
+        surface: {
+          DEFAULT: '#121B2E',
+          elevated: '#162038',
+        },
+        // Borders / Dividers
+        border: {
+          DEFAULT: '#1F2A44',
+        },
+        // Text
+        text: {
+          primary: '#E6EAF2',
+          secondary: '#9AA4BF',
+          muted: '#6B7280',
+        },
+        // Accents (used sparingly)
+        accent: {
+          DEFAULT: '#6D5EF3',  // 44CLUB Purple
+          blue: '#3B82F6',     // Electric Blue
+        },
+        // Status colors
+        success: '#22C55E',
+        warning: '#F59E0B',
+        danger: '#EF4444',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        'card': '16px',
+        'button': '10px',
+      },
+      fontSize: {
+        // Type scale
+        'page': ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        'section': ['16px', { lineHeight: '24px', fontWeight: '600' }],
+        'body': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'secondary': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+        'meta': ['12px', { lineHeight: '16px', fontWeight: '500' }],
+      },
+      spacing: {
+        // Spacing scale
+        'micro': '4px',
+        'tight': '8px',
+        'compact': '12px',
+        'default': '16px',
+        'section': '24px',
+        'major': '32px',
+        'page': '48px',
       },
     },
   },

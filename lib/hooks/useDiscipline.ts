@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateForApi } from '@/lib/date'
 import type {
@@ -8,7 +8,9 @@ import type {
   FrameworkTemplate,
   UserFramework,
   DailyFrameworkSubmission,
+  DailyFrameworkItem,
   FrameworkSubmissionStatus,
+  FrameworkCriteria,
   Block,
   DailyScore,
 } from '@/lib/types'
@@ -17,7 +19,7 @@ export function useCommunityChallenge(userId: string | undefined) {
   const [challenge, setChallenge] = useState<CommunityChallenge | null>(null)
   const [todayBlock, setTodayBlock] = useState<Block | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchChallenge = useCallback(async () => {
     setLoading(true)
@@ -104,8 +106,9 @@ export function useFrameworks(userId: string | undefined) {
   const [frameworks, setFrameworks] = useState<FrameworkTemplate[]>([])
   const [activeFramework, setActiveFramework] = useState<UserFramework | null>(null)
   const [todaySubmission, setTodaySubmission] = useState<DailyFrameworkSubmission | null>(null)
+  const [todayItems, setTodayItems] = useState<DailyFrameworkItem[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchFrameworks = useCallback(async () => {
     setLoading(true)
@@ -141,6 +144,15 @@ export function useFrameworks(userId: string | undefined) {
           .single()
 
         setTodaySubmission(submissionData as DailyFrameworkSubmission | null)
+
+        // Fetch today's framework items (live ticking)
+        const { data: itemsData } = await supabase
+          .from('daily_framework_items')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('date', today)
+
+        setTodayItems((itemsData as DailyFrameworkItem[]) || [])
       }
     } catch (err) {
       console.error('Failed to fetch frameworks:', err)
@@ -203,13 +215,69 @@ export function useFrameworks(userId: string | undefined) {
     [userId, supabase]
   )
 
+  // Toggle a framework criterion item
+  const toggleFrameworkItem = useCallback(
+    async (criteriaKey: string, checked: boolean) => {
+      if (!userId) throw new Error('Not authenticated')
+      if (!activeFramework?.framework_template_id) throw new Error('No active framework')
+
+      const today = formatDateForApi(new Date())
+
+      const { data, error } = await supabase
+        .from('daily_framework_items')
+        .upsert(
+          {
+            user_id: userId,
+            date: today,
+            framework_template_id: activeFramework.framework_template_id,
+            criteria_key: criteriaKey,
+            checked,
+            checked_at: checked ? new Date().toISOString() : null,
+          },
+          { onConflict: 'user_id,date,criteria_key' }
+        )
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Update local state
+      setTodayItems((prev) => {
+        const existing = prev.find((item) => item.criteria_key === criteriaKey)
+        if (existing) {
+          return prev.map((item) =>
+            item.criteria_key === criteriaKey
+              ? { ...item, checked, checked_at: checked ? new Date().toISOString() : null }
+              : item
+          )
+        }
+        return [...prev, data as DailyFrameworkItem]
+      })
+
+      return data as DailyFrameworkItem
+    },
+    [userId, activeFramework, supabase]
+  )
+
+  // Calculate completion count
+  const completionCount = useMemo(() => {
+    if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
+    const criteria = activeFramework.framework_template.criteria as FrameworkCriteria
+    const total = criteria.items?.length || 0
+    const completed = todayItems.filter((item) => item.checked).length
+    return { completed, total }
+  }, [activeFramework, todayItems])
+
   return {
     frameworks,
     activeFramework,
     todaySubmission,
+    todayItems,
+    completionCount,
     loading,
     activateFramework,
     submitDailyStatus,
+    toggleFrameworkItem,
     refetch: fetchFrameworks,
   }
 }
@@ -217,10 +285,13 @@ export function useFrameworks(userId: string | undefined) {
 export function useDailyScores(userId: string | undefined, days: number = 7) {
   const [scores, setScores] = useState<DailyScore[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchScores = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
     try {

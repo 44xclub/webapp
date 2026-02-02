@@ -1,16 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, ChevronLeft } from 'lucide-react'
+import { Loader2, CheckSquare, ChevronRight } from 'lucide-react'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
-import { ProfileCard } from '@/components/structure/ProfileCard'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
+import { HeaderStrip } from '@/components/shared/HeaderStrip'
+import { BottomNav } from '@/components/shared/BottomNav'
+import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+/*
+  44CLUB Structure Page
+  Discipline & Training. Stoic. Controlled.
+*/
 
 type TabType = 'discipline' | 'training'
 
@@ -18,83 +25,75 @@ export default function StructurePage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
+  const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
 
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  // Auth check
   useEffect(() => {
+    let isMounted = true
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-      setUser(user)
-      setAuthLoading(false)
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (!isMounted) return
+        if (error || !user) { router.push('/login'); return }
+        setUser(user)
+        setAuthLoading(false)
+      } catch { if (isMounted) router.push('/login') }
     }
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-        }
-      }
-    )
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return
+      if (event === 'SIGNED_OUT') router.push('/login')
+      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
+    })
 
-    return () => subscription.unsubscribe()
+    return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  // Data hooks
   const { profile, loading: profileLoading } = useProfile(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, logChallenge, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
-  const { frameworks, activeFramework, todaySubmission, loading: frameworksLoading, activateFramework, submitDailyStatus, refetch: refetchFrameworks } = useFrameworks(user?.id)
+  const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <Loader2 className="h-6 w-6 animate-spin text-accent" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border safe-top">
-        <div className="flex items-center px-4 py-3">
-          <button
-            onClick={() => router.push('/app')}
-            className="p-2 -ml-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-          </button>
-          <h1 className="text-lg font-semibold text-foreground ml-2">Structure</h1>
+    <div className="min-h-screen bg-canvas pb-16">
+      <HeaderStrip profile={profile} loading={profileLoading} />
+
+      {/* Page Header */}
+      <header className="bg-surface border-b border-border">
+        <div className="px-4 py-3">
+          <h1 className="text-page-title font-semibold text-text-primary">Structure</h1>
         </div>
 
         {/* Tab Toggle */}
         <div className="px-4 pb-3">
-          <div className="inline-flex bg-secondary rounded-lg p-1 w-full">
+          <div className="flex bg-canvas-card rounded-[10px] p-1">
             <button
               onClick={() => setActiveTab('discipline')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 py-2 text-secondary font-medium rounded-[8px] transition-colors duration-150 ${
                 activeTab === 'discipline'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-secondary'
               }`}
             >
               Discipline
             </button>
             <button
               onClick={() => setActiveTab('training')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`flex-1 py-2 text-secondary font-medium rounded-[8px] transition-colors duration-150 ${
                 activeTab === 'training'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-secondary'
               }`}
             >
               Training
@@ -103,79 +102,78 @@ export default function StructurePage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-4 pb-24 space-y-4">
-        {/* Profile Card - always visible */}
-        {!profileLoading && profile && (
-          <ProfileCard profile={profile} />
-        )}
-
+      {/* Content */}
+      <main className="p-4 space-y-3">
         {activeTab === 'discipline' ? (
           <>
-            {/* Community Challenge */}
-            {challengeLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            {activeFramework?.framework_template && !frameworksLoading && (
+              <button onClick={() => setFrameworkModalOpen(true)} className="w-full text-left">
+                <div className="bg-surface border border-border rounded-[16px] p-4 hover:border-text-muted transition-colors duration-150">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-meta text-text-muted mb-1">Active Framework</p>
+                      <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <CheckSquare className={`h-4 w-4 ${
+                          completionCount.completed === completionCount.total && completionCount.total > 0
+                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
+                        }`} />
+                        <span className={`text-meta ${
+                          completionCount.completed === completionCount.total && completionCount.total > 0
+                            ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
+                        }`}>
+                          {completionCount.completed}/{completionCount.total} complete
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-text-muted" />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <ChallengeCard
-                challenge={challenge}
-                todayBlock={todayBlock}
-                onLogChallenge={logChallenge}
-                onRefetch={refetchChallenge}
-              />
+              </button>
             )}
 
-            {/* Frameworks */}
-            {frameworksLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+            {challengeLoading ? (
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : (
-              <FrameworksSection
-                frameworks={frameworks}
-                activeFramework={activeFramework}
-                todaySubmission={todaySubmission}
-                onActivateFramework={activateFramework}
-                onSubmitStatus={submitDailyStatus}
-                onRefetch={refetchFrameworks}
-              />
+              <ChallengeCard challenge={challenge} todayBlock={todayBlock} onLogChallenge={logChallenge} onRefetch={refetchChallenge} />
+            )}
+
+            {frameworksLoading ? (
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+              </div>
+            ) : (
+              <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
           </>
         ) : (
           <>
-            {/* Active Programme */}
             {programmesLoading ? (
-              <div className="bg-card rounded-xl p-4 border border-border">
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+              <div className="bg-surface border border-border rounded-[16px] p-8 flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
               </div>
             ) : (
               <>
-                <ProgrammeSection
-                  activeProgramme={activeProgramme}
-                  sessions={sessions}
-                  onDeactivate={deactivateProgramme}
-                  onScheduleWeek={scheduleWeek}
-                />
-
-                {/* Programme Catalogue */}
-                <ProgrammeCatalogue
-                  programmes={programmes}
-                  activeProgrammeId={activeProgramme?.programme_template_id}
-                  onActivate={activateProgramme}
-                  onRefetch={refetchProgrammes}
-                />
+                <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} />
+                <ProgrammeCatalogue programmes={programmes} activeProgrammeId={activeProgramme?.programme_template_id} onActivate={activateProgramme} onRefetch={refetchProgrammes} />
               </>
             )}
           </>
         )}
       </main>
+
+      <BottomNav />
+
+      <FrameworkChecklistModal
+        isOpen={frameworkModalOpen}
+        onClose={() => setFrameworkModalOpen(false)}
+        framework={activeFramework?.framework_template}
+        todayItems={todayItems}
+        completionCount={completionCount}
+        onToggleItem={toggleFrameworkItem}
+      />
     </div>
   )
 }

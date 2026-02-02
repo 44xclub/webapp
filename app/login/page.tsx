@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button, Input } from '@/components/ui'
 import { Loader2, CheckCircle } from 'lucide-react'
 
-export default function LoginPage() {
+/*
+  44CLUB Login Page
+  Entry point. Elite access.
+*/
+
+function LoginForm() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,7 +22,6 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Check for auth callback errors
     const errorParam = searchParams.get('error')
     if (errorParam === 'auth_callback_error') {
       setError('Authentication failed. Please try again.')
@@ -44,22 +48,16 @@ export default function LoginPage() {
 
         if (error) throw error
 
-        // Check if email confirmation is required
         if (data.user && data.user.identities && data.user.identities.length === 0) {
           setError('An account with this email already exists.')
         } else if (data.user && !data.session) {
-          // Email confirmation required
           setMessage('Check your email for a confirmation link to complete signup.')
         } else if (data.session) {
-          // Auto-confirmed (email confirmation disabled in Supabase)
           router.push('/app')
           router.refresh()
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
         router.push('/app')
         router.refresh()
@@ -72,19 +70,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center px-4 bg-canvas">
+      <div className="w-full max-w-sm animate-fadeIn">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">44CLUB</h1>
-          <p className="text-muted-foreground mt-2">Blocks</p>
+          <h1 className="text-[32px] font-black text-text-primary tracking-tight">44CLUB</h1>
+          <p className="text-text-muted mt-2 text-secondary font-medium tracking-wide">BLOCKS</p>
         </div>
 
         {/* Success Message */}
         {message && (
-          <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-3">
-            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-500">{message}</p>
+          <div className="mb-4 p-4 bg-success/10 border border-success/20 rounded-[10px] flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+            <p className="text-secondary text-success">{message}</p>
           </div>
         )}
 
@@ -111,12 +109,10 @@ export default function LoginPage() {
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           />
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-secondary text-danger">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
@@ -125,19 +121,27 @@ export default function LoginPage() {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => {
-              setMode(mode === 'login' ? 'signup' : 'login')
-              setError('')
-              setMessage('')
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage('') }}
+            className="text-secondary text-text-muted hover:text-text-secondary transition-colors"
           >
-            {mode === 'login'
-              ? "Don't have an account? Sign up"
-              : 'Already have an account? Sign in'}
+            {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-canvas">
+          <Loader2 className="h-6 w-6 animate-spin text-accent" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }

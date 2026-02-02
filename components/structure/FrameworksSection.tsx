@@ -6,6 +6,11 @@ import { Modal } from '@/components/ui/Modal'
 import { BookOpen, Check, Circle, Minus, Search, Loader2 } from 'lucide-react'
 import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus } from '@/lib/types'
 
+/*
+  44CLUB Frameworks Section
+  Disciplined. Minimal decoration.
+*/
+
 interface FrameworksSectionProps {
   frameworks: FrameworkTemplate[]
   activeFramework: UserFramework | null
@@ -15,14 +20,7 @@ interface FrameworksSectionProps {
   onRefetch: () => void
 }
 
-export function FrameworksSection({
-  frameworks,
-  activeFramework,
-  todaySubmission,
-  onActivateFramework,
-  onSubmitStatus,
-  onRefetch,
-}: FrameworksSectionProps) {
+export function FrameworksSection({ frameworks, activeFramework, todaySubmission, onActivateFramework, onSubmitStatus, onRefetch }: FrameworksSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFramework, setSelectedFramework] = useState<FrameworkTemplate | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
@@ -30,9 +28,7 @@ export function FrameworksSection({
   const [submitting, setSubmitting] = useState(false)
   const [activating, setActivating] = useState(false)
 
-  const filteredFrameworks = frameworks.filter((f) =>
-    f.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredFrameworks = frameworks.filter((f) => f.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
   const handleActivate = async (framework: FrameworkTemplate) => {
     if (activeFramework && activeFramework.framework_template_id !== framework.id) {
@@ -40,14 +36,13 @@ export function FrameworksSection({
       setSwitchConfirmOpen(true)
       return
     }
-
     setActivating(true)
     try {
       await onActivateFramework(framework.id)
       setDetailModalOpen(false)
       onRefetch()
     } catch (err) {
-      console.error('Failed to activate framework:', err)
+      console.error('Failed to activate:', err)
     } finally {
       setActivating(false)
     }
@@ -55,7 +50,6 @@ export function FrameworksSection({
 
   const handleConfirmSwitch = async () => {
     if (!selectedFramework) return
-
     setActivating(true)
     try {
       await onActivateFramework(selectedFramework.id)
@@ -63,7 +57,7 @@ export function FrameworksSection({
       setDetailModalOpen(false)
       onRefetch()
     } catch (err) {
-      console.error('Failed to switch framework:', err)
+      console.error('Failed to switch:', err)
     } finally {
       setActivating(false)
     }
@@ -75,7 +69,7 @@ export function FrameworksSection({
       await onSubmitStatus(status)
       onRefetch()
     } catch (err) {
-      console.error('Failed to submit status:', err)
+      console.error('Failed to submit:', err)
     } finally {
       setSubmitting(false)
     }
@@ -84,124 +78,84 @@ export function FrameworksSection({
   const isLocked = todaySubmission?.locked_at != null
 
   return (
-    <div className="space-y-4">
-      {/* Active Framework & Daily Submission */}
-      <div className="bg-card rounded-xl p-4 border border-border">
+    <div className="space-y-3">
+      {/* Active Framework */}
+      <div className="bg-surface border border-border rounded-[16px] p-4">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-purple-500/10">
-            <BookOpen className="h-5 w-5 text-purple-500" />
+          <div className="p-2 rounded-[10px] bg-accent/10 border border-accent/20">
+            <BookOpen className="h-5 w-5 text-accent" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Daily Framework</h3>
-            <p className="text-sm text-muted-foreground">Your daily discipline checklist</p>
+            <h3 className="text-body font-semibold text-text-primary">Daily Framework</h3>
+            <p className="text-secondary text-text-muted">Your discipline checklist</p>
           </div>
         </div>
 
         {activeFramework?.framework_template ? (
           <div className="space-y-4">
-            <div className="p-3 bg-secondary/50 rounded-lg">
-              <p className="font-medium text-foreground">{activeFramework.framework_template.title}</p>
+            <div className="p-3 bg-canvas-card rounded-[10px] border border-border">
+              <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
               {activeFramework.framework_template.description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {activeFramework.framework_template.description}
-                </p>
+                <p className="text-secondary text-text-secondary mt-1">{activeFramework.framework_template.description}</p>
               )}
             </div>
 
-            {/* Daily Status Submission */}
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">Today&apos;s Status</p>
+              <p className="text-meta font-medium text-text-secondary mb-2">Today&apos;s Status</p>
               {isLocked ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="capitalize">{todaySubmission?.status}</span>
-                  <span className="text-xs">(locked)</span>
-                </div>
+                <p className="text-secondary text-text-muted capitalize">{todaySubmission?.status} (locked)</p>
               ) : (
                 <div className="flex gap-2">
-                  <Button
-                    variant={todaySubmission?.status === 'complete' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('complete')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Complete
+                  <Button variant={todaySubmission?.status === 'complete' ? 'default' : 'outline'} size="sm" onClick={() => handleSubmitStatus('complete')} disabled={submitting} className="flex-1">
+                    <Check className="h-4 w-4" /> Complete
                   </Button>
-                  <Button
-                    variant={todaySubmission?.status === 'partial' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('partial')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Circle className="h-4 w-4 mr-1" />
-                    Partial
+                  <Button variant={todaySubmission?.status === 'partial' ? 'default' : 'outline'} size="sm" onClick={() => handleSubmitStatus('partial')} disabled={submitting} className="flex-1">
+                    <Circle className="h-4 w-4" /> Partial
                   </Button>
-                  <Button
-                    variant={todaySubmission?.status === 'zero' ? 'destructive' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSubmitStatus('zero')}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    <Minus className="h-4 w-4 mr-1" />
-                    Zero
+                  <Button variant={todaySubmission?.status === 'zero' ? 'destructive' : 'outline'} size="sm" onClick={() => handleSubmitStatus('zero')} disabled={submitting} className="flex-1">
+                    <Minus className="h-4 w-4" /> Zero
                   </Button>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No framework activated. Choose one below to start tracking.
-          </p>
+          <p className="text-secondary text-text-muted">No framework active. Choose one below.</p>
         )}
       </div>
 
       {/* Framework List */}
-      <div className="bg-card rounded-xl p-4 border border-border">
-        <h4 className="font-semibold text-foreground mb-3">Available Frameworks</h4>
+      <div className="bg-surface border border-border rounded-[16px] p-4">
+        <h4 className="text-body font-semibold text-text-primary mb-3">Available Frameworks</h4>
 
-        {/* Search */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input
             type="text"
-            placeholder="Search frameworks..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary outline-none"
+            className="w-full pl-9 pr-3 py-2 text-secondary bg-canvas-card text-text-primary border border-border rounded-[10px] placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
           />
         </div>
 
-        {/* Framework List */}
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2 max-h-48 overflow-y-auto">
           {filteredFrameworks.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No frameworks found
-            </p>
+            <p className="text-secondary text-text-muted py-4 text-center">No frameworks found</p>
           ) : (
             filteredFrameworks.map((framework) => {
               const isActive = activeFramework?.framework_template_id === framework.id
               return (
                 <button
                   key={framework.id}
-                  onClick={() => {
-                    setSelectedFramework(framework)
-                    setDetailModalOpen(true)
-                  }}
-                  className={`w-full p-3 rounded-lg text-left transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 border border-primary'
-                      : 'bg-secondary/50 hover:bg-secondary'
+                  onClick={() => { setSelectedFramework(framework); setDetailModalOpen(true) }}
+                  className={`w-full p-3 rounded-[10px] text-left transition-colors duration-150 ${
+                    isActive ? 'bg-accent/10 border border-accent/30' : 'bg-canvas-card border border-border hover:border-text-muted'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{framework.title}</span>
-                    {isActive && (
-                      <span className="text-xs text-primary font-medium">Active</span>
-                    )}
+                    <span className="text-body font-medium text-text-primary">{framework.title}</span>
+                    {isActive && <span className="text-meta text-accent font-medium">Active</span>}
                   </div>
                 </button>
               )
@@ -210,88 +164,39 @@ export function FrameworksSection({
         </div>
       </div>
 
-      {/* Framework Detail Modal */}
-      <Modal
-        isOpen={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
-        title={selectedFramework?.title || 'Framework'}
-      >
+      {/* Detail Modal */}
+      <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title={selectedFramework?.title || 'Framework'}>
         {selectedFramework && (
           <div className="p-4 space-y-4">
-            {selectedFramework.description && (
-              <p className="text-sm text-muted-foreground">{selectedFramework.description}</p>
-            )}
-
-            {/* Criteria List */}
+            {selectedFramework.description && <p className="text-secondary text-text-secondary">{selectedFramework.description}</p>}
             {selectedFramework.criteria && 'items' in selectedFramework.criteria && (
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Criteria</p>
-                <ul className="space-y-2">
-                  {(selectedFramework.criteria as { items: Array<{ id: string; label: string; description?: string }> }).items.map((item) => (
-                    <li key={item.id} className="flex items-start gap-2 text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                      <div>
-                        <span className="text-foreground">{item.label}</span>
-                        {item.description && (
-                          <p className="text-muted-foreground text-xs">{item.description}</p>
-                        )}
-                      </div>
+                <p className="text-meta font-medium text-text-primary mb-2">Criteria</p>
+                <ul className="space-y-1">
+                  {(selectedFramework.criteria as { items: Array<{ id: string; label: string }> }).items.map((item) => (
+                    <li key={item.id} className="flex items-center gap-2 text-secondary text-text-secondary">
+                      <span className="w-1 h-1 rounded-full bg-accent" />
+                      {item.label}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
-            <Button
-              onClick={() => handleActivate(selectedFramework)}
-              disabled={activating}
-              className="w-full"
-            >
-              {activating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Activating...
-                </>
-              ) : activeFramework?.framework_template_id === selectedFramework.id ? (
-                'Currently Active'
-              ) : activeFramework ? (
-                'Switch to this Framework'
-              ) : (
-                'Activate Framework'
-              )}
+            <Button onClick={() => handleActivate(selectedFramework)} disabled={activating} className="w-full">
+              {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : activeFramework?.framework_template_id === selectedFramework.id ? 'Currently Active' : 'Activate'}
             </Button>
           </div>
         )}
       </Modal>
 
-      {/* Switch Confirmation Modal */}
-      <Modal
-        isOpen={switchConfirmOpen}
-        onClose={() => setSwitchConfirmOpen(false)}
-        title="Switch Framework?"
-      >
+      {/* Switch Confirm */}
+      <Modal isOpen={switchConfirmOpen} onClose={() => setSwitchConfirmOpen(false)} title="Switch Framework?">
         <div className="p-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Switching will deactivate your current framework. Your history will be preserved.
-          </p>
+          <p className="text-secondary text-text-secondary">This will deactivate your current framework. History is preserved.</p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setSwitchConfirmOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmSwitch}
-              disabled={activating}
-              className="flex-1"
-            >
-              {activating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Switch'
-              )}
+            <Button variant="outline" onClick={() => setSwitchConfirmOpen(false)} className="flex-1">Cancel</Button>
+            <Button onClick={handleConfirmSwitch} disabled={activating} className="flex-1">
+              {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Switch'}
             </Button>
           </div>
         </div>
