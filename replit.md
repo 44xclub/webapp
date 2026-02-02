@@ -36,6 +36,8 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
+- Feb 2, 2026: Redesigned block modal with two-step flow (quick entry + details)
+- Feb 2, 2026: Added duration quick-select chips (15m, 30m, 45m, 1h, 1.5h, 2h)
 - Feb 2, 2026: Added progress bar to HeaderStrip showing level-up progress with score breakdown
 - Feb 2, 2026: Redesigned streak section with gradient card, professional typography
 - Feb 2, 2026: Added overdue detection (red tint + "Overdue" label) for past-time blocks
