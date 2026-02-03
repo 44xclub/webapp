@@ -621,13 +621,18 @@ export interface FrameworkTemplate {
 }
 
 export interface FrameworkCriteria {
-  items: FrameworkCriteriaItem[]
+  items?: FrameworkCriteriaItem[]
 }
 
 export interface FrameworkCriteriaItem {
-  id: string
+  key: string
   label: string
   description?: string
+  type?: 'boolean' | 'number'
+  target?: number
+  unit?: string
+  required?: boolean
+  category?: string
 }
 
 // User Framework (active framework)

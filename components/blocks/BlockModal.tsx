@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Modal, Button, Input, Select } from '@/components/ui'
+import { Modal, Button, Input } from '@/components/ui'
 import { MediaUploader } from './MediaUploader'
 import {
   WorkoutForm,
@@ -21,9 +21,10 @@ import {
   challengeSchema,
   type BlockFormData,
 } from '@/lib/schemas'
-import { blockTypeLabels } from '@/lib/utils'
+import { blockTypeLabels, blockTypeAccentColors, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
 import type { Block, BlockType, BlockMedia } from '@/lib/types'
+import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface BlockModalProps {
   isOpen: boolean
@@ -44,6 +45,15 @@ const blockTypeOptions = [
   { value: 'nutrition', label: 'Nutrition' },
   { value: 'checkin', label: 'Check-in' },
   { value: 'personal', label: 'Personal' },
+]
+
+const durationOptions = [
+  { value: 15, label: '15m' },
+  { value: 30, label: '30m' },
+  { value: 45, label: '45m' },
+  { value: 60, label: '1h' },
+  { value: 90, label: '1.5h' },
+  { value: 120, label: '2h' },
 ]
 
 function getSchemaForType(type: BlockType) {
@@ -78,6 +88,40 @@ function getDefaultPayload(type: BlockType) {
   }
 }
 
+function addMinutesToTime(time: string, minutes: number): string {
+  const [hours, mins] = time.split(':').map(Number)
+  const totalMins = hours * 60 + mins + minutes
+  const newHours = Math.floor(totalMins / 60) % 24
+  const newMins = totalMins % 60
+  return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`
+}
+
+function calculateMinutesBetween(startTime: string, endTime: string | null): number | null {
+  if (!startTime || !endTime) return null
+  const [startH, startM] = startTime.split(':').map(Number)
+  const [endH, endM] = endTime.split(':').map(Number)
+  const startMins = startH * 60 + startM
+  const endMins = endH * 60 + endM
+  if (endMins >= startMins) return endMins - startMins
+  return (24 * 60 - startMins) + endMins // Handle overnight
+}
+
+function formatDisplayDate(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatDisplayTime(time: string): string {
+  const [hours, mins] = time.split(':').map(Number)
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const h = hours % 12 || 12
+  return `${h}:${String(mins).padStart(2, '0')} ${ampm}`
+}
+
+function isToday(dateStr: string): boolean {
+  return dateStr === formatDateForApi(new Date())
+}
+
 export function BlockModal({
   isOpen,
   onClose,
@@ -90,10 +134,10 @@ export function BlockModal({
   onMediaDelete,
   userHasHeight = false,
 }: BlockModalProps) {
-  const [blockType, setBlockType] = useState<BlockType>(
-    editingBlock?.block_type || 'workout'
-  )
+  const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
+  const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedDuration, setSelectedDuration] = useState<number>(30)
 
   const schema = useMemo(() => getSchemaForType(blockType), [blockType])
 
@@ -101,7 +145,7 @@ export function BlockModal({
     if (editingBlock) {
       return {
         date: editingBlock.date,
-        start_time: editingBlock.start_time.slice(0, 5), // Remove seconds
+        start_time: editingBlock.start_time.slice(0, 5),
         end_time: editingBlock.end_time?.slice(0, 5) || null,
         block_type: editingBlock.block_type,
         title: editingBlock.title || '',
@@ -128,11 +172,51 @@ export function BlockModal({
     defaultValues: defaultValues as BlockFormData,
   })
 
-  // Reset form when modal opens or block type changes
+  const startTime = form.watch('start_time')
+  const endTimeWatched = form.watch('end_time')
+  const dateValue = form.watch('date')
+  const titleValue = form.watch('title')
+
+  // Update end time when duration changes - only for new blocks in step 1
+  useEffect(() => {
+    // Don't auto-update for existing blocks being edited
+    if (editingBlock) return
+    
+    if (startTime && selectedDuration && step === 1) {
+      const newEndTime = addMinutesToTime(startTime, selectedDuration)
+      form.setValue('end_time', newEndTime)
+      
+      // Auto-fill duration for workout blocks
+      if (blockType === 'workout') {
+        form.setValue('payload.duration', selectedDuration)
+      }
+    }
+  }, [startTime, selectedDuration, blockType, form, editingBlock, step])
+
+  // For edit mode: sync payload.duration when times change (for workout blocks)
+  useEffect(() => {
+    if (!editingBlock || blockType !== 'workout') return
+    
+    const computedDuration = calculateMinutesBetween(startTime, endTimeWatched ?? null)
+    if (computedDuration !== null && computedDuration > 0) {
+      form.setValue('payload.duration', computedDuration)
+    }
+  }, [startTime, endTimeWatched, editingBlock, blockType, form])
+
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       if (editingBlock) {
+        setStep(2) // Go directly to step 2 when editing
         setBlockType(editingBlock.block_type)
+        
+        // Calculate duration from existing times
+        const existingDuration = calculateMinutesBetween(
+          editingBlock.start_time.slice(0, 5),
+          editingBlock.end_time?.slice(0, 5) || null
+        )
+        if (existingDuration) setSelectedDuration(existingDuration)
+        
         form.reset({
           date: editingBlock.date,
           start_time: editingBlock.start_time.slice(0, 5),
@@ -144,6 +228,8 @@ export function BlockModal({
           repeat_rule: editingBlock.repeat_rule || { pattern: 'none' },
         } as BlockFormData)
       } else {
+        setStep(1)
+        setSelectedDuration(30)
         form.reset({
           date: formatDateForApi(initialDate),
           start_time: roundToNearest5Minutes(),
@@ -158,9 +244,8 @@ export function BlockModal({
     }
   }, [isOpen, editingBlock, initialDate, blockType, form])
 
-  // Handle block type change (only for new blocks)
   const handleBlockTypeChange = (newType: BlockType) => {
-    if (editingBlock) return // Don't allow changing type when editing
+    if (editingBlock) return
     setBlockType(newType)
     form.reset({
       ...form.getValues(),
@@ -170,10 +255,24 @@ export function BlockModal({
     } as BlockFormData)
   }
 
+  const handleContinue = () => {
+    setStep(2)
+  }
+
+  const handleBack = () => {
+    setStep(1)
+  }
+
+  const handleClose = () => {
+    setStep(1)
+    onClose()
+  }
+
   const handleSubmit = async (data: BlockFormData) => {
     setIsSubmitting(true)
     try {
       await onSave(data)
+      setStep(1)
       onClose()
     } catch (error) {
       console.error('Failed to save block:', error)
@@ -183,7 +282,6 @@ export function BlockModal({
   }
 
   const renderForm = () => {
-    // Cast form to the specific type needed by each form component
     switch (blockType) {
       case 'workout':
         return <WorkoutForm form={form as ReturnType<typeof useForm<typeof workoutSchema._type>>} />
@@ -201,90 +299,249 @@ export function BlockModal({
       case 'personal':
         return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
       case 'challenge':
-        // Challenge uses the same form as personal (simple title/notes)
         return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
     }
   }
 
+  const accent = blockTypeAccentColors[blockType]
+  const endTime = endTimeWatched
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
-      title={editingBlock ? `Edit ${blockTypeLabels[blockType]}` : 'New Block'}
+      onClose={handleClose}
+      title={editingBlock ? `Edit ${blockTypeLabels[blockType]}` : step === 1 ? 'New Block' : 'Details'}
+      showClose={true}
     >
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
-        {/* Block Type Selector - only for new blocks */}
-        {!editingBlock && (
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            {blockTypeOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleBlockTypeChange(option.value as BlockType)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  blockType === option.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+      {/* Step 1: Quick Entry */}
+      {step === 1 && !editingBlock && (
+        <div className="p-4 space-y-5">
+          {/* Block Type Selector */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+            {blockTypeOptions.map((option) => {
+              const isSelected = blockType === option.value
+              const colorMap: Record<string, string> = {
+                workout: '#f97316',
+                habit: '#10b981',
+                nutrition: '#0ea5e9',
+                checkin: '#8b5cf6',
+                personal: '#f43f5e',
+              }
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleBlockTypeChange(option.value as BlockType)}
+                  className={cn(
+                    'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
+                    isSelected
+                      ? 'text-white border-transparent'
+                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
+                  )}
+                  style={isSelected ? { backgroundColor: colorMap[option.value] } : undefined}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
           </div>
-        )}
 
-        {/* Universal Fields */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            label="Date"
-            {...form.register('date')}
-            error={form.formState.errors.date?.message}
-          />
-          <Input
-            type="time"
-            label="Start Time"
-            {...form.register('start_time')}
-            error={form.formState.errors.start_time?.message}
-          />
-        </div>
+          {/* Title Input */}
+          <div>
+            <Input
+              label={blockType === 'workout' ? 'Workout Title' : blockType === 'habit' ? 'Habit Name' : blockType === 'nutrition' ? 'Meal Name' : 'Title'}
+              placeholder={
+                blockType === 'workout' ? 'e.g., Push Day, Leg Day' :
+                blockType === 'habit' ? 'e.g., Morning meditation' :
+                blockType === 'nutrition' ? 'e.g., Chicken salad' :
+                'e.g., Doctor appointment'
+              }
+              {...form.register('title')}
+            />
+          </div>
 
-        <Input
-          type="time"
-          label="End Time (optional)"
-          {...form.register('end_time')}
-          error={form.formState.errors.end_time?.message}
-        />
+          {/* Date Row */}
+          <div className="flex items-center justify-between p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)]">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-[#3b82f6]" />
+              <span className="text-[15px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
+            </div>
+            {isToday(dateValue) && (
+              <span className="text-[12px] text-[#3b82f6] font-medium">Today</span>
+            )}
+          </div>
 
-        {/* Type-specific Form */}
-        {renderForm()}
+          {/* Time Section */}
+          <div>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Start Time</label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <Input
+                  type="time"
+                  {...form.register('start_time')}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-[14px] text-[rgba(238,242,255,0.52)]">
+                <span>to</span>
+                <span className="text-[#eef2ff] font-medium">{endTime ? formatDisplayTime(endTime) : '--:--'}</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Media Upload - only for existing blocks */}
-        {editingBlock && userId && onMediaUpload && onMediaDelete && (
-          <MediaUploader
-            blockId={editingBlock.id}
-            userId={userId}
-            media={blockMedia}
-            onUpload={onMediaUpload}
-            onDelete={onMediaDelete}
-          />
-        )}
+          {/* Duration Quick Select */}
+          <div>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Duration</label>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {durationOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSelectedDuration(option.value)}
+                  className={cn(
+                    'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
+                    selectedDuration === option.value
+                      ? `${accent.bg} text-white border-transparent`
+                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3 pt-2">
+          {/* Continue Button */}
           <Button
             type="button"
-            variant="outline"
-            onClick={onClose}
-            className="flex-1"
+            onClick={handleContinue}
+            className="w-full"
+            size="lg"
           >
-            Cancel
-          </Button>
-          <Button type="submit" loading={isSubmitting} className="flex-1">
-            {editingBlock ? 'Save Changes' : 'Create Block'}
+            Continue
+            <ChevronRight className="h-5 w-5 ml-1" />
           </Button>
         </div>
-      </form>
+      )}
+
+      {/* Step 2: Details */}
+      {(step === 2 || editingBlock) && (
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
+          {/* Summary Header */}
+          {!editingBlock && (
+            <div className={cn(
+              'p-4 rounded-card border',
+              `bg-gradient-to-r from-steel-800 to-steel-900 border-steel-700`
+            )}>
+              <div className="flex items-center gap-3 mb-2">
+                <div className={cn(
+                  'h-10 w-10 rounded-lg flex items-center justify-center',
+                  `${accent.bg}/20 border ${accent.border}/30`
+                )}>
+                  <Clock className={cn('h-5 w-5', accent.text)} />
+                </div>
+                <div>
+                  <p className="text-meta text-text-muted">
+                    {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'} ({selectedDuration} min)
+                  </p>
+                  <p className="text-body font-semibold text-foreground">
+                    {titleValue || blockTypeLabels[blockType]}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Back button for new blocks */}
+          {!editingBlock && (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="flex items-center gap-1 text-meta text-text-muted hover:text-text-secondary transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to basics
+            </button>
+          )}
+
+          {/* Quick info rows when editing */}
+          {editingBlock && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 bg-steel-800/50 rounded-card border border-steel-700">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <span className="text-body text-foreground">{formatDisplayDate(dateValue)}</span>
+                </div>
+                <Input
+                  type="date"
+                  {...form.register('date')}
+                  className="w-auto"
+                />
+              </div>
+              <div className="p-3 bg-steel-800/50 rounded-card border border-steel-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <span className="text-body text-foreground">
+                      {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'}
+                      {endTime && (
+                        <span className="text-meta text-text-muted ml-2">
+                          ({calculateMinutesBetween(startTime, endTime) || 0} min)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="time"
+                    label="Start"
+                    {...form.register('start_time')}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="time"
+                    label="End"
+                    {...form.register('end_time')}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Type-specific Form */}
+          <div className="space-y-4">
+            {renderForm()}
+          </div>
+
+          {/* Media Upload - only for existing blocks */}
+          {editingBlock && userId && onMediaUpload && onMediaDelete && (
+            <MediaUploader
+              blockId={editingBlock.id}
+              userId={userId}
+              media={blockMedia}
+              onUpload={onMediaUpload}
+              onDelete={onMediaDelete}
+            />
+          )}
+
+          {/* Submit Button */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={isSubmitting} className="flex-1">
+              {editingBlock ? 'Save Changes' : 'Create Block'}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   )
 }

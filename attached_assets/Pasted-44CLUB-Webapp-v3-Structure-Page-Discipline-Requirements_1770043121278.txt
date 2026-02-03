@@ -1,0 +1,437 @@
+44CLUB Webapp v3 — Structure Page (Discipline) Requirements
+0) Goal
+
+Make the Discipline tab the single “daily discipline control center”:
+
+Community Challenge shown first (with “Log today” → creates a challenge block)
+
+Active Framework shown second (daily checklist with progress + modal checklist)
+
+Available Frameworks shown third (catalogue; view-only until activated)
+
+Same Active Framework card + checklist behavior appears on Home beneath the day header.
+
+Cutoff logic:
+
+User can tick/untick all day (visual changes allowed)
+
+At 12:00 midday (cutoff), the system stores the locked daily outcome in daily_framework_submissions for the day being resolved (typically previous day, per your existing scoring system rules)
+
+1) Navigation + Page Layout
+1.1 Page
+
+Page name: Structure
+
+Tabs: Discipline (default), Training
+
+Discipline tab order (top → bottom)
+
+Community Challenge Card
+
+Active Framework Card (only if user has active framework)
+
+Available Frameworks Catalogue (search + filters, card grid)
+
+2) Component Requirements
+2.1 Community Challenge Card (shown first)
+Data Source
+
+community_challenges — determine active challenge by date range:
+
+Active challenge where start_date <= today <= end_date
+
+“Today” = user local date from profiles.timezone
+
+UI
+
+Card contains:
+
+Title: “Community Challenge”
+
+Frequency label (optional): “Monthly”
+
+Challenge title + description
+
+Primary CTA button: Log today
+
+Behavior: “Log today”
+
+On click:
+
+Create a blocks record for today with:
+
+block_type = 'challenge'
+
+title = challenge.title (or user editable in modal)
+
+challenge_id = community_challenges.id
+
+start_time defaults to “now” or a sensible default (e.g. 09:00)
+
+payload includes:
+
+challenge_title
+
+challenge_rules (optional)
+
+user_input fields the modal collects (see below)
+
+Open the standard Block modal (same as other block types) pre-filled.
+
+Modal fields
+
+Minimum:
+
+Notes / reflection (text)
+
+Optional “proof” media upload (if you support it already via block_media)
+
+Post-save result
+
+The created block appears in Home Day view under today’s blocks.
+
+When block completed, it contributes to daily planning completion.
+
+2.2 Active Framework Card (shown second)
+Data Source (must be deterministic)
+
+Active framework template:
+
+user_frameworks.framework_template_id → join to framework_templates
+
+Daily checklist items:
+
+daily_framework_items for (user_id, selected_date)
+
+Locked status:
+
+daily_framework_submissions for (user_id, selected_date)
+
+Definition: selected_date
+
+On Structure page, selected_date defaults to today in user timezone.
+
+You may later extend to allow browsing past days, but MVP: today only.
+
+UI (Card)
+
+Card header:
+
+Label: “Active Framework”
+
+Title: framework_templates.title
+
+Background image: framework_templates.image_path behind gradient overlay
+
+Progress indicator:
+
+“X/Y complete” where:
+
+X = count(checked=true)
+
+Y = total criteria items
+
+A progress bar representing X/Y
+
+State badge on card:
+
+If X==Y and Y>0: show “Complete (Today)”
+
+If locked and status exists:
+
+complete/partial/zero badge based on daily_framework_submissions.status
+
+If no items: show “Not started”
+
+Click Behavior
+
+Clicking the card opens a Framework Checklist Modal.
+
+Checklist Modal (Today)
+
+Title: framework title
+
+Subtitle: framework description
+
+List criteria (vertical):
+
+Checkbox
+
+Criterion text
+
+Live updating:
+
+Ticking calls RPC fn_set_framework_item_checked(date, criteria_key, checked)
+
+Optimistic UI (toggle instantly), revert on failure.
+
+Checklist data initialization (critical)
+
+On opening Structure page or checklist modal:
+
+Call fn_ensure_daily_framework_items(today) to guarantee rows exist
+
+Fetch daily_framework_items for today and render
+
+After cutoff behavior
+
+User can still tick/untick visually (allowed)
+
+But the UI must show the locked status if it exists:
+
+If daily_framework_submissions.locked_at IS NOT NULL for that date:
+
+Display “Locked” label and status indicator
+
+Still allow ticking (per your instruction), but do not change locked status.
+
+If you want stricter behavior later (disable after lock), that’s a v4 decision.
+
+2.3 Available Frameworks Catalogue (shown third)
+Data Source
+
+framework_templates where is_active = true
+
+UI
+
+Search field: “Search frameworks…”
+
+Optional filter chips:
+
+Difficulty (if you add it later)
+
+“Active” / “All”
+
+Card grid (horizontal scroll or multi-column grid depending on device):
+
+Image background using image_path
+
+Title
+
+Short description snippet
+
+Click behavior
+
+Clicking a framework card opens Framework Detail Modal:
+
+Title + description
+
+Criteria list (view-only)
+
+CTA button:
+
+If already active: “Currently Active” (disabled)
+
+If not active: “Activate Framework”
+
+Activate Framework behavior
+
+On confirm:
+
+Upsert into user_frameworks:
+
+user_id = auth.uid()
+
+framework_template_id = clicked_template_id
+
+activated_at = now()
+
+Immediately call fn_ensure_daily_framework_items(today)
+
+Refresh Active Framework card and checklist items
+
+The previous active framework is replaced (only one active).
+
+3) Home Page Mirror Requirement (Active Framework)
+3.1 Placement
+
+On Home page, under the day header (e.g. Jan 31 · Today · Saturday) and above daily blocks list:
+
+Display the same Active Framework Card, but compact.
+
+3.2 Behavior
+
+Same progress (“X/Y complete”)
+
+Same “Complete Today” display
+
+Clicking opens the same checklist modal
+
+Uses the same selected_date = the currently selected day in the week strip
+
+If user is browsing other dates: show progress for that date
+
+4) Data + Query Requirements
+4.1 “Today” and user timezone
+
+Always compute user “today” using profiles.timezone.
+
+The UI should not use browser timezone if profiles.timezone exists.
+
+Selected day on Home is derived from week strip but still interpreted in user timezone.
+
+4.2 Required API Calls (Supabase)
+
+Minimum call flow for Structure → Discipline:
+
+On Discipline tab mount:
+
+Fetch user profile (for timezone + display name etc if needed)
+
+Determine today_date (user timezone)
+
+Fetch active challenge:
+
+query community_challenges where start_date <= today_date <= end_date
+
+Fetch active framework:
+
+query user_frameworks join framework_templates
+
+If active framework exists:
+
+call RPC fn_ensure_daily_framework_items(today_date)
+
+fetch daily_framework_items where date=today_date
+
+fetch daily_framework_submissions where date=today_date (optional; for locked status)
+
+Fetch available frameworks:
+
+query framework_templates where is_active=true
+
+On tick:
+
+call RPC fn_set_framework_item_checked(today_date, criteria_key, checked)
+
+then refetch items OR locally update counts
+
+On activate:
+
+upsert user_frameworks
+
+call fn_ensure_daily_framework_items(today_date)
+
+refetch active framework + items + submissions
+
+5) Edge Cases (must handle cleanly)
+5.1 No active framework
+
+Active Framework card area shows:
+
+“No framework activated”
+
+CTA: “Choose a framework” → scroll to catalogue
+
+5.2 Framework criteria changed by admin
+
+If admin edits criteria array:
+
+fn_ensure_daily_framework_items will add missing keys.
+
+Old keys might remain in daily_framework_items for that date.
+Requirement:
+
+UI should render criteria based on template criteria order and keys.
+
+Filter out items whose key no longer exists in template criteria.
+
+5.3 No criteria rows exist yet
+
+Always call fn_ensure_daily_framework_items before relying on counts.
+
+5.4 Locked submission exists but no items
+
+If locked exists, show locked status regardless.
+
+6) Styling + UX Requirements (Discipline Tab only)
+6.1 Card system
+
+Cards have:
+
+Dark surface (#0f1116 type)
+
+Subtle border (#232833 type)
+
+Soft shadow
+
+Background image uses:
+
+image + dark gradient overlay (60–80% black)
+
+Title always readable
+
+6.2 Checklist modal
+
+Full-height modal on mobile
+
+Center modal on desktop
+
+Criteria rows:
+
+44px min height
+
+Checkbox left, text right
+
+Checked row gets subtle highlight
+
+6.3 Progress
+
+Progress bar visible at a glance
+
+“X/Y complete” always displayed
+
+7) Acceptance Criteria (no wiggle room)
+Active Framework
+
+ User sees Active Framework card on Structure and Home if activated
+
+ Card shows image background and title
+
+ Card shows accurate X/Y count and progress bar for selected day
+
+ Ticking checkbox updates UI immediately and persists
+
+ If all criteria checked, card shows “Complete (Today)”
+
+ If a locked submission exists for the day, UI shows that locked status
+
+Available Frameworks
+
+ Catalogue lists all active templates with images
+
+ Clicking shows details + view-only criteria
+
+ Activating replaces previous framework
+
+ After activating, active card updates instantly and checklist becomes editable
+
+Community Challenge
+
+ If a challenge is active, card displays it above active framework
+
+ “Log today” creates a challenge block for today and opens block modal
+
+ Block appears on Home day list after save
+
+8) Database Alignment (for AI/dev clarity)
+
+These tables are used:
+
+user_frameworks → active framework
+
+framework_templates → title, description, criteria, image_path
+
+daily_framework_items → checkboxes per day
+
+daily_framework_submissions → locked outcome
+
+community_challenges → active challenge
+
+blocks (+ block_media) → created when user logs challenge
+
+RPCs used:
+
+fn_ensure_daily_framework_items(date)
+
+fn_set_framework_item_checked(date, criteria_key, checked)

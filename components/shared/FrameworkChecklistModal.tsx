@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Modal, Checkbox } from '@/components/ui'
-import { Check, X, Circle, Loader2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Modal, Button } from '@/components/ui'
+import { Check, Loader2 } from 'lucide-react'
 import type {
   FrameworkTemplate,
   FrameworkCriteria,
@@ -17,6 +17,7 @@ interface FrameworkChecklistModalProps {
   todayItems: DailyFrameworkItem[]
   completionCount: { completed: number; total: number }
   onToggleItem: (criteriaKey: string, checked: boolean) => Promise<DailyFrameworkItem>
+  onDeactivate?: () => Promise<void>
 }
 
 export function FrameworkChecklistModal({
@@ -26,132 +27,150 @@ export function FrameworkChecklistModal({
   todayItems,
   completionCount,
   onToggleItem,
+  onDeactivate,
 }: FrameworkChecklistModalProps) {
-  // Get criteria items from framework
+  const [togglingKey, setTogglingKey] = useState<string | null>(null)
+  const [deactivating, setDeactivating] = useState(false)
+
   const criteriaItems = useMemo(() => {
     if (!framework?.criteria) return []
-    const criteria = framework.criteria as FrameworkCriteria
-    return criteria.items || []
+    const criteria = framework.criteria as FrameworkCriteria | FrameworkCriteriaItem[]
+    const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    
+    const items = rawItems.map((item: FrameworkCriteriaItem & { id?: string }) => ({
+      ...item,
+      key: item.key || item.id || '',
+    }))
+    
+    if (items.length === 0 && framework) {
+      console.warn('[FrameworkChecklist] Empty criteria:', {
+        framework_template_id: framework.id,
+        criteria_raw: framework.criteria,
+      })
+    }
+    
+    return items
   }, [framework])
 
-  // Get completion status for each criterion
   const getItemStatus = (criteriaKey: string): boolean => {
     const item = todayItems.find((i) => i.criteria_key === criteriaKey)
     return item?.checked ?? false
   }
 
-  // Compute status indicator
-  const statusIndicator = useMemo(() => {
-    const { completed, total } = completionCount
-    if (total === 0) return { label: 'No items', color: 'text-muted-foreground', bg: 'bg-secondary' }
-    if (completed === 0) return { label: 'Not started', color: 'text-red-500', bg: 'bg-red-500/10' }
-    if (completed < total) return { label: 'In progress', color: 'text-yellow-500', bg: 'bg-yellow-500/10' }
-    return { label: 'Complete', color: 'text-green-500', bg: 'bg-green-500/10' }
-  }, [completionCount])
-
   const handleToggle = async (criteriaKey: string, currentValue: boolean) => {
+    setTogglingKey(criteriaKey)
     try {
+      console.log('[FrameworkChecklist] Toggling:', { criteriaKey, newValue: !currentValue })
       await onToggleItem(criteriaKey, !currentValue)
+      console.log('[FrameworkChecklist] Toggle success')
     } catch (err) {
-      console.error('Failed to toggle item:', err)
+      console.error('[FrameworkChecklist] Toggle failed:', err)
+    } finally {
+      setTogglingKey(null)
+    }
+  }
+
+  const handleDeactivate = async () => {
+    if (!onDeactivate) return
+    setDeactivating(true)
+    try {
+      await onDeactivate()
+      onClose()
+    } catch (err) {
+      console.error('Failed to deactivate:', err)
+    } finally {
+      setDeactivating(false)
     }
   }
 
   if (!framework) return null
 
+  const progressPercent = completionCount.total > 0 ? (completionCount.completed / completionCount.total) * 100 : 0
+  const isComplete = completionCount.completed === completionCount.total && completionCount.total > 0
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={framework.title}
-    >
-      <div className="space-y-4">
-        {/* Status indicator */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+    <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
+      <div className="space-y-4 px-2">
+        <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] mx-1">
           <div>
-            <p className="text-sm text-muted-foreground">Today&apos;s Progress</p>
-            <p className="text-lg font-bold text-foreground">
-              {completionCount.completed} / {completionCount.total}
-            </p>
-          </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusIndicator.color} ${statusIndicator.bg}`}>
-            {statusIndicator.label}
-          </span>
-        </div>
-
-        {/* Framework description */}
-        {framework.description && (
-          <p className="text-sm text-muted-foreground">{framework.description}</p>
-        )}
-
-        {/* Criteria checklist */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-foreground">Daily Checklist</h4>
-          <div className="space-y-2">
-            {criteriaItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No criteria defined for this framework
-              </p>
-            ) : (
-              criteriaItems.map((item) => {
-                const isCompleted = getItemStatus(item.id)
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleToggle(item.id, isCompleted)}
-                    className={`w-full flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
-                      isCompleted
-                        ? 'bg-green-500/10 border-green-500/30'
-                        : 'bg-card border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div
-                      className={`flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center ${
-                        isCompleted
-                          ? 'bg-green-500 text-white'
-                          : 'border-2 border-muted-foreground/30'
-                      }`}
-                    >
-                      {isCompleted && <Check className="h-3 w-3" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-medium ${
-                          isCompleted ? 'text-green-500 line-through' : 'text-foreground'
-                        }`}
-                      >
-                        {item.label}
-                      </p>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {item.description}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                )
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        {completionCount.total > 0 && (
-          <div className="space-y-1">
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  completionCount.completed === completionCount.total
-                    ? 'bg-green-500'
-                    : completionCount.completed > 0
-                    ? 'bg-yellow-500'
-                    : 'bg-muted-foreground'
-                }`}
-                style={{
-                  width: `${(completionCount.completed / completionCount.total) * 100}%`,
-                }}
-              />
+            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-1">Today&apos;s Progress</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[28px] font-bold text-text-primary">{completionCount.completed}</span>
+              <span className="text-[16px] text-text-muted">/ {completionCount.total}</span>
             </div>
+          </div>
+          <div className={`px-4 py-2 rounded-full text-[12px] font-semibold ${
+            isComplete 
+              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+              : completionCount.completed > 0
+              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+              : 'bg-[#1a1d21] text-text-muted border border-[rgba(255,255,255,0.08)]'
+          }`}>
+            {isComplete ? 'Complete' : completionCount.completed > 0 ? 'In Progress' : 'Not Started'}
+          </div>
+        </div>
+
+        <div className="h-2 bg-[#1a1d21] rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-500 ease-out ${
+              isComplete ? 'bg-emerald-500' : completionCount.completed > 0 ? 'bg-amber-500' : ''
+            }`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          {criteriaItems.map((item) => {
+            const isCompleted = getItemStatus(item.key)
+            const isToggling = togglingKey === item.key
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleToggle(item.key, isCompleted)}
+                disabled={isToggling}
+                className={`w-full flex items-center gap-4 p-4 rounded-[12px] border transition-all duration-200 text-left ${
+                  isCompleted
+                    ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15'
+                    : 'bg-[#0d1014] border-[rgba(255,255,255,0.08)] hover:border-[#3b82f6]/50 hover:bg-[#0f1216]'
+                }`}
+              >
+                <div
+                  className={`flex-shrink-0 w-6 h-6 rounded-[6px] flex items-center justify-center transition-all duration-200 ${
+                    isCompleted
+                      ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                      : 'border-2 border-[rgba(255,255,255,0.25)] bg-transparent'
+                  }`}
+                >
+                  {isToggling ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                  ) : isCompleted ? (
+                    <Check className="h-4 w-4 text-white" strokeWidth={3} />
+                  ) : null}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[15px] font-medium leading-tight ${
+                    isCompleted ? 'text-emerald-400' : 'text-text-primary'
+                  }`}>
+                    {item.label}
+                  </p>
+                  {item.description && (
+                    <p className="text-[12px] text-text-muted mt-1">{item.description}</p>
+                  )}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {onDeactivate && (
+          <div className="pt-4 pb-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">
+            <button
+              onClick={handleDeactivate}
+              disabled={deactivating}
+              className="w-full py-3 px-4 rounded-[12px] bg-rose-500/20 text-rose-400 font-semibold text-[14px] hover:bg-rose-500/30 transition-colors disabled:opacity-50"
+            >
+              {deactivating ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Deactivate Framework'}
+            </button>
           </div>
         )}
       </div>

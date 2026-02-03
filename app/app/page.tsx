@@ -14,10 +14,11 @@ import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile, useFrameworks } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2, Flame, ChevronRight, CheckSquare } from 'lucide-react'
+import { Plus, Loader2, Flame } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
+import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -65,7 +66,7 @@ export default function AppPage() {
   const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
-  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem } = useFrameworks(user?.id)
+  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -110,63 +111,59 @@ export default function AppPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <Loader2 className="h-6 w-6 animate-spin text-[#3b82f6]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-canvas flex flex-col pb-16">
+    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Streak Module */}
       {profile && (
-        <div className="px-4 py-2 bg-surface border-b border-border">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-warning" />
+        <div className="mx-4 mt-2 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-[12px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
+                <Flame className="h-5 w-5 text-[#f59e0b]" />
+              </div>
               <div>
-                <span className="text-body font-bold text-text-primary">{profile.current_streak || 0}</span>
-                <span className="text-meta text-text-muted ml-1">day streak</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Current Streak</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[20px] font-semibold text-[#eef2ff]">{profile.current_streak || 0}</span>
+                  <span className="text-[13px] text-[rgba(238,242,255,0.60)]">days</span>
+                </div>
               </div>
             </div>
-            <div className="text-meta text-text-muted">Best: {profile.best_streak || 0}</div>
+            <div className="text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Personal Best</p>
+              <div className="flex items-baseline gap-1 justify-end">
+                <span className="text-[16px] font-semibold text-[#22d3ee]">{profile.best_streak || 0}</span>
+                <span className="text-[12px] text-[rgba(238,242,255,0.52)]">days</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} onWeekChange={handleWeekChange} blocksByDate={blocksByDate} />
 
-      <div className="px-4 py-3 flex justify-center border-b border-border bg-canvas">
+      <div className="px-4 py-3 flex justify-center border-b border-[rgba(255,255,255,0.07)] bg-[#07090d]">
         <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
       </div>
 
-      {/* Active Framework Card */}
-      {viewMode === 'day' && activeFramework?.framework_template && !frameworkLoading && (
-        <button onClick={() => setFrameworkModalOpen(true)} className="block mx-4 mt-3 w-[calc(100%-2rem)] text-left">
-          <div className="bg-surface rounded-[16px] p-4 border border-border hover:border-text-muted transition-colors duration-150">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-meta text-text-muted mb-1">Active Framework</p>
-                <p className="text-body font-medium text-text-primary">{activeFramework.framework_template.title}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <CheckSquare className={`h-4 w-4 ${
-                    completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
-                  }`} />
-                  <p className={`text-meta ${
-                    completionCount.completed === completionCount.total && completionCount.total > 0
-                      ? 'text-success' : completionCount.completed > 0 ? 'text-warning' : 'text-text-muted'
-                  }`}>
-                    {completionCount.completed} / {completionCount.total} complete
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-text-muted" />
-            </div>
-          </div>
-        </button>
+      {/* Active Framework Card - same as Structure page */}
+      {viewMode === 'day' && !frameworkLoading && (
+        <div className="mx-4 mt-3">
+          <ActiveFrameworkCard
+            activeFramework={activeFramework}
+            todaySubmission={null}
+            completionCount={completionCount}
+            onOpenChecklist={() => setFrameworkModalOpen(true)}
+          />
+        </div>
       )}
 
       <main className="flex-1 pb-8 overflow-y-auto">
@@ -196,7 +193,7 @@ export default function AppPage() {
 
       <BlockModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveBlock} initialDate={addingToDate || selectedDate} editingBlock={editingBlock} blockMedia={editingBlock?.block_media || []} userId={user?.id} onMediaUpload={uploadMedia} onMediaDelete={deleteMedia} userHasHeight={hasHeight} />
 
-      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} />
+      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
     </div>
   )
 }

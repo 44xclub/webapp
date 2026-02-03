@@ -1,0 +1,284 @@
+Discipline Framework Criteria + Checklist UI (Catalogue + Active)
+1) Goal
+
+Implement a discipline framework system where:
+
+Admin creates frameworks (title, description, image, criteria array)
+
+User browses catalogue, views criteria
+
+User activates ONE framework
+
+Every day, user gets a fresh checklist for that framework
+
+User can tick/untick throughout the day
+
+At 12:00 midday cutoff (user timezone), the day is locked for scoring purposes (ticks after cutoff don’t affect score)
+
+2) Data Model (what the UI must read/write)
+Tables involved
+
+Read (Catalogue):
+
+framework_templates (where is_active = true)
+
+Active framework state:
+
+user_frameworks (one row per user → active framework_template_id)
+
+Daily checklist state:
+
+daily_framework_items
+
+user_id
+
+date (in user timezone)
+
+framework_template_id
+
+criteria_key
+
+checked
+
+checked_at
+
+Critical: criteria source of truth
+
+The definition of criteria is always from:
+
+framework_templates.criteria (JSON array)
+
+The daily completion state is always from:
+
+daily_framework_items
+
+The UI must merge them by criteria_key.
+
+3) Criteria JSON spec (frontend contract)
+
+Each criteria item in framework_templates.criteria is an object with:
+
+Minimum required:
+
+key (string, unique within that framework)
+
+label (string)
+
+Optional fields:
+
+type: "boolean" (default) or "number"
+
+target: number (only for type "number")
+
+unit: string (optional)
+
+required: boolean (optional)
+
+category: string (optional)
+
+Frontend must interpret:
+
+If type === "number" → UI may still use checkbox (v1) OR later evolve to numeric entry. For now, render as checkbox with label + target.
+
+4) UX: Structure Page → Discipline tab layout
+
+Order (top to bottom):
+
+Community Challenge Card
+
+Active Framework Card
+
+Available Frameworks Catalogue (grid/cards)
+
+4.1 Community Challenge Card
+
+Shows the current active monthly challenge (from community_challenges if today within start/end).
+
+CTA: “Log today” → creates a blocks row with block_type='challenge' + challenge_id, opens block modal.
+
+4.2 Active Framework Card (key component)
+
+If user has an active framework (user_frameworks exists):
+
+Card background uses framework_templates.image_path
+
+Title + short description
+
+Progress bar: checked_count / total_count (e.g. 4/5)
+
+Status:
+
+If checked_count === total_count show Complete (for today)
+
+Else show In progress
+
+On click → opens Active Framework Modal
+
+Active Framework Modal (must show checklist)
+
+Contents:
+
+Header: framework title + close
+
+“Today’s Progress”: x/y
+
+Checklist list:
+
+Each row: checkbox + label
+
+Checkbox state derived from daily_framework_items.checked
+
+Tapping toggles checked/unchecked
+
+Writes:
+
+Update/Upsert daily_framework_items for that user_id + date + framework_template_id + criteria_key
+
+Set checked_at = now() only when checking true (set null when unchecked)
+
+Important behaviour:
+
+The checklist must not be empty if the template has criteria.
+
+If empty, the UI must show a developer-facing debug note in console (not in UI).
+
+4.3 Available Frameworks (Catalogue)
+
+Pull framework_templates where is_active=true
+
+Display as cards with image background (image_path)
+
+Searching filter: text match on title + description
+
+On click → opens Framework Detail Modal (read-only)
+
+Framework Detail Modal
+
+Shows:
+
+Title
+
+Description
+
+Criteria list (read-only, bullet list)
+
+Button:
+
+If not active: Activate
+
+If active: Currently Active (disabled)
+
+Activate action:
+
+Upsert user_frameworks to the selected framework_template_id
+
+Ensure daily checklist rows exist for today (see “Data hydration” below)
+
+Close modal and update Active Framework Card
+
+5) Data hydration: how checklist rows appear each day
+
+The UI must guarantee daily rows exist before it tries to render them.
+
+On page load (Structure > Discipline)
+
+If user has active framework:
+
+Determine today (user timezone) date
+
+Call RPC: fn_ensure_daily_framework_items(today_date) OR implement equivalent logic
+
+Then fetch today’s daily_framework_items for that framework + date
+
+Render checklist
+
+On activation
+
+After upserting user_frameworks:
+
+Call fn_ensure_daily_framework_items(today_date)
+
+Fetch items
+
+Render
+
+If you skip the ensure call, you’ll keep seeing “No criteria defined” even with correct template criteria.
+
+6) Timezone + cutoff rules (v1)
+
+“Today” is based on profiles.timezone
+
+Cutoff time is 12:00 local time
+
+Ticks after cutoff can still be shown visually, but scoring logic must ignore changes after cutoff (scoring handled elsewhere)
+
+Frontend:
+
+Doesn’t need to enforce lock yet, but should display a subtle “Locked” state if backend returns locked status (future-ready).
+
+7) Implementation notes (what the AI building the webapp must do)
+7.1 The merge logic (required)
+
+When rendering checklist rows:
+
+Start from template criteria array (source of labels)
+
+For each criteria.key, find matching daily item by key
+
+Render:
+
+checked = dailyItem?.checked ?? false
+
+label = criteria.label
+
+use criteria.type/target/unit as secondary text
+
+7.2 Handling criteria JSON shape
+
+Must support:
+
+criteria as array (your current DB)
+Optionally also support:
+
+criteria.items if older data exists
+
+7.3 Debug requirements (so you can diagnose fast)
+
+If checklist renders empty:
+
+Log:
+
+active framework_template_id
+
+fetched template criteria length
+
+fetched daily items count
+
+today date + timezone
+
+This prevents you wasting hours guessing.
+
+What tables the app writes to (explicit)
+Browse list
+
+Reads: framework_templates
+
+View framework detail
+
+Reads: framework_templates.criteria
+
+Activate framework
+
+Writes: user_frameworks (upsert by user_id)
+
+Calls: fn_ensure_daily_framework_items(date)
+
+Reads: daily_framework_items after ensure
+
+Toggle checklist item
+
+Writes: daily_framework_items (upsert)
+
+checked = true/false
+
+checked_at = now() when true, null when false

@@ -52,27 +52,27 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-canvas-deep/80 backdrop-blur-sm animate-fadeIn"
+        className="absolute inset-0 bg-[#05070a]/85 backdrop-blur-sm animate-fadeIn"
         onClick={onClose}
       />
 
       {/* Modal content - bottom sheet on mobile, centered on desktop */}
       <div
         className={cn(
-          'relative z-10 w-full sm:max-w-lg max-h-[90vh] bg-surface border border-border rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp',
+          'relative z-10 w-full sm:max-w-lg max-h-[90vh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg',
           className
         )}
       >
         {/* Header */}
         {(title || showClose) && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h2 className="text-body font-semibold text-text-primary">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
+            <h2 className="text-[15px] font-bold text-[#eef2ff]">
               {title}
             </h2>
             {showClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-[8px] text-text-muted hover:text-text-secondary hover:bg-canvas-card transition-colors"
+                className="p-1.5 rounded-[10px] text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.05)] transition-all duration-[140ms]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -122,7 +122,7 @@ export function DropdownMenu({
   return (
     <div
       className={cn(
-        'absolute right-0 top-full mt-1 z-20 min-w-[160px] bg-surface border border-border rounded-[10px] py-1 animate-fadeIn',
+        'absolute right-0 top-full mt-1 z-20 min-w-[180px] bg-[rgba(9,11,16,0.92)] border border-[rgba(255,255,255,0.10)] rounded-[14px] py-2 px-2 animate-fadeIn backdrop-blur-[14px] shadow-lg',
         className
       )}
       onClick={(e) => e.stopPropagation()}
@@ -135,7 +135,7 @@ export function DropdownMenu({
             onClose()
           }}
           className={cn(
-            'w-full px-3 py-2 text-left text-secondary text-text-primary hover:bg-canvas-card transition-colors flex items-center gap-2',
+            'w-full px-3 py-2.5 text-left text-[13px] font-bold text-[rgba(238,242,255,0.86)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(238,242,255,0.96)] rounded-[12px] transition-all duration-[140ms] flex items-center gap-2',
             item.variant === 'destructive' && 'text-danger hover:bg-danger/10'
           )}
         >

@@ -134,8 +134,14 @@ export function useFrameworks(userId: string | undefined) {
 
         setActiveFramework(userFrameworkData as UserFramework | null)
 
-        // Fetch today's submission
         const today = formatDateForApi(new Date())
+
+        // Ensure daily framework items exist (call RPC to hydrate)
+        if (userFrameworkData) {
+          await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+        }
+
+        // Fetch today's submission
         const { data: submissionData } = await supabase
           .from('daily_framework_submissions')
           .select('*')
@@ -145,14 +151,19 @@ export function useFrameworks(userId: string | undefined) {
 
         setTodaySubmission(submissionData as DailyFrameworkSubmission | null)
 
-        // Fetch today's framework items (live ticking)
-        const { data: itemsData } = await supabase
-          .from('daily_framework_items')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('date', today)
+        // Fetch today's framework items for the active framework only
+        if (userFrameworkData?.framework_template_id) {
+          const { data: itemsData } = await supabase
+            .from('daily_framework_items')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('date', today)
+            .eq('framework_template_id', userFrameworkData.framework_template_id)
 
-        setTodayItems((itemsData as DailyFrameworkItem[]) || [])
+          setTodayItems((itemsData as DailyFrameworkItem[]) || [])
+        } else {
+          setTodayItems([])
+        }
       }
     } catch (err) {
       console.error('Failed to fetch frameworks:', err)
@@ -181,6 +192,19 @@ export function useFrameworks(userId: string | undefined) {
 
       if (error) throw error
 
+      // Ensure daily framework items exist for today
+      const today = formatDateForApi(new Date())
+      await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+
+      // Fetch fresh items for the new framework
+      const { data: itemsData } = await supabase
+        .from('daily_framework_items')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .eq('framework_template_id', frameworkTemplateId)
+
+      setTodayItems((itemsData as DailyFrameworkItem[]) || [])
       setActiveFramework(data as UserFramework)
       return data as UserFramework
     },
@@ -234,7 +258,7 @@ export function useFrameworks(userId: string | undefined) {
             checked,
             checked_at: checked ? new Date().toISOString() : null,
           },
-          { onConflict: 'user_id,date,criteria_key' }
+          { onConflict: 'user_id,date,framework_template_id,criteria_key' }
         )
         .select()
         .single()
@@ -259,11 +283,28 @@ export function useFrameworks(userId: string | undefined) {
     [userId, activeFramework, supabase]
   )
 
+  // Deactivate framework
+  const deactivateFramework = useCallback(async () => {
+    if (!userId) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('user_frameworks')
+      .delete()
+      .eq('user_id', userId)
+
+    if (error) throw error
+
+    setActiveFramework(null)
+    setTodayItems([])
+  }, [userId, supabase])
+
   // Calculate completion count
   const completionCount = useMemo(() => {
     if (!activeFramework?.framework_template?.criteria) return { completed: 0, total: 0 }
     const criteria = activeFramework.framework_template.criteria as FrameworkCriteria
-    const total = criteria.items?.length || 0
+    // Support both criteria.items array and criteria as direct array
+    const items = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    const total = items.length
     const completed = todayItems.filter((item) => item.checked).length
     return { completed, total }
   }, [activeFramework, todayItems])
@@ -276,6 +317,7 @@ export function useFrameworks(userId: string | undefined) {
     completionCount,
     loading,
     activateFramework,
+    deactivateFramework,
     submitDailyStatus,
     toggleFrameworkItem,
     refetch: fetchFrameworks,
