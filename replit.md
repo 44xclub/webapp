@@ -39,6 +39,11 @@ A Next.js 14 application with Supabase integration for authentication and data s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous/public key
 
 ## Recent Changes
+- Feb 3, 2026: ProgrammeCatalogue optimized to match Framework card style (image backgrounds, title overlay, 4-column grid)
+- Feb 3, 2026: Programme detail modal with day tabs (Day 1, Day 2, etc.) and session/exercise breakdown
+- Feb 3, 2026: Block type selector highlights with each type's color (workout=orange, habit=green, etc.)
+- Feb 3, 2026: Time section cleaned up in NewBlock modal
+- Feb 3, 2026: Framework items now filter by active framework_template_id on fetch and activation
 - Feb 2, 2026: Structure page optimization - reordered Discipline tab (Challenge → Active Framework → Available Frameworks)
 - Feb 2, 2026: New ActiveFrameworkCard component with image background, gradient overlay, and progress bar
 - Feb 2, 2026: Compact ActiveFrameworkCard added to Home page below day selector
