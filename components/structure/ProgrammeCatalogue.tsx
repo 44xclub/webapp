@@ -155,9 +155,9 @@ export function ProgrammeCatalogue({
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {filteredProgrammes.length === 0 ? (
-            <p className="text-secondary text-text-muted py-4 text-center col-span-4">No programmes found</p>
+            <p className="text-secondary text-text-muted py-4 text-center col-span-2 sm:col-span-4">No programmes found</p>
           ) : (
             filteredProgrammes.map((programme) => {
               const isActive = activeProgrammeId === programme.id
