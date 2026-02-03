@@ -99,11 +99,27 @@ export function ProgrammeCatalogue({
   const renderSessionPayload = (payload: any) => {
     if (!payload) return null
 
+    // Handle plan string format (exercises separated by newlines)
+    if (payload.plan && typeof payload.plan === 'string') {
+      const exercises = payload.plan.split('\\n').filter((line: string) => line.trim())
+      return (
+        <div className="space-y-1">
+          {exercises.map((exercise: string, idx: number) => (
+            <div key={idx} className="flex items-start gap-3 py-2.5 px-3 rounded-[10px] bg-[#0d1014]">
+              <span className="w-2 h-2 rounded-full bg-[#f97316] mt-1.5 flex-shrink-0" />
+              <p className="text-[15px] text-text-primary flex-1">{exercise.trim()}</p>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Handle structured exercise_matrix or exercises array
     const exercises = payload.exercise_matrix || payload.exercises || []
     if (exercises.length === 0) return null
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         {exercises.map((ex: any, idx: number) => (
           <div key={idx} className="flex items-start gap-3 py-2.5 px-3 rounded-[10px] bg-[#0d1014]">
             <span className="w-2 h-2 rounded-full bg-[#f97316] mt-1.5 flex-shrink-0" />
