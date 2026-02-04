@@ -67,7 +67,7 @@ const badgeColors: Record<DisciplineBadge, string> = {
 
 const communityTabs = [
   { value: 'team', label: 'Team' },
-  { value: 'feed', label: 'Feed' },
+  { value: 'feed', label: 'Community' },
 ]
 
 export default function CommunityPage() {
@@ -568,16 +568,19 @@ function FeedView({
                 <div className="mt-3 bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3">
                   <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2">Workout Breakdown</p>
                   <div className="space-y-2">
-                    {post.payload.workout_matrix.map((exercise, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-[13px]">
-                        <span className="text-[#eef2ff]">{exercise.exercise || 'Exercise'}</span>
-                        <div className="flex items-center gap-2 text-[rgba(238,242,255,0.45)]">
-                          {exercise.sets && <span>{exercise.sets} sets</span>}
-                          {exercise.reps && <span>× {exercise.reps}</span>}
-                          {exercise.weight && <span>@ {exercise.weight}kg</span>}
+                    {post.payload.workout_matrix.map((exercise: any, idx: number) => {
+                      const setsCount = Array.isArray(exercise.sets) ? exercise.sets.length : exercise.sets
+                      return (
+                        <div key={idx} className="flex items-center justify-between text-[13px]">
+                          <span className="text-[#eef2ff]">{exercise.exercise || 'Exercise'}</span>
+                          <div className="flex items-center gap-2 text-[rgba(238,242,255,0.45)]">
+                            {setsCount && <span>{setsCount} sets</span>}
+                            {exercise.reps && <span>× {exercise.reps}</span>}
+                            {exercise.weight && <span>@ {exercise.weight}kg</span>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                   {post.payload.duration && (
                     <p className="text-[11px] text-[rgba(238,242,255,0.40)] mt-2">

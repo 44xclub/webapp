@@ -78,7 +78,7 @@ export function MediaUploader({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-foreground mb-2">
+      <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
         Media
       </label>
 

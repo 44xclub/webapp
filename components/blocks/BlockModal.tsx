@@ -44,6 +44,7 @@ const blockTypeOptions = [
   { value: 'habit', label: 'Habit' },
   { value: 'nutrition', label: 'Nutrition' },
   { value: 'checkin', label: 'Check-in' },
+  { value: 'challenge', label: 'Challenge' },
   { value: 'personal', label: 'Personal' },
 ]
 
@@ -77,12 +78,16 @@ function getDefaultPayload(type: BlockType) {
   switch (type) {
     case 'workout':
       return {
-        exercise_matrix: [{ exercise: '', sets: 3, reps: '10', weight: '', notes: '' }],
+        subtype: 'custom',
+        category: 'weight_lifting',
+        exercise_matrix: [{ exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }],
       }
     case 'nutrition':
       return { meal_type: 'breakfast', meal_name: '' }
     case 'checkin':
       return { weight: 0 }
+    case 'challenge':
+      return {}
     default:
       return {}
   }
@@ -325,6 +330,7 @@ export function BlockModal({
                 habit: '#10b981',
                 nutrition: '#0ea5e9',
                 checkin: '#8b5cf6',
+                challenge: '#f59e0b',
                 personal: '#f43f5e',
               }
               return (
@@ -518,6 +524,41 @@ export function BlockModal({
               onUpload={onMediaUpload}
               onDelete={onMediaDelete}
             />
+          )}
+
+          {/* Share to Feed Toggle - not for personal blocks */}
+          {blockType !== 'personal' && (
+            <div className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)]">
+              <div>
+                <p className="text-[13px] font-medium text-[#eef2ff]">Share to Feed</p>
+                <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
+                  {blockType === 'challenge' ? 'Required for challenges' : 'Post to community feed on completion'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (blockType === 'challenge') return // forced
+                  const current = form.getValues('shared_to_feed' as any)
+                  form.setValue('shared_to_feed' as any, !current)
+                }}
+                className={cn(
+                  'relative w-11 h-6 rounded-full transition-colors duration-200',
+                  (blockType === 'challenge' || form.watch('shared_to_feed' as any))
+                    ? 'bg-[#3b82f6]'
+                    : 'bg-[rgba(255,255,255,0.12)]'
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200',
+                    (blockType === 'challenge' || form.watch('shared_to_feed' as any))
+                      ? 'translate-x-5'
+                      : 'translate-x-0'
+                  )}
+                />
+              </button>
+            </div>
           )}
 
           {/* Submit Button */}

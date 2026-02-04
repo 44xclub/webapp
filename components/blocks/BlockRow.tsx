@@ -123,18 +123,33 @@ export function BlockRow({
 
     if (block.block_type === 'workout') {
       const payload = block.payload as unknown as WorkoutPayload
+      // Show exercise count for set-level format
+      if (payload?.exercise_matrix && Array.isArray(payload.exercise_matrix)) {
+        parts.push(`${payload.exercise_matrix.length} exercises`)
+      }
       if (payload?.duration) {
         parts.push(`${payload.duration} min`)
       }
       if (payload?.rpe) {
         parts.push(`RPE ${payload.rpe}`)
       }
+      if (payload?.category) {
+        const categoryLabels: Record<string, string> = {
+          weight_lifting: 'Weights',
+          hyrox: 'Hyrox',
+          hybrid: 'Hybrid',
+          running: 'Running',
+          sport: 'Sport',
+          other: 'Other',
+        }
+        parts.push(categoryLabels[payload.category] || '')
+      }
     }
 
     return parts
   }
 
-  const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-muted-foreground bg-muted/50'
+  const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-[rgba(238,242,255,0.52)] bg-[rgba(255,255,255,0.04)]'
 
   return (
     <div

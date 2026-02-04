@@ -49,18 +49,18 @@ export function DayView({
         </div>
       </div>
 
-      {/* Block list */}
+      {/* Block list with faint border container */}
       <div className="px-3">
         {sortedBlocks.length === 0 ? (
           // Empty state
-          <div className="rounded-xl overflow-hidden">
+          <div className="rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
             <div className="px-4 py-12 text-center">
               <p className="text-[rgba(238,242,255,0.52)] text-[14px] mb-4">
                 No blocks yet.
               </p>
               <button
                 onClick={() => onAddBlock(date)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#3b82f6] text-white rounded-lg text-[13px] font-semibold hover:bg-[#3b82f6]/90 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#3b82f6] text-white rounded-[10px] text-[13px] font-semibold hover:bg-[#3b82f6]/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Add block
@@ -68,7 +68,7 @@ export function DayView({
             </div>
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden">
+          <div className="rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
             <div className="divide-y divide-[rgba(255,255,255,0.06)]">
               {sortedBlocks.map((block) => (
                 <BlockRow

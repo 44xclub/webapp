@@ -64,7 +64,7 @@ export function CheckinForm({ form, userHasHeight = false }: CheckinFormProps) {
       />
 
       {/* Note about images */}
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
         You can add front/back/side photos after saving the block.
       </p>
     </div>

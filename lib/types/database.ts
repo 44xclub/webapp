@@ -710,7 +710,24 @@ export interface ScoreBreakdown {
 }
 
 // Payload types for each block type
+export type WorkoutSubtype = 'programme' | 'custom'
+export type WorkoutCategory = 'weight_lifting' | 'hyrox' | 'hybrid' | 'running' | 'sport' | 'other'
+
+export interface ExerciseSet {
+  set: number
+  reps: number | string
+  weight: number | string
+  completed?: boolean
+}
+
 export interface ExerciseEntry {
+  exercise: string
+  sets: ExerciseSet[]
+  notes?: string
+}
+
+// Legacy flat format (pre-v4) for backward compat in display
+export interface LegacyExerciseEntry {
   exercise: string
   sets: number
   reps: string
@@ -719,7 +736,10 @@ export interface ExerciseEntry {
 }
 
 export interface WorkoutPayload {
-  exercise_matrix: ExerciseEntry[]
+  subtype?: WorkoutSubtype
+  category?: WorkoutCategory
+  exercise_matrix?: ExerciseEntry[]
+  description?: string
   duration?: number
   rpe?: number
 }

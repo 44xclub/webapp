@@ -51,10 +51,12 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     fetchBlocks()
   }, [fetchBlocks])
 
-  // Create a new block
+  // Create a new block (with optional share-to-feed)
   const createBlock = useCallback(
     async (data: BlockFormData) => {
       if (!userId) throw new Error('Not authenticated')
+
+      const sharedToFeed = (data as any).shared_to_feed === true || data.block_type === 'challenge'
 
       const insertData = {
         user_id: userId,
@@ -66,6 +68,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         notes: data.notes || null,
         payload: data.payload || {},
         repeat_rule: data.repeat_rule || null,
+        shared_to_feed: sharedToFeed,
       }
 
       const { data: newBlock, error } = await supabase
@@ -115,7 +118,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     [userId, supabase]
   )
 
-  // Toggle completion (optimistic update)
+  // Toggle completion (optimistic update) + create feed post if shared
   const toggleComplete = useCallback(
     async (block: Block) => {
       if (!userId) throw new Error('Not authenticated')
@@ -137,6 +140,23 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
           .eq('user_id', userId)
 
         if (error) throw error
+
+        // Create feed post when completing a shared block (not when un-completing)
+        if (newCompletedAt && block.shared_to_feed && block.block_type !== 'personal') {
+          try {
+            await supabase
+              .from('feed_posts')
+              .upsert({
+                user_id: userId,
+                block_id: block.id,
+                title: block.title || `${block.block_type.charAt(0).toUpperCase() + block.block_type.slice(1)} completed`,
+                payload: block.payload || {},
+              }, { onConflict: 'block_id' })
+          } catch (feedErr) {
+            // Don't fail the completion if feed post fails
+            console.error('Feed post creation failed:', feedErr)
+          }
+        }
       } catch (err) {
         // Revert on error
         setBlocks((prev) =>
