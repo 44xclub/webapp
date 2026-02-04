@@ -1,0 +1,57 @@
+I have optimised Discipline Frameworks to show the image as the card, then the title over the top, when clicked a modal pop up appears with the frameworks Title, Description and criteria. 
+
+Its time to optimise the fitness programmes the same way, they have image file path also, copy the exact way the frameworks looks. However when a fitness programme is clicked, it will look a bit different. The user will see the fitness programme with its title over the card (same as Frameworks) Then when clicked, there will be title, description and then a breakdown of each day. If its a 3 day a week programme, There will be tabs for Day 1, Day 2, Day 3. Then Those can be licked to see session breakdown. This needs to be in a clean format. Below is the supabase schema, for the relevant fitness programme tables. Any questions then ask. You should have the most recent webapp on this branch. 
+
+
+create table public.programme_templates (
+  id uuid not null default gen_random_uuid (),
+  title text not null,
+  overview text not null,
+  structure text null,
+  equipment text null,
+  tags text[] not null default '{}'::text[],
+  is_active boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  hero_image_path text null,
+  constraint programme_templates_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create trigger update_programme_templates_updated_at BEFORE
+update on programme_templates for EACH row
+execute FUNCTION update_updated_at_column ();
+
+
+
+
+
+create table public.programme_sessions (
+  id uuid not null default gen_random_uuid (),
+  programme_template_id uuid not null,
+  week integer not null,
+  day_index integer not null,
+  title text not null,
+  payload jsonb not null default '{}'::jsonb,
+  constraint programme_sessions_pkey primary key (id),
+  constraint programme_sessions_programme_template_id_week_day_index_key unique (programme_template_id, week, day_index),
+  constraint programme_sessions_programme_template_id_fkey foreign KEY (programme_template_id) references programme_templates (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_programme_sessions_template on public.programme_sessions using btree (programme_template_id) TABLESPACE pg_default;
+
+
+
+create table public.user_programmes (
+  user_id uuid not null,
+  programme_template_id uuid not null,
+  activated_at timestamp with time zone not null default now(),
+  deactivated_at timestamp with time zone null,
+  updated_at timestamp with time zone not null default now(),
+  constraint user_programmes_pkey primary key (user_id),
+  constraint user_programmes_programme_template_id_fkey foreign KEY (programme_template_id) references programme_templates (id),
+  constraint user_programmes_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create trigger update_user_programmes_updated_at BEFORE
+update on user_programmes for EACH row
+execute FUNCTION update_updated_at_column ();

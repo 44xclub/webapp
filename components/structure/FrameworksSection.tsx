@@ -78,9 +78,9 @@ export function FrameworksSection({ frameworks, activeFramework, todaySubmission
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {filteredFrameworks.length === 0 ? (
-            <p className="text-secondary text-text-muted py-4 text-center col-span-4">No frameworks found</p>
+            <p className="text-secondary text-text-muted py-4 text-center col-span-2 sm:col-span-4">No frameworks found</p>
           ) : (
             filteredFrameworks.map((framework) => {
               const isActive = activeFramework?.framework_template_id === framework.id
