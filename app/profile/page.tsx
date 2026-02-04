@@ -26,11 +26,6 @@ import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-/*
-  44CLUB Profile Page
-  Status. Stats. Settings.
-*/
-
 const TIMEZONES = [
   'Europe/London',
   'Europe/Paris',
@@ -46,11 +41,11 @@ const TIMEZONES = [
 ]
 
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-text-muted',
-  'Committed': 'text-accent-blue',
-  'Elite': 'text-accent',
-  'Forged': 'text-warning',
-  '44-Pro': 'text-success',
+  'Initiated': 'text-[rgba(238,242,255,0.50)]',
+  'Committed': 'text-[#60a5fa]',
+  'Elite': 'text-[#22d3ee]',
+  'Forged': 'text-[#f59e0b]',
+  '44-Pro': 'text-[#a78bfa]',
 }
 
 export default function ProfilePage() {
@@ -183,8 +178,8 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
       </div>
     )
   }
@@ -193,12 +188,12 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-canvas pb-20">
+    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
       {/* Page Header */}
-      <header className="bg-surface border-b border-border">
-        <div className="flex items-center justify-between px-4 py-4">
-          <h1 className="text-page-title font-semibold text-text-primary">Profile</h1>
-          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-text-muted hover:text-text-secondary hover:bg-canvas-card transition-colors">
+      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="text-[20px] font-semibold text-[#eef2ff]">Profile</h1>
+          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
@@ -206,38 +201,38 @@ export default function ProfilePage() {
 
       <main className="px-4 py-4 space-y-4">
         {/* Profile Card */}
-        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
-          <div className="p-6 flex flex-col items-center">
-            <div className="mb-4">
-              <div className="h-24 w-24 rounded-[16px] bg-canvas-card flex items-center justify-center border border-border">
-                <span className="text-section-title font-semibold text-text-secondary">{initials}</span>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="p-5 flex flex-col items-center">
+            <div className="mb-3">
+              <div className="h-20 w-20 rounded-[14px] bg-[rgba(255,255,255,0.04)] flex items-center justify-center border border-[rgba(255,255,255,0.08)]">
+                <span className="text-[18px] font-semibold text-[rgba(238,242,255,0.65)]">{initials}</span>
               </div>
             </div>
-            <h2 className="text-page-title font-semibold text-text-primary mb-1">{displayName}</h2>
-            <p className="text-secondary text-text-muted">{user?.email}</p>
+            <h2 className="text-[18px] font-semibold text-[#eef2ff] mb-0.5">{displayName}</h2>
+            <p className="text-[13px] text-[rgba(238,242,255,0.45)]">{user?.email}</p>
           </div>
 
           {/* Discipline Stats */}
           {disciplineLevel && (
-            <div className="border-t border-border px-6 py-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="border-t border-[rgba(255,255,255,0.06)] px-5 py-3.5">
+              <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={`text-body font-semibold ${badgeColors[disciplineLevel.badge]}`}>{disciplineLevel.badge}</span>
-                  <span className="text-secondary text-text-muted">Level {disciplineLevel.level}</span>
+                  <span className={`text-[14px] font-semibold ${badgeColors[disciplineLevel.badge]}`}>{disciplineLevel.badge}</span>
+                  <span className="text-[12px] text-[rgba(238,242,255,0.40)]">Level {disciplineLevel.level}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-body font-bold text-text-primary">{profile?.discipline_score}</span>
-                  <span className="text-secondary text-text-muted ml-1">pts</span>
+                  <span className="text-[14px] font-bold text-[#eef2ff]">{profile?.discipline_score}</span>
+                  <span className="text-[12px] text-[rgba(238,242,255,0.40)] ml-1">pts</span>
                 </div>
               </div>
               {disciplineLevel.level < 44 && (
                 <div className="space-y-1">
-                  <div className="flex justify-between text-meta text-text-muted">
+                  <div className="flex justify-between text-[11px] text-[rgba(238,242,255,0.40)]">
                     <span>{disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} to next</span>
                     <span>{Math.round(disciplineLevel.progress)}%</span>
                   </div>
-                  <div className="w-full h-2 bg-canvas-card rounded-full overflow-hidden">
-                    <div className="h-full bg-accent transition-all duration-500" style={{ width: `${disciplineLevel.progress}%` }} />
+                  <div className="w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#3b82f6] transition-all duration-500" style={{ width: `${disciplineLevel.progress}%` }} />
                   </div>
                 </div>
               )}
@@ -246,18 +241,18 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-body font-medium text-text-primary">Profile Details</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleCancelEdit} className="p-1.5 text-text-muted hover:text-text-secondary"><X className="h-4 w-4" /></button>
-                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-accent hover:text-accent/80">
+                <button onClick={handleCancelEdit} className="p-1.5 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"><X className="h-4 w-4" /></button>
+                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-[#3b82f6] hover:text-[#60a5fa]">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="text-secondary text-accent hover:underline">Edit</button>
+              <button onClick={() => setEditing(true)} className="text-[12px] font-medium text-[#3b82f6] hover:underline">Edit</button>
             )}
           </div>
 
@@ -273,7 +268,7 @@ export default function ProfilePage() {
                 <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
               </>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <ProfileRow icon={UserIcon} label="Display Name" value={profile?.display_name || 'Not set'} />
                 <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
                 <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
@@ -286,47 +281,47 @@ export default function ProfilePage() {
         </div>
 
         {/* Streak Stats */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Streaks</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Streaks</h3>
           </div>
-          <div className="p-4 grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
-              <Flame className="h-8 w-8 text-warning mx-auto mb-2" />
-              <p className="text-section-title font-bold text-text-primary">{profile?.current_streak || 0}</p>
-              <p className="text-meta text-text-muted">Current Streak</p>
+          <div className="p-4 grid grid-cols-2 gap-3">
+            <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
+              <Flame className="h-7 w-7 text-[#f59e0b] mx-auto mb-1.5" />
+              <p className="text-[18px] font-bold text-[#eef2ff]">{profile?.current_streak || 0}</p>
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Current Streak</p>
             </div>
-            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
-              <Trophy className="h-8 w-8 text-success mx-auto mb-2" />
-              <p className="text-section-title font-bold text-text-primary">{profile?.best_streak || 0}</p>
-              <p className="text-meta text-text-muted">Best Streak</p>
+            <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
+              <Trophy className="h-7 w-7 text-[#22c55e] mx-auto mb-1.5" />
+              <p className="text-[18px] font-bold text-[#eef2ff]">{profile?.best_streak || 0}</p>
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Best Streak</p>
             </div>
           </div>
         </div>
 
         {/* Check-ins */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Recent Check-ins</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Recent Check-ins</h3>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
             {checkinsLoading ? (
-              <div className="p-4 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-text-muted" /></div>
+              <div className="p-4 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" /></div>
             ) : checkinBlocks.length === 0 ? (
-              <div className="p-4 text-center text-text-muted text-secondary">No check-ins recorded yet</div>
+              <div className="p-4 text-center text-[12px] text-[rgba(238,242,255,0.40)]">No check-ins recorded yet</div>
             ) : (
               checkinBlocks.map((block) => {
                 const payload = block.payload as { weight?: number; body_fat_percent?: number }
                 return (
                   <div key={block.id} className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Scale className="h-5 w-5 text-text-muted" />
+                      <Scale className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
                       <div>
-                        <p className="text-secondary font-medium text-text-primary">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
-                        <p className="text-meta text-text-muted">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        <p className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
+                        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                       </div>
                     </div>
-                    {payload?.body_fat_percent && <span className="text-secondary text-text-muted">{payload.body_fat_percent}% BF</span>}
+                    {payload?.body_fat_percent && <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{payload.body_fat_percent}% BF</span>}
                   </div>
                 )
               })
@@ -335,24 +330,24 @@ export default function ProfilePage() {
         </div>
 
         {/* Statistics */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Statistics</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Statistics</h3>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-text-muted" />
-                <span className="text-secondary text-text-primary">Member since</span>
+                <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Member since</span>
               </div>
-              <span className="text-secondary text-text-muted">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
+              <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
             </div>
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Dumbbell className="h-5 w-5 text-text-muted" />
-                <span className="text-secondary text-text-primary">Total Points</span>
+                <Dumbbell className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Total Points</span>
               </div>
-              <span className="text-secondary font-medium text-text-primary">{profile?.discipline_score || 0}</span>
+              <span className="text-[13px] font-medium text-[#eef2ff]">{profile?.discipline_score || 0}</span>
             </div>
           </div>
         </div>
@@ -369,11 +364,11 @@ export default function ProfilePage() {
 
 function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <Icon className="h-5 w-5 text-text-muted" />
+    <div className="flex items-center gap-3 py-1">
+      <Icon className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
       <div>
-        <p className="text-meta text-text-muted">{label}</p>
-        <p className="text-secondary text-text-primary">{value}</p>
+        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{label}</p>
+        <p className="text-[13px] text-[rgba(238,242,255,0.85)]">{value}</p>
       </div>
     </div>
   )

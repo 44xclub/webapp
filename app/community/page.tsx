@@ -8,6 +8,7 @@ import { Loader2, Users, Activity, Heart, Trash2, Trophy, Zap, Shield, Award, Cr
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { DisciplineBadge, ExerciseEntry, Profile, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
@@ -63,6 +64,11 @@ const badgeColors: Record<DisciplineBadge, string> = {
   'Forged': 'text-amber-400',
   '44-Pro': 'text-yellow-400',
 }
+
+const communityTabs = [
+  { value: 'team', label: 'Team' },
+  { value: 'feed', label: 'Feed' },
+]
 
 export default function CommunityPage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
@@ -198,8 +204,8 @@ export default function CommunityPage() {
   if (authLoading) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary animate-pulse-glow" />
+        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
         </div>
       </div>
     )
@@ -207,43 +213,18 @@ export default function CommunityPage() {
 
   return (
     <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] bg-background pb-20">
+    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
-      <header className="bg-card border-b border-border">
-        <div className="px-4 py-3">
-          <h1 className="text-lg font-semibold text-foreground">Community</h1>
-        </div>
-
-        {/* Tab Toggle */}
-        <div className="px-4 pb-3">
-          <div className="inline-flex bg-secondary rounded-lg p-1 w-full">
-            <button
-              onClick={() => setActiveTab('team')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'team'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              Team
-            </button>
-            <button
-              onClick={() => setActiveTab('feed')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'feed'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Activity className="h-4 w-4" />
-              Feed
-            </button>
-          </div>
-        </div>
+      <header className="px-4 pt-4 pb-2">
+        <h1 className="text-[20px] font-semibold text-[#eef2ff] mb-3">Community</h1>
+        <SegmentedControl
+          tabs={communityTabs}
+          activeTab={activeTab}
+          onChange={(v) => setActiveTab(v as TabType)}
+        />
       </header>
 
       {/* Main Content */}
@@ -335,17 +316,17 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
       </div>
     )
   }
 
   if (!teamData?.team) {
     return (
-      <div className="bg-card rounded-xl p-6 border border-border text-center">
-        <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">No Team Yet</h3>
-        <p className="text-sm text-muted-foreground">
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
+        <Users className="h-12 w-12 text-[rgba(238,242,255,0.35)] mx-auto mb-4" />
+        <h3 className="text-[16px] font-medium text-[#eef2ff] mb-2">No Team Yet</h3>
+        <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
           You&apos;ll be assigned to a team of 8 members to keep each other accountable.
         </p>
       </div>
@@ -359,49 +340,49 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Team Header */}
-      <div className="bg-card rounded-xl p-4 border border-border">
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-4 border border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Your Team</p>
-            <p className="text-2xl font-bold text-foreground">Team #{teamData.team.team_number}</p>
+            <p className="text-[12px] text-[rgba(238,242,255,0.45)]">Your Team</p>
+            <p className="text-[22px] font-bold text-[#eef2ff]">Team #{teamData.team.team_number}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Score</p>
-            <p className="text-xl font-bold text-foreground">{teamTotalScore}</p>
+            <p className="text-[12px] text-[rgba(238,242,255,0.45)]">Total Score</p>
+            <p className="text-[20px] font-bold text-[#eef2ff]">{teamTotalScore}</p>
           </div>
         </div>
       </div>
 
       {/* Daily Overview */}
       {teamData.dailyOverview && (
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">Latest Snapshot ({teamData.dailyOverview.date})</p>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-4 border border-[rgba(255,255,255,0.06)]">
+          <p className="text-[12px] text-[rgba(238,242,255,0.45)] mb-2">Latest Snapshot ({teamData.dailyOverview.date})</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-secondary rounded-lg">
-              <p className="text-lg font-bold text-foreground">
+            <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
+              <p className="text-[18px] font-bold text-[#eef2ff]">
                 {(teamData.dailyOverview.payload as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
               </p>
-              <p className="text-xs text-muted-foreground">Avg Score</p>
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Avg Score</p>
             </div>
-            <div className="text-center p-3 bg-secondary rounded-lg">
-              <p className="text-lg font-bold text-foreground">
+            <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
+              <p className="text-[18px] font-bold text-[#eef2ff]">
                 {(teamData.dailyOverview.payload as TeamSnapshot)?.total_score || 0}
               </p>
-              <p className="text-xs text-muted-foreground">Total Score</p>
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Total Score</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Team Members */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h3 className="font-medium text-foreground">Team Members</h3>
-          <span className="text-sm text-muted-foreground">{teamData.members.length}/8</span>
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+          <h3 className="text-[14px] font-medium text-[#eef2ff]">Team Members</h3>
+          <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{teamData.members.length}/8</span>
         </div>
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-[rgba(255,255,255,0.06)]">
           {teamData.members.map((member) => {
             const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
             const BadgeIcon = badgeIcons[level.badge]
@@ -411,31 +392,31 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
             return (
               <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                    <span className="text-sm font-medium text-muted-foreground">
+                  <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
                       {initials}
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-[13px] font-medium text-[#eef2ff]">
                       {displayName}
                       {member.role === 'captain' && (
-                        <span className="ml-2 text-xs text-primary">(Captain)</span>
+                        <span className="ml-2 text-[11px] text-[#3b82f6]">(Captain)</span>
                       )}
                     </p>
                     <div className="flex items-center gap-1">
                       <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                      <span className={`text-xs ${badgeColors[level.badge]}`}>
+                      <span className={`text-[11px] ${badgeColors[level.badge]}`}>
                         Lv.{level.level}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-foreground">
+                  <p className="text-[13px] font-bold text-[#eef2ff]">
                     {member.profiles?.discipline_score || 0}
                   </p>
-                  <p className="text-xs text-muted-foreground">pts</p>
+                  <p className="text-[11px] text-[rgba(238,242,255,0.40)]">pts</p>
                 </div>
               </div>
             )
@@ -504,17 +485,17 @@ function FeedView({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
       </div>
     )
   }
 
   if (posts.length === 0) {
     return (
-      <div className="bg-card rounded-xl p-6 border border-border text-center">
-        <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-foreground mb-2">No Posts Yet</h3>
-        <p className="text-sm text-muted-foreground">
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
+        <Activity className="h-12 w-12 text-[rgba(238,242,255,0.35)] mx-auto mb-4" />
+        <h3 className="text-[16px] font-medium text-[#eef2ff] mb-2">No Posts Yet</h3>
+        <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
           Share your workouts and achievements to inspire others.
         </p>
       </div>
@@ -522,7 +503,7 @@ function FeedView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {posts.map((post) => {
         const displayName = post.user_profile?.display_name || 'Member'
         const initials = displayName.slice(0, 2).toUpperCase()
@@ -531,25 +512,25 @@ function FeedView({
         const isOwnPost = post.user_id === userId
 
         return (
-          <div key={post.id} className="bg-card rounded-xl border border-border overflow-hidden">
+          <div key={post.id} className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
             {/* Post Header */}
-            <div className="px-4 py-3 border-b border-border">
+            <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                    <span className="text-sm font-medium text-muted-foreground">
+                  <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
                       {initials}
                     </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground">{displayName}</p>
+                      <p className="text-[13px] font-medium text-[#eef2ff]">{displayName}</p>
                       <div className="flex items-center gap-1">
                         <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                        <span className={`text-xs ${badgeColors[level.badge]}`}>Lv.{level.level}</span>
+                        <span className={`text-[11px] ${badgeColors[level.badge]}`}>Lv.{level.level}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
                       {new Date(post.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -563,7 +544,7 @@ function FeedView({
                   <button
                     onClick={() => handleDelete(post.id)}
                     disabled={deleting === post.id}
-                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                    className="p-2 text-[rgba(238,242,255,0.40)] hover:text-rose-400 transition-colors"
                   >
                     {deleting === post.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -577,20 +558,20 @@ function FeedView({
 
             {/* Post Content */}
             <div className="px-4 py-3">
-              <h3 className="font-medium text-foreground mb-2">{post.title}</h3>
+              <h3 className="text-[14px] font-medium text-[#eef2ff] mb-2">{post.title}</h3>
               {post.body && (
-                <p className="text-sm text-muted-foreground mb-3">{post.body}</p>
+                <p className="text-[13px] text-[rgba(238,242,255,0.52)] mb-3">{post.body}</p>
               )}
 
               {/* Workout Matrix */}
               {post.payload?.workout_matrix && post.payload.workout_matrix.length > 0 && (
-                <div className="mt-3 bg-secondary/50 rounded-lg p-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Workout Breakdown</p>
+                <div className="mt-3 bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3">
+                  <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2">Workout Breakdown</p>
                   <div className="space-y-2">
                     {post.payload.workout_matrix.map((exercise, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-sm">
-                        <span className="text-foreground">{exercise.exercise || 'Exercise'}</span>
-                        <div className="flex items-center gap-2 text-muted-foreground">
+                      <div key={idx} className="flex items-center justify-between text-[13px]">
+                        <span className="text-[#eef2ff]">{exercise.exercise || 'Exercise'}</span>
+                        <div className="flex items-center gap-2 text-[rgba(238,242,255,0.45)]">
                           {exercise.sets && <span>{exercise.sets} sets</span>}
                           {exercise.reps && <span>× {exercise.reps}</span>}
                           {exercise.weight && <span>@ {exercise.weight}kg</span>}
@@ -599,7 +580,7 @@ function FeedView({
                     ))}
                   </div>
                   {post.payload.duration && (
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-[11px] text-[rgba(238,242,255,0.40)] mt-2">
                       Duration: {post.payload.duration} min
                     </p>
                   )}
@@ -608,13 +589,13 @@ function FeedView({
             </div>
 
             {/* Post Actions */}
-            <div className="px-4 py-3 border-t border-border flex items-center gap-4">
+            <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-4">
               <button
                 onClick={() => handleRespect(post.id, post.has_respected || false)}
-                className={`flex items-center gap-2 text-sm transition-colors ${
+                className={`flex items-center gap-2 text-[13px] transition-colors ${
                   post.has_respected
                     ? 'text-red-500'
-                    : 'text-muted-foreground hover:text-red-500'
+                    : 'text-[rgba(238,242,255,0.45)] hover:text-red-500'
                 }`}
               >
                 <Heart

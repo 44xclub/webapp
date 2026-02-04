@@ -429,22 +429,16 @@ export function BlockModal({
         <form onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
           {/* Summary Header */}
           {!editingBlock && (
-            <div className={cn(
-              'p-4 rounded-card border',
-              `bg-gradient-to-r from-steel-800 to-steel-900 border-steel-700`
-            )}>
+            <div className="p-4 rounded-[12px] border bg-[#0d1014] border-[rgba(255,255,255,0.08)]">
               <div className="flex items-center gap-3 mb-2">
-                <div className={cn(
-                  'h-10 w-10 rounded-lg flex items-center justify-center',
-                  `${accent.bg}/20 border ${accent.border}/30`
-                )}>
+                <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)]">
                   <Clock className={cn('h-5 w-5', accent.text)} />
                 </div>
                 <div>
-                  <p className="text-meta text-text-muted">
+                  <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
                     {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'} ({selectedDuration} min)
                   </p>
-                  <p className="text-body font-semibold text-foreground">
+                  <p className="text-[14px] font-semibold text-[#eef2ff]">
                     {titleValue || blockTypeLabels[blockType]}
                   </p>
                 </div>
@@ -457,7 +451,7 @@ export function BlockModal({
             <button
               type="button"
               onClick={handleBack}
-              className="flex items-center gap-1 text-meta text-text-muted hover:text-text-secondary transition-colors"
+              className="flex items-center gap-1 text-[12px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)] transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to basics
@@ -467,10 +461,10 @@ export function BlockModal({
           {/* Quick info rows when editing */}
           {editingBlock && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-steel-800/50 rounded-card border border-steel-700">
+              <div className="flex items-center justify-between p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)]">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  <span className="text-body text-foreground">{formatDisplayDate(dateValue)}</span>
+                  <Calendar className="h-5 w-5 text-[#3b82f6]" />
+                  <span className="text-[14px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
                 </div>
                 <Input
                   type="date"
@@ -478,14 +472,14 @@ export function BlockModal({
                   className="w-auto"
                 />
               </div>
-              <div className="p-3 bg-steel-800/50 rounded-card border border-steel-700 space-y-3">
+              <div className="p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-primary" />
-                    <span className="text-body text-foreground">
+                    <Clock className="h-5 w-5 text-[#3b82f6]" />
+                    <span className="text-[14px] text-[#eef2ff]">
                       {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'}
                       {endTime && (
-                        <span className="text-meta text-text-muted ml-2">
+                        <span className="text-[12px] text-[rgba(238,242,255,0.45)] ml-2">
                           ({calculateMinutesBetween(startTime, endTime) || 0} min)
                         </span>
                       )}

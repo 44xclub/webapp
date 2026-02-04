@@ -169,7 +169,7 @@ export default function AppPage() {
       <main className="flex-1 pb-8 overflow-y-auto">
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
+            <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
           </div>
         ) : viewMode === 'day' ? (
           <div className="pt-2">
