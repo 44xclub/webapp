@@ -5,11 +5,6 @@ import { Button } from '@/components/ui'
 import { Target, Check, Loader2 } from 'lucide-react'
 import type { CommunityChallenge, Block } from '@/lib/types'
 
-/*
-  44CLUB Challenge Card
-  Stoic. Controlled. Status display.
-*/
-
 interface ChallengeCardProps {
   challenge: CommunityChallenge | null
   todayBlock: Block | null
@@ -34,17 +29,13 @@ export function ChallengeCard({ challenge, todayBlock, onLogChallenge, onRefetch
 
   if (!challenge) {
     return (
-      <div className="bg-surface border border-border rounded-[16px] p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-[10px] bg-canvas-card">
-            <Target className="h-5 w-5 text-text-muted" />
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)]">
+            <Target className="h-4 w-4 text-[rgba(238,242,255,0.30)]" />
           </div>
-          <div>
-            <h3 className="text-body font-semibold text-text-primary">Community Challenge</h3>
-            <p className="text-secondary text-text-muted">Monthly</p>
-          </div>
+          <p className="text-[12px] text-[rgba(238,242,255,0.40)]">No active challenge this month.</p>
         </div>
-        <p className="text-secondary text-text-muted">No active challenge this month.</p>
       </div>
     )
   }
@@ -53,43 +44,37 @@ export function ChallengeCard({ challenge, todayBlock, onLogChallenge, onRefetch
   const hasLogged = todayBlock != null
 
   return (
-    <div className="bg-surface border border-border rounded-[16px] p-4">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-[10px] bg-accent/10 border border-accent/20">
-          <Target className="h-5 w-5 text-accent" />
+    <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3.5">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="p-1.5 rounded-[8px] bg-[rgba(59,130,246,0.08)] border border-[rgba(59,130,246,0.12)]">
+          <Target className="h-4 w-4 text-[#3b82f6]" />
         </div>
         <div className="flex-1">
-          <h3 className="text-body font-semibold text-text-primary">Community Challenge</h3>
-          <p className="text-secondary text-text-muted">Monthly</p>
+          <h4 className="text-[13px] font-semibold text-[rgba(238,242,255,0.90)]">{challenge.title}</h4>
         </div>
         {isCompleted && (
-          <div className="p-1.5 rounded-[10px] bg-success/10 border border-success/20">
-            <Check className="h-4 w-4 text-success" />
+          <div className="p-1 rounded-[6px] bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.12)]">
+            <Check className="h-3.5 w-3.5 text-[#22c55e]" />
           </div>
         )}
       </div>
 
-      <div className="space-y-3">
-        <div>
-          <h4 className="text-body font-medium text-text-primary">{challenge.title}</h4>
-          {challenge.description && (
-            <p className="text-secondary text-text-secondary mt-1">{challenge.description}</p>
-          )}
+      {challenge.description && (
+        <p className="text-[12px] text-[rgba(238,242,255,0.45)] leading-relaxed mb-3">{challenge.description}</p>
+      )}
+
+      {isCompleted ? (
+        <div className="flex items-center gap-1.5 text-[12px] text-[#22c55e] font-medium">
+          <Check className="h-3.5 w-3.5" />
+          Completed today
         </div>
-
-        {isCompleted ? (
-          <div className="flex items-center gap-2 text-secondary text-success font-medium">
-            <Check className="h-4 w-4" />
-            Completed today
-          </div>
-        ) : hasLogged ? (
-          <p className="text-secondary text-text-muted">Logged - mark complete in calendar</p>
-        ) : (
-          <Button onClick={handleLogChallenge} disabled={logging} className="w-full">
-            {logging ? <><Loader2 className="h-4 w-4 animate-spin" /> Logging...</> : 'Log today'}
-          </Button>
-        )}
-      </div>
+      ) : hasLogged ? (
+        <p className="text-[11px] text-[rgba(238,242,255,0.35)]">Logged - mark complete in calendar</p>
+      ) : (
+        <Button onClick={handleLogChallenge} disabled={logging} size="sm" className="w-full">
+          {logging ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Logging...</> : 'Log today'}
+        </Button>
+      )}
     </div>
   )
 }
