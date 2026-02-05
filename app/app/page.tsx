@@ -105,9 +105,9 @@ export default function AppPage() {
   const handleAddBlock = useCallback((date: Date) => { setAddingToDate(date); setEditingBlock(null); setModalOpen(true) }, [])
   const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
   const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null) }, [])
-  const handleSaveBlock = useCallback(async (data: BlockFormData) => {
+  const handleSaveBlock = useCallback(async (data: BlockFormData, entryMode?: 'schedule' | 'log') => {
     if (editingBlock) await updateBlock(editingBlock.id, data)
-    else await createBlock(data)
+    else await createBlock(data, entryMode || 'schedule')
   }, [editingBlock, createBlock, updateBlock])
   // Determine if block should show share prompt on completion
   const isShareEligible = useCallback((block: Block) => {
@@ -117,7 +117,8 @@ export default function AppPage() {
 
   const handleToggleComplete = useCallback(async (block: Block) => {
     // If completing (not un-completing) and share eligible, show share prompt
-    if (!block.completed_at && isShareEligible(block)) {
+    // But don't show prompt if already shared to feed
+    if (!block.completed_at && isShareEligible(block) && !block.shared_to_feed) {
       // Complete the block first
       await toggleComplete(block)
       // Then show share prompt

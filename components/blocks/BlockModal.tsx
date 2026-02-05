@@ -21,7 +21,7 @@ import {
   challengeSchema,
   type BlockFormData,
 } from '@/lib/schemas'
-import { blockTypeLabels, blockTypeAccentColors, cn } from '@/lib/utils'
+import { blockTypeLabels, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
 import type { Block, BlockType, BlockMedia, ProgrammeSession, UserProgramme } from '@/lib/types'
 import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -29,7 +29,7 @@ import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 interface BlockModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: BlockFormData) => Promise<void>
+  onSave: (data: BlockFormData, entryMode?: 'schedule' | 'log') => Promise<void>
   initialDate: Date
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
@@ -278,6 +278,10 @@ export function BlockModal({
   const handleBlockTypeChange = (newType: BlockType) => {
     if (editingBlock) return
     setBlockType(newType)
+    // Challenge blocks can only be logged, not scheduled
+    if (newType === 'challenge') {
+      setEntryMode('log')
+    }
     form.reset({
       ...form.getValues(),
       block_type: newType,
@@ -302,7 +306,8 @@ export function BlockModal({
   const handleSubmit = async (data: BlockFormData) => {
     setIsSubmitting(true)
     try {
-      await onSave(data)
+      // Pass entry mode for new blocks (not editing)
+      await onSave(data, editingBlock ? undefined : entryMode)
       setStep(1)
       onClose()
     } catch (error) {
@@ -340,7 +345,6 @@ export function BlockModal({
     }
   }
 
-  const accent = blockTypeAccentColors[blockType]
   const endTime = endTimeWatched
 
   // Determine if this block is future-scheduled (for share/media gating)
@@ -383,33 +387,41 @@ export function BlockModal({
       {/* Step 1: Quick Entry */}
       {step === 1 && !editingBlock && (
         <div className="p-4 space-y-5">
-          {/* Schedule vs Log Toggle */}
-          <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
-            <button
-              type="button"
-              onClick={() => setEntryMode('schedule')}
-              className={cn(
-                'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
-                entryMode === 'schedule'
-                  ? 'bg-[#3b82f6] text-white'
-                  : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
-              )}
-            >
-              Schedule
-            </button>
-            <button
-              type="button"
-              onClick={() => setEntryMode('log')}
-              className={cn(
-                'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
-                entryMode === 'log'
-                  ? 'bg-[#3b82f6] text-white'
-                  : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
-              )}
-            >
-              Log
-            </button>
-          </div>
+          {/* Schedule vs Log Toggle - hidden for challenge blocks (always Log) */}
+          {blockType !== 'challenge' ? (
+            <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
+              <button
+                type="button"
+                onClick={() => setEntryMode('schedule')}
+                className={cn(
+                  'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
+                  entryMode === 'schedule'
+                    ? 'bg-[#3b82f6] text-white'
+                    : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
+                )}
+              >
+                Schedule
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntryMode('log')}
+                className={cn(
+                  'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
+                  entryMode === 'log'
+                    ? 'bg-[#3b82f6] text-white'
+                    : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
+                )}
+              >
+                Log
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 bg-[rgba(245,158,11,0.08)] rounded-[10px] border border-[rgba(245,158,11,0.2)]">
+              <p className="text-[12px] text-amber-400 font-medium">
+                🏆 Challenge blocks can only be logged, not scheduled.
+              </p>
+            </div>
+          )}
 
           {/* Block Type Selector - unified accent colour */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
@@ -488,7 +500,7 @@ export function BlockModal({
                   className={cn(
                     'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
                     selectedDuration === option.value
-                      ? `${accent.bg} text-white border-transparent`
+                      ? 'bg-[#3b82f6] text-white border-transparent'
                       : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
                   )}
                 >
@@ -519,7 +531,7 @@ export function BlockModal({
             <div className="p-4 rounded-[12px] border bg-[#0d1014] border-[rgba(255,255,255,0.08)]">
               <div className="flex items-center gap-3 mb-2">
                 <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)]">
-                  <Clock className={cn('h-5 w-5', accent.text)} />
+                  <Clock className="h-5 w-5 text-[#3b82f6]" />
                 </div>
                 <div>
                   <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
