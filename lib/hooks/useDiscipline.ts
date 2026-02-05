@@ -26,20 +26,46 @@ export function useCommunityChallenge(userId: string | undefined) {
     try {
       const today = formatDateForApi(new Date())
 
-      // Fetch active challenge (today is between start_date and end_date)
-      const { data: challengeData, error: challengeError } = await supabase
-        .from('community_challenges')
-        .select('*')
-        .lte('start_date', today)
-        .gte('end_date', today)
-        .limit(1)
-        .single()
-
-      if (challengeError && challengeError.code !== 'PGRST116') {
-        console.error('Failed to fetch challenge:', challengeError)
+      // Try RPC first to get active challenge ID (DB-enforced)
+      let activeChallengeId: string | null = null
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('fn_active_challenge_id', {
+          p_day: today,
+        })
+        if (!rpcError && rpcData) {
+          activeChallengeId = rpcData
+        }
+      } catch (e) {
+        // RPC might not exist yet - fall back to direct query
+        console.warn('[Challenge] fn_active_challenge_id RPC not available')
       }
 
-      setChallenge(challengeData as CommunityChallenge | null)
+      // Fetch challenge data - by ID if we have it, or by date range
+      let challengeData: CommunityChallenge | null = null
+      if (activeChallengeId) {
+        const { data, error } = await supabase
+          .from('community_challenges')
+          .select('*')
+          .eq('id', activeChallengeId)
+          .single()
+        if (!error) challengeData = data as CommunityChallenge
+      } else {
+        // Fallback: fetch by date range
+        const { data, error } = await supabase
+          .from('community_challenges')
+          .select('*')
+          .lte('start_date', today)
+          .gte('end_date', today)
+          .limit(1)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Failed to fetch challenge:', error)
+        }
+        if (!error) challengeData = data as CommunityChallenge
+      }
+
+      setChallenge(challengeData)
 
       // Fetch today's challenge block if user is logged in
       if (userId && challengeData) {
@@ -66,6 +92,7 @@ export function useCommunityChallenge(userId: string | undefined) {
     fetchChallenge()
   }, [fetchChallenge])
 
+  // Log challenge via RPC (challenge blocks must use RPC per DB requirements)
   const logChallenge = useCallback(async () => {
     if (!userId || !challenge) throw new Error('Cannot log challenge')
 
@@ -73,24 +100,55 @@ export function useCommunityChallenge(userId: string | undefined) {
     const now = new Date()
     const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')}`
 
-    const { data, error } = await supabase
-      .from('blocks')
-      .insert({
-        user_id: userId,
-        date: today,
-        start_time: startTime,
-        block_type: 'challenge',
-        title: challenge.title,
-        challenge_id: challenge.id,
-        payload: { challenge_id: challenge.id },
+    // Try to use RPC for challenge creation (DB-enforced)
+    try {
+      const { data: blockId, error: rpcError } = await supabase.rpc('fn_create_challenge_block', {
+        p_user_id: userId,
+        p_day: today,
+        p_start_time: startTime,
+        p_title: challenge.title,
       })
-      .select()
-      .single()
 
-    if (error) throw error
+      if (rpcError) {
+        // Fallback to direct insert if RPC doesn't exist yet
+        console.warn('[Challenge] RPC not available, using direct insert:', rpcError)
+        const { data, error } = await supabase
+          .from('blocks')
+          .insert({
+            user_id: userId,
+            date: today,
+            start_time: startTime,
+            block_type: 'challenge',
+            title: challenge.title,
+            challenge_id: challenge.id,
+            payload: { challenge_id: challenge.id },
+            is_planned: false, // Challenge blocks are always unplanned
+            completed_at: now.toISOString(),
+            performed_at: now.toISOString(),
+            shared_to_feed: true, // Challenge blocks always shared
+          })
+          .select()
+          .single()
 
-    setTodayBlock(data as Block)
-    return data as Block
+        if (error) throw error
+        setTodayBlock(data as Block)
+        return data as Block
+      }
+
+      // RPC succeeded - fetch the created block
+      const { data: newBlock, error: fetchError } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('id', blockId)
+        .single()
+
+      if (fetchError) throw fetchError
+      setTodayBlock(newBlock as Block)
+      return newBlock as Block
+    } catch (err) {
+      console.error('[Challenge] Failed to create challenge block:', err)
+      throw err
+    }
   }, [userId, challenge, supabase])
 
   return {

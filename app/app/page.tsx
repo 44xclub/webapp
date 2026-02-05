@@ -13,7 +13,7 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes } from '@/lib/hooks'
+import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
@@ -69,6 +69,7 @@ export default function AppPage() {
   const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
+  const { rank, loading: rankLoading } = useRank(user?.id)
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
   const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
 
@@ -150,7 +151,7 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
-      <HeaderStrip profile={profile} loading={profileLoading} />
+      <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
       {/* Streak Module - using shared component */}
       {profile && (

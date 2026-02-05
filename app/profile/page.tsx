@@ -17,9 +17,10 @@ import {
   Check,
   X,
 } from 'lucide-react'
-import { useProfile } from '@/lib/hooks'
+import { useProfile, useRank } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { StreakCard } from '@/components/shared/StreakCard'
+import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block } from '@/lib/types'
@@ -89,6 +90,7 @@ export default function ProfilePage() {
   }, [router, supabase])
 
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
+  const { rank } = useRank(user?.id)
 
   useEffect(() => {
     async function fetchCheckins() {
@@ -211,30 +213,16 @@ export default function ProfilePage() {
             <p className="text-[13px] text-[rgba(238,242,255,0.45)]">{user?.email}</p>
           </div>
 
-          {/* Discipline Stats */}
-          {disciplineLevel && (
+          {/* Discipline Stats - clickable to open explanation modal */}
+          {(rank || disciplineLevel) && (
             <div className="border-t border-[rgba(255,255,255,0.06)] px-5 py-3.5">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className={`text-[14px] font-semibold ${badgeColors[disciplineLevel.badge]}`}>{disciplineLevel.badge}</span>
-                  <span className="text-[12px] text-[rgba(238,242,255,0.40)]">Level {disciplineLevel.level}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[14px] font-bold text-[#eef2ff]">{profile?.discipline_score}</span>
-                  <span className="text-[12px] text-[rgba(238,242,255,0.40)] ml-1">pts</span>
-                </div>
-              </div>
-              {disciplineLevel.level < 44 && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] text-[rgba(238,242,255,0.40)]">
-                    <span>{disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} to next</span>
-                    <span>{Math.round(disciplineLevel.progress)}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#3b82f6] transition-all duration-500" style={{ width: `${disciplineLevel.progress}%` }} />
-                  </div>
-                </div>
-              )}
+              <DisciplineScoreModule
+                rank={rank}
+                score={profile?.discipline_score}
+                variant="full"
+                showProgress={true}
+                clickable={true}
+              />
             </div>
           )}
         </div>

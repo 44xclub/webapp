@@ -3,43 +3,29 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { calculateDisciplineLevel } from '@/lib/types'
-import type { Profile, DisciplineBadge } from '@/lib/types'
-import { Shield, Zap, Award, Trophy, Crown } from 'lucide-react'
+import type { Profile, DisciplineBadge, ProfileRank } from '@/lib/types'
+import { DisciplineScoreModule, badgeIcons, badgeColors, badgeBgColors } from './DisciplineScoreModule'
 
 interface HeaderStripProps {
   profile: Profile | null
+  rank?: ProfileRank | null
   loading?: boolean
 }
 
-const badgeIcons: Record<DisciplineBadge, typeof Shield> = {
-  'Initiated': Shield,
-  'Committed': Zap,
-  'Elite': Award,
-  'Forged': Trophy,
-  '44-Pro': Crown,
-}
-
-const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-[rgba(238,242,255,0.60)]',
-  'Committed': 'text-[#60a5fa]',
-  'Elite': 'text-[#22d3ee]',
-  'Forged': 'text-[#f59e0b]',
-  '44-Pro': 'text-[#a78bfa]',
-}
-
-const badgeBgColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'bg-[rgba(238,242,255,0.60)]',
-  'Committed': 'bg-[#60a5fa]',
-  'Elite': 'bg-[#22d3ee]',
-  'Forged': 'bg-[#f59e0b]',
-  '44-Pro': 'bg-[#a78bfa]',
-}
-
-export function HeaderStrip({ profile, loading }: HeaderStripProps) {
-  const disciplineLevel = useMemo(
-    () => profile ? calculateDisciplineLevel(profile.discipline_score) : null,
-    [profile]
-  )
+export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
+  // Use rank data if available (from v_profiles_rank view), otherwise calculate from profile
+  const disciplineLevel = useMemo(() => {
+    if (rank) {
+      return {
+        level: rank.level,
+        badge: rank.badge_tier,
+        progress: rank.level_progress_pct,
+        scoreIntoLevel: 0,
+        toNextLevel: 0,
+      }
+    }
+    return profile ? calculateDisciplineLevel(profile.discipline_score) : null
+  }, [profile, rank])
 
   if (loading || !profile || !disciplineLevel) {
     return (
@@ -83,17 +69,14 @@ export function HeaderStrip({ profile, loading }: HeaderStripProps) {
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
-            <div className="text-center min-w-[48px]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Level</p>
-              <p className="text-[22px] font-semibold text-[#eef2ff]">{disciplineLevel.level}</p>
-            </div>
-            <div className="w-px h-10 bg-[rgba(255,255,255,0.07)]" />
-            <div className="text-center min-w-[52px]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Score</p>
-              <p className="text-[22px] font-semibold text-[#3b82f6]">{profile.discipline_score}</p>
-            </div>
-          </div>
+          {/* Discipline Score Module - clickable to open explanation */}
+          <DisciplineScoreModule
+            rank={rank}
+            score={profile.discipline_score}
+            variant="full"
+            showProgress={false}
+            clickable={true}
+          />
         </div>
       </div>
 

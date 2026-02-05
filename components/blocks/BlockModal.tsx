@@ -557,6 +557,16 @@ export function BlockModal({
             </button>
           )}
 
+          {/* Locked State Banner - shows when editing blocks after cutoff */}
+          {editingBlock?.locked_at && (
+            <div className="p-3 bg-[rgba(245,158,11,0.08)] rounded-[10px] border border-[rgba(245,158,11,0.2)] flex items-center gap-2">
+              <span className="text-[12px]">🔒</span>
+              <p className="text-[12px] text-amber-400 font-medium">
+                Locked — edits won&apos;t affect score.
+              </p>
+            </div>
+          )}
+
           {/* Clean date/time edit section */}
           {editingBlock && (
             <div className="p-4 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-4">

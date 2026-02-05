@@ -564,6 +564,8 @@ export interface Block {
   programme_template_id: string | null
   programme_session_id: string | null
   shared_to_feed: boolean
+  is_planned: boolean
+  performed_at: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -873,9 +875,24 @@ export interface DisciplineLevel {
 
 export type DisciplineBadge = 'Initiated' | 'Committed' | 'Elite' | 'Forged' | '44-Pro'
 
+// v_profiles_rank view response (DB-provided rank data)
+export interface ProfileRank {
+  user_id: string
+  display_name: string | null
+  avatar_path: string | null
+  discipline_score: number
+  level: number
+  badge_tier: DisciplineBadge
+  level_progress_pct: number
+  current_streak: number
+  best_streak: number
+  is_paused: boolean
+}
+
 /**
  * Calculate discipline level from score
  * Formula: level = floor( (-1 + sqrt(1 + 4*S)) / 2 ), capped at 44
+ * Note: Prefer using v_profiles_rank view for DB-provided values
  */
 export function calculateDisciplineLevel(score: number): DisciplineLevel {
   const S = Math.max(score, 0)

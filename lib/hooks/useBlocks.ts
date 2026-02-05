@@ -52,15 +52,19 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
   }, [fetchBlocks])
 
   // Create a new block (with optional share-to-feed)
-  // entryMode: 'schedule' = future planning, 'log' = past/now logging (auto-complete)
+  // entryMode: 'schedule' = future planning (is_planned=true), 'log' = past/now logging (is_planned=false, auto-complete)
   const createBlock = useCallback(
     async (data: BlockFormData, entryMode: 'schedule' | 'log' = 'schedule') => {
       if (!userId) throw new Error('Not authenticated')
 
       const sharedToFeed = (data as any).shared_to_feed === true || data.block_type === 'challenge'
 
-      // For Log mode, auto-complete the block on creation
+      // Schedule mode = planned, Log mode = unplanned (already done)
       const isLogMode = entryMode === 'log'
+      // Challenge blocks are always unplanned (DB enforces this via trigger)
+      const isPlanned = !isLogMode && data.block_type !== 'challenge'
+
+      const now = new Date().toISOString()
 
       const insertData: Record<string, unknown> = {
         user_id: userId,
@@ -73,11 +77,13 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         payload: data.payload || {},
         repeat_rule: data.repeat_rule || null,
         shared_to_feed: sharedToFeed,
+        is_planned: isPlanned,
       }
 
-      // Auto-set completed_at for Log mode (logging something already done)
+      // Auto-set completed_at and performed_at for Log mode (logging something already done)
       if (isLogMode) {
-        insertData.completed_at = new Date().toISOString()
+        insertData.completed_at = now
+        insertData.performed_at = now
       }
 
       const { data: newBlock, error } = await supabase
