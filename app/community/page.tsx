@@ -362,13 +362,13 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
               <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.payload as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
+                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
               </p>
               <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Avg Score</p>
             </div>
             <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
               <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.payload as TeamSnapshot)?.total_score || 0}
+                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.total_score || 0}
               </p>
               <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Total Score</p>
             </div>
