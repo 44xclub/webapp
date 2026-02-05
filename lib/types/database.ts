@@ -808,8 +808,9 @@ export interface TeamDailyOverview {
   id: string
   team_id: string
   date: string
-  snapshot: TeamSnapshot
-  generated_at: string
+  cutoff_at: string
+  payload: TeamSnapshot
+  created_at: string
 }
 
 export interface TeamSnapshot {

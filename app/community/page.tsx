@@ -149,7 +149,11 @@ export default function CommunityPage() {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (postsError) throw postsError
+      console.log('Feed posts data:', postsData)
+      if (postsError) {
+        console.error('Feed posts error:', postsError)
+        throw postsError
+      }
 
       // Fetch respect counts and user's respects
       const postIds = postsData?.map((p: any) => p.id) || []
@@ -269,25 +273,36 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     setLoading(true)
     try {
       // Fetch user's team membership
-      const { data: membership } = await supabase
+      const { data: membership, error: membershipError } = await supabase
         .from('team_members')
         .select('team_id, role, teams(id, team_number)')
         .eq('user_id', userId)
         .is('left_at', null)
         .single()
 
+      if (membershipError) {
+        console.error('Membership query error:', membershipError)
+      }
+      console.log('Membership data:', membership)
+
       if (membership?.team_id) {
         // Fetch team members with profiles
-        const { data: members } = await supabase
+        // Use profiles:user_id hint since team_members.user_id -> auth.users.id and profiles.id -> auth.users.id
+        const { data: members, error: membersError } = await supabase
           .from('team_members')
-          .select('user_id, role, joined_at, profiles(display_name, avatar_path, discipline_score)')
+          .select('user_id, role, joined_at, profiles:user_id(display_name, avatar_path, discipline_score)')
           .eq('team_id', membership.team_id)
           .is('left_at', null)
           .order('role', { ascending: false })
 
+        if (membersError) {
+          console.error('Members query error:', membersError)
+        }
+        console.log('Members data:', members)
+
         // Fetch latest daily overview
         const today = new Date().toISOString().split('T')[0]
-        const { data: overview } = await supabase
+        const { data: overview, error: overviewError } = await supabase
           .from('team_daily_overviews')
           .select('*')
           .eq('team_id', membership.team_id)
@@ -295,6 +310,11 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
           .order('date', { ascending: false })
           .limit(1)
           .single()
+
+        if (overviewError && overviewError.code !== 'PGRST116') {
+          // PGRST116 = no rows returned, which is expected if no overviews exist
+          console.error('Overview query error:', overviewError)
+        }
 
         setTeamData({
           team: membership.teams,
@@ -362,13 +382,13 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
               <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
+                {(teamData.dailyOverview.payload as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
               </p>
               <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Avg Score</p>
             </div>
             <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
               <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.snapshot as TeamSnapshot)?.total_score || 0}
+                {(teamData.dailyOverview.payload as TeamSnapshot)?.total_score || 0}
               </p>
               <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Total Score</p>
             </div>
