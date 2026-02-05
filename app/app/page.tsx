@@ -231,6 +231,7 @@ export default function AppPage() {
         onClose={() => setSharePromptBlock(null)}
         block={sharePromptBlock}
         userId={user?.id}
+        userProfile={profile}
         onMediaUpload={uploadMedia}
         onMediaDelete={deleteMedia}
         onConfirm={handleSharePromptConfirm}

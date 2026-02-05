@@ -2,41 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-// Using native img for signed URLs as they have their own caching
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Users, Activity, Heart, Trash2, Trophy, Zap, Shield, Award, Crown } from 'lucide-react'
+import { Loader2, Users, Activity, Trophy, Zap, Shield, Award, Crown, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { FeedPostCard, FeedPost } from '@/components/feed/FeedPostCard'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import type { DisciplineBadge, ExerciseEntry, Profile, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
+import type { DisciplineBadge, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
 
 type TabType = 'team' | 'feed'
-
-interface FeedPost {
-  id: string
-  user_id: string
-  block_id: string | null
-  title: string
-  body: string | null
-  media_path: string | null
-  payload: {
-    workout_matrix?: ExerciseEntry[]
-    duration?: number
-    rpe?: number
-  }
-  created_at: string
-  deleted_at: string | null
-  user_profile?: {
-    display_name: string | null
-    avatar_path: string | null
-    discipline_score: number
-  }
-  respect_count?: number
-  has_respected?: boolean
-}
 
 interface TeamMemberData {
   user_id: string
@@ -272,9 +249,10 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     team: { id: string; team_number: number } | null
     members: TeamMemberData[]
     role: 'captain' | 'member'
-    dailyOverview: TeamDailyOverview | null
+    dailyOverviews: TeamDailyOverview[]
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [membersExpanded, setMembersExpanded] = useState(false)
 
   useEffect(() => {
     if (userId) {
@@ -284,70 +262,51 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
 
   const fetchTeamData = async () => {
     setLoading(true)
-    console.log('[Team] Fetching team data for userId:', userId)
 
     try {
-      // Step 1: Fetch user's team membership (without join first to debug)
+      // Step 1: Fetch user's team membership
       const { data: memberships, error: membershipError } = await supabase
         .from('team_members')
         .select('team_id, role')
         .eq('user_id', userId)
         .is('left_at', null)
 
-      console.log('[Team] Raw membership query result:', { memberships, membershipError })
-
-      if (membershipError) {
-        console.error('[Team] Membership query error:', membershipError)
-        setTeamData(null)
-        return
-      }
-
-      if (!memberships || memberships.length === 0) {
-        console.log('[Team] No team membership found for user')
+      if (membershipError || !memberships || memberships.length === 0) {
         setTeamData(null)
         return
       }
 
       const membership = memberships[0]
-      console.log('[Team] Found membership:', membership)
 
-      // Step 2: Fetch team details separately
+      // Step 2: Fetch team details
       const { data: team, error: teamError } = await supabase
         .from('teams')
         .select('id, team_number')
         .eq('id', membership.team_id)
         .single()
 
-      console.log('[Team] Team query result:', { team, teamError })
-
       if (teamError || !team) {
-        console.error('[Team] Team query error:', teamError)
         setTeamData(null)
         return
       }
 
-      // Step 3: Fetch team members with profiles
-      const { data: members, error: membersError } = await supabase
+      // Step 3: Fetch team members
+      const { data: members } = await supabase
         .from('team_members')
         .select('user_id, role, joined_at')
         .eq('team_id', membership.team_id)
         .is('left_at', null)
         .order('role', { ascending: false })
 
-      console.log('[Team] Members query result:', { members, membersError })
-
-      // Step 4: Fetch profiles for members separately (more reliable than join)
+      // Step 4: Fetch profiles for members
       let membersWithProfiles: TeamMemberData[] = []
       if (members && members.length > 0) {
         const userIds = members.map((m: { user_id: string }) => m.user_id)
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles } = await supabase
           .from('profiles')
           .select('id, display_name, avatar_path, discipline_score')
           .in('id', userIds)
 
-        console.log('[Team] Profiles query result:', { profiles, profilesError })
-
-        // Map profiles to members
         const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
         membersWithProfiles = members.map((m: any) => ({
           ...m,
@@ -355,24 +314,19 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         })) as TeamMemberData[]
       }
 
-      // Step 5: Fetch latest daily overview (optional)
-      const today = new Date().toISOString().split('T')[0]
-      const { data: overview } = await supabase
+      // Step 5: Fetch daily overviews (multiple, for the feed)
+      const { data: overviews } = await supabase
         .from('team_daily_overviews')
         .select('*')
         .eq('team_id', membership.team_id)
-        .lte('date', today)
         .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      console.log('[Team] Final team data:', { team, membersWithProfiles, overview })
+        .limit(14) // Last 2 weeks
 
       setTeamData({
         team: team,
         members: membersWithProfiles,
         role: membership.role,
-        dailyOverview: overview as TeamDailyOverview | null,
+        dailyOverviews: (overviews || []) as TeamDailyOverview[],
       })
     } catch (err) {
       console.error('[Team] Failed to fetch team:', err)
@@ -402,7 +356,6 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     )
   }
 
-  // Calculate team total score
   const teamTotalScore = teamData.members.reduce(
     (sum, m) => sum + (m.profiles?.discipline_score || 0),
     0
@@ -410,7 +363,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
 
   return (
     <div className="space-y-3">
-      {/* Team Header */}
+      {/* Team Summary Card */}
       <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-4 border border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center justify-between">
           <div>
@@ -424,73 +377,186 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         </div>
       </div>
 
-      {/* Daily Overview */}
-      {teamData.dailyOverview && (
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-4 border border-[rgba(255,255,255,0.06)]">
-          <p className="text-[12px] text-[rgba(238,242,255,0.45)] mb-2">Latest Snapshot ({teamData.dailyOverview.date})</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
-              <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.payload as TeamSnapshot)?.avg_score?.toFixed(0) || 0}
-              </p>
-              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Avg Score</p>
-            </div>
-            <div className="text-center p-3 bg-[rgba(255,255,255,0.03)] rounded-[10px]">
-              <p className="text-[18px] font-bold text-[#eef2ff]">
-                {(teamData.dailyOverview.payload as TeamSnapshot)?.total_score || 0}
-              </p>
-              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Total Score</p>
-            </div>
+      {/* Collapsible Team Members */}
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <button
+          onClick={() => setMembersExpanded(!membersExpanded)}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-[14px] font-medium text-[#eef2ff]">Team Members</h3>
+            <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{teamData.members.length}/8</span>
+          </div>
+          {membersExpanded ? (
+            <ChevronDown className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+          )}
+        </button>
+
+        {membersExpanded && (
+          <div className="border-t border-[rgba(255,255,255,0.06)] divide-y divide-[rgba(255,255,255,0.06)]">
+            {teamData.members.map((member) => {
+              const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
+              const BadgeIcon = badgeIcons[level.badge]
+              const displayName = member.profiles?.display_name || 'Member'
+              const initials = displayName.slice(0, 2).toUpperCase()
+
+              return (
+                <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
+                      <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
+                        {initials}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-[#eef2ff]">
+                        {displayName}
+                        {member.role === 'captain' && (
+                          <span className="ml-2 text-[11px] text-[#3b82f6]">(Captain)</span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
+                        <span className={`text-[11px] ${badgeColors[level.badge]}`}>
+                          Lv.{level.level}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[13px] font-bold text-[#eef2ff]">
+                      {member.profiles?.discipline_score || 0}
+                    </p>
+                    <p className="text-[11px] text-[rgba(238,242,255,0.40)]">pts</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Daily Overviews Feed */}
+      <div className="space-y-2">
+        <h3 className="text-[14px] font-medium text-[#eef2ff] px-1">Daily Overviews</h3>
+
+        {teamData.dailyOverviews.length === 0 ? (
+          <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
+            <Calendar className="h-8 w-8 text-[rgba(238,242,255,0.35)] mx-auto mb-3" />
+            <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+              No daily overviews yet. Check back after the first day resolves.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {teamData.dailyOverviews.map((overview) => (
+              <DailyOverviewCard
+                key={overview.id}
+                overview={overview}
+                members={teamData.members}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Daily Overview Card (chat/feed style)
+function DailyOverviewCard({
+  overview,
+  members,
+}: {
+  overview: TeamDailyOverview
+  members: TeamMemberData[]
+}) {
+  const payload = overview.payload as TeamSnapshot
+  const date = new Date(overview.date)
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+  const resolvedTime = overview.cutoff_at
+    ? new Date(overview.cutoff_at).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : null
+
+  // Map member snapshots to profiles for display names
+  const memberSnapshots = payload?.members || []
+
+  return (
+    <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-[#3b82f6]" />
+          <span className="text-[13px] font-medium text-[#eef2ff]">{formattedDate}</span>
+        </div>
+        {resolvedTime && (
+          <span className="text-[11px] text-[rgba(238,242,255,0.40)]">
+            Resolved at {resolvedTime}
+          </span>
+        )}
+      </div>
+
+      {/* Summary Stats */}
+      {payload && (
+        <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.06)] flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Avg:</span>
+            <span className="text-[13px] font-medium text-[#eef2ff]">
+              {payload.avg_score?.toFixed(0) || 0}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Total:</span>
+            <span className="text-[13px] font-medium text-[#eef2ff]">
+              {payload.total_score || 0}
+            </span>
           </div>
         </div>
       )}
 
-      {/* Team Members */}
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
-          <h3 className="text-[14px] font-medium text-[#eef2ff]">Team Members</h3>
-          <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{teamData.members.length}/8</span>
-        </div>
-        <div className="divide-y divide-[rgba(255,255,255,0.06)]">
-          {teamData.members.map((member) => {
-            const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
-            const BadgeIcon = badgeIcons[level.badge]
-            const displayName = member.profiles?.display_name || 'Member'
-            const initials = displayName.slice(0, 2).toUpperCase()
+      {/* Member Summaries */}
+      <div className="px-4 py-3 space-y-2">
+        {memberSnapshots.length > 0 ? (
+          memberSnapshots.map((snapshot: any, idx: number) => {
+            const memberProfile = members.find((m) => m.user_id === snapshot.user_id)
+            const displayName = snapshot.display_name || memberProfile?.profiles?.display_name || 'Member'
+            const delta = snapshot.daily_delta || 0
+            const status = snapshot.framework_status
 
             return (
-              <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
-                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
-                      {initials}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-[#eef2ff]">
-                      {displayName}
-                      {member.role === 'captain' && (
-                        <span className="ml-2 text-[11px] text-[#3b82f6]">(Captain)</span>
-                      )}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                      <span className={`text-[11px] ${badgeColors[level.badge]}`}>
-                        Lv.{level.level}
-                      </span>
-                    </div>
-                  </div>
+              <div key={idx} className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13px] text-[#eef2ff] font-medium">{displayName}</span>
+                  <span className="text-[13px] text-[rgba(238,242,255,0.52)]">
+                    {' — '}
+                    {status === 'complete' && 'Completed all blocks'}
+                    {status === 'partial' && 'Partial completion'}
+                    {status === 'zero' && 'No blocks completed'}
+                    {!status && `Score: ${snapshot.discipline_score || 0}`}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="text-[13px] font-bold text-[#eef2ff]">
-                    {member.profiles?.discipline_score || 0}
-                  </p>
-                  <p className="text-[11px] text-[rgba(238,242,255,0.40)]">pts</p>
-                </div>
+                <span className={`text-[12px] font-medium flex-shrink-0 ${
+                  delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-rose-400' : 'text-[rgba(238,242,255,0.45)]'
+                }`}>
+                  {delta > 0 ? '+' : ''}{delta}
+                </span>
               </div>
             )
-          })}
-        </div>
+          })
+        ) : (
+          <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+            No member data available for this day.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -516,14 +582,12 @@ function FeedView({
     if (!userId) return
     try {
       if (hasRespected) {
-        // Remove respect
         await supabase
           .from('feed_respects')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', userId)
       } else {
-        // Add respect
         await supabase
           .from('feed_respects')
           .insert({ post_id: postId, user_id: userId })
@@ -573,112 +637,16 @@ function FeedView({
 
   return (
     <div className="space-y-3">
-      {posts.map((post) => {
-        const displayName = post.user_profile?.display_name || 'Member'
-        const initials = displayName.slice(0, 2).toUpperCase()
-        const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
-        const BadgeIcon = badgeIcons[level.badge]
-        const isOwnPost = post.user_id === userId
-
-        return (
-          <div key={post.id} className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-            {/* Post Header */}
-            <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
-                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
-                      {initials}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-medium text-[#eef2ff]">{displayName}</p>
-                      <div className="flex items-center gap-1">
-                        <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                        <span className={`text-[11px] ${badgeColors[level.badge]}`}>Lv.{level.level}</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
-                      {new Date(post.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-                {isOwnPost && (
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    disabled={deleting === post.id}
-                    className="p-2 text-[rgba(238,242,255,0.40)] hover:text-rose-400 transition-colors"
-                  >
-                    {deleting === post.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Post Content */}
-            <div className="px-4 py-3">
-              <h3 className="text-[14px] font-medium text-[#eef2ff] mb-2">{post.title}</h3>
-              {post.body && (
-                <p className="text-[13px] text-[rgba(238,242,255,0.52)] mb-3">{post.body}</p>
-              )}
-
-              {/* Workout Matrix */}
-              {post.payload?.workout_matrix && post.payload.workout_matrix.length > 0 && (
-                <div className="mt-3 bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3">
-                  <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2">Workout Breakdown</p>
-                  <div className="space-y-2">
-                    {post.payload.workout_matrix.map((exercise: any, idx: number) => {
-                      const setsCount = Array.isArray(exercise.sets) ? exercise.sets.length : exercise.sets
-                      return (
-                        <div key={idx} className="flex items-center justify-between text-[13px]">
-                          <span className="text-[#eef2ff]">{exercise.exercise || 'Exercise'}</span>
-                          <div className="flex items-center gap-2 text-[rgba(238,242,255,0.45)]">
-                            {setsCount && <span>{setsCount} sets</span>}
-                            {exercise.reps && <span>× {exercise.reps}</span>}
-                            {exercise.weight && <span>@ {exercise.weight}kg</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  {post.payload.duration && (
-                    <p className="text-[11px] text-[rgba(238,242,255,0.40)] mt-2">
-                      Duration: {post.payload.duration} min
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Post Actions */}
-            <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-4">
-              <button
-                onClick={() => handleRespect(post.id, post.has_respected || false)}
-                className={`flex items-center gap-2 text-[13px] transition-colors ${
-                  post.has_respected
-                    ? 'text-red-500'
-                    : 'text-[rgba(238,242,255,0.45)] hover:text-red-500'
-                }`}
-              >
-                <Heart
-                  className={`h-4 w-4 ${post.has_respected ? 'fill-current' : ''}`}
-                />
-                <span>{post.respect_count || 0} Respect</span>
-              </button>
-            </div>
-          </div>
-        )
-      })}
+      {posts.map((post) => (
+        <FeedPostCard
+          key={post.id}
+          post={post}
+          userId={userId}
+          onRespect={handleRespect}
+          onDelete={handleDelete}
+          deleting={deleting === post.id}
+        />
+      ))}
     </div>
   )
 }
