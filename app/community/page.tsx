@@ -134,25 +134,38 @@ export default function CommunityPage() {
     if (!user) return
     setFeedLoading(true)
     try {
-      // Fetch posts with profile info
+      // Fetch posts first (without join - join doesn't work with auth.users FK)
       const { data: postsData, error: postsError } = await supabase
         .from('feed_posts')
-        .select(`
-          *,
-          profiles:user_id (
-            display_name,
-            avatar_path,
-            discipline_score
-          )
-        `)
+        .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(50)
 
-      console.log('Feed posts data:', postsData)
+      console.log('[Feed] Posts data:', postsData)
       if (postsError) {
-        console.error('Feed posts error:', postsError)
+        console.error('[Feed] Posts error:', postsError)
         throw postsError
+      }
+
+      // Fetch profiles separately for all post authors
+      let postsWithProfiles = postsData || []
+      if (postsData && postsData.length > 0) {
+        const userIds = Array.from(new Set(postsData.map((p: any) => p.user_id)))
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, avatar_path, discipline_score')
+          .in('id', userIds)
+
+        console.log('[Feed] Profiles for posts:', { profiles, profilesError })
+
+        if (profiles) {
+          const profileMap = new Map(profiles.map((p: any) => [p.id, p]))
+          postsWithProfiles = postsData.map((post: any) => ({
+            ...post,
+            profiles: profileMap.get(post.user_id) || null
+          }))
+        }
       }
 
       // Fetch respect counts and user's respects
@@ -187,7 +200,7 @@ export default function CommunityPage() {
       }
 
       // Map posts with profile, counts, and user respect status
-      const mappedPosts = (postsData || []).map((post: any) => ({
+      const mappedPosts = postsWithProfiles.map((post: any) => ({
         ...post,
         user_profile: post.profiles,
         respect_count: respectCounts[post.id] || 0,
