@@ -77,15 +77,15 @@ function WeekDayRow({
   return (
     <div
       className={cn(
-        'bg-card rounded-xl border overflow-hidden transition-colors',
-        isSelected ? 'border-primary' : 'border-border',
-        isToday && !isSelected && 'border-primary/50'
+        'bg-[rgba(255,255,255,0.025)] rounded-[14px] border overflow-hidden transition-colors',
+        isSelected ? 'border-[#3b82f6]' : 'border-[rgba(255,255,255,0.06)]',
+        isToday && !isSelected && 'border-[rgba(59,130,246,0.35)]'
       )}
     >
       {/* Day header row - clickable to switch to day view */}
       <button
         onClick={() => onSelectDay(date)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[rgba(255,255,255,0.03)] transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-start">
@@ -126,7 +126,7 @@ function WeekDayRow({
 
       {/* Block previews */}
       {sortedBlocks.length > 0 && (
-        <div className="border-t border-border divide-y divide-border">
+        <div className="border-t border-[rgba(255,255,255,0.06)] divide-y divide-[rgba(255,255,255,0.06)]">
           {displayBlocks.map((block) => (
             <button
               key={block.id}
@@ -135,7 +135,7 @@ function WeekDayRow({
                 onEditBlock(block)
               }}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-2 hover:bg-secondary/50 transition-colors text-left',
+                'w-full flex items-center gap-3 px-4 py-2 hover:bg-[rgba(255,255,255,0.03)] transition-colors text-left',
                 block.completed_at && 'opacity-60'
               )}
             >
@@ -169,7 +169,7 @@ function WeekDayRow({
           {remainingCount > 0 && (
             <button
               onClick={() => onSelectDay(date)}
-              className="w-full px-4 py-2 text-xs text-muted-foreground hover:bg-secondary/50 transition-colors text-left"
+              className="w-full px-4 py-2 text-xs text-[rgba(238,242,255,0.45)] hover:bg-[rgba(255,255,255,0.03)] transition-colors text-left"
             >
               +{remainingCount} more
             </button>
@@ -181,7 +181,7 @@ function WeekDayRow({
       {sortedBlocks.length === 0 && (
         <button
           onClick={() => onSelectDay(date)}
-          className="w-full border-t border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary/50 transition-colors text-left"
+          className="w-full border-t border-[rgba(255,255,255,0.06)] px-4 py-2 text-xs text-[rgba(238,242,255,0.40)] hover:bg-[rgba(255,255,255,0.03)] transition-colors text-left"
         >
           No blocks
         </button>

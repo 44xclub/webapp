@@ -6,8 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   LogOut,
-  Flame,
-  Trophy,
   Calendar,
   Dumbbell,
   User as UserIcon,
@@ -21,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { StreakCard } from '@/components/shared/StreakCard'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block } from '@/lib/types'
@@ -280,22 +279,17 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Streak Stats */}
+        {/* Streak Stats - using shared component */}
         <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
           <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
             <h3 className="text-[14px] font-semibold text-[#eef2ff]">Streaks</h3>
           </div>
-          <div className="p-4 grid grid-cols-2 gap-3">
-            <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
-              <Flame className="h-7 w-7 text-[#f59e0b] mx-auto mb-1.5" />
-              <p className="text-[18px] font-bold text-[#eef2ff]">{profile?.current_streak || 0}</p>
-              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Current Streak</p>
-            </div>
-            <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
-              <Trophy className="h-7 w-7 text-[#22c55e] mx-auto mb-1.5" />
-              <p className="text-[18px] font-bold text-[#eef2ff]">{profile?.best_streak || 0}</p>
-              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Best Streak</p>
-            </div>
+          <div className="p-4">
+            <StreakCard
+              currentStreak={profile?.current_streak || 0}
+              bestStreak={profile?.best_streak || 0}
+              variant="full"
+            />
           </div>
         </div>
 

@@ -23,7 +23,7 @@ import {
 } from '@/lib/schemas'
 import { blockTypeLabels, blockTypeAccentColors, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
-import type { Block, BlockType, BlockMedia } from '@/lib/types'
+import type { Block, BlockType, BlockMedia, ProgrammeSession, UserProgramme } from '@/lib/types'
 import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface BlockModalProps {
@@ -37,6 +37,9 @@ interface BlockModalProps {
   onMediaUpload?: (blockId: string, file: File) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   userHasHeight?: boolean
+  activeProgramme?: UserProgramme | null
+  programmeSessions?: ProgrammeSession[]
+  userTimezone?: string
 }
 
 const blockTypeOptions = [
@@ -127,6 +130,24 @@ function isToday(dateStr: string): boolean {
   return dateStr === formatDateForApi(new Date())
 }
 
+// Check if a block is scheduled for the future (vs log-now/past)
+function isFutureScheduled(dateStr: string, startTime: string, timezone: string = 'Europe/London'): boolean {
+  try {
+    // Create scheduled datetime in user's timezone
+    const scheduledDate = new Date(`${dateStr}T${startTime}:00`)
+    const now = new Date()
+
+    // Add 2 minute tolerance
+    const toleranceMs = 2 * 60 * 1000
+    return scheduledDate.getTime() > (now.getTime() + toleranceMs)
+  } catch {
+    return false
+  }
+}
+
+// Block types eligible for sharing
+const SHARE_ELIGIBLE_TYPES: BlockType[] = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+
 export function BlockModal({
   isOpen,
   onClose,
@@ -138,11 +159,15 @@ export function BlockModal({
   onMediaUpload,
   onMediaDelete,
   userHasHeight = false,
+  activeProgramme,
+  programmeSessions = [],
+  userTimezone = 'Europe/London',
 }: BlockModalProps) {
   const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDuration, setSelectedDuration] = useState<number>(30)
+  const [entryMode, setEntryMode] = useState<'schedule' | 'log'>('schedule') // Schedule (future) vs Log (now/past)
 
   const schema = useMemo(() => getSchemaForType(blockType), [blockType])
 
@@ -235,6 +260,7 @@ export function BlockModal({
       } else {
         setStep(1)
         setSelectedDuration(30)
+        setEntryMode('schedule') // Reset to schedule mode for new blocks
         form.reset({
           date: formatDateForApi(initialDate),
           start_time: roundToNearest5Minutes(),
@@ -289,7 +315,13 @@ export function BlockModal({
   const renderForm = () => {
     switch (blockType) {
       case 'workout':
-        return <WorkoutForm form={form as ReturnType<typeof useForm<typeof workoutSchema._type>>} />
+        return (
+          <WorkoutForm
+            form={form as ReturnType<typeof useForm<typeof workoutSchema._type>>}
+            activeProgramme={activeProgramme}
+            programmeSessions={programmeSessions}
+          />
+        )
       case 'habit':
         return <HabitForm form={form as ReturnType<typeof useForm<typeof habitSchema._type>>} />
       case 'nutrition':
@@ -311,6 +343,36 @@ export function BlockModal({
   const accent = blockTypeAccentColors[blockType]
   const endTime = endTimeWatched
 
+  // Determine if this block is future-scheduled (for share/media gating)
+  // For new blocks, use the entryMode toggle; for editing, compute from date/time
+  const isScheduledFuture = useMemo(() => {
+    if (editingBlock) {
+      // For existing blocks, compute based on actual date/time
+      if (!dateValue || !startTime) return false
+      return isFutureScheduled(dateValue, startTime, userTimezone)
+    }
+    // For new blocks, use the explicit user selection
+    return entryMode === 'schedule'
+  }, [editingBlock, dateValue, startTime, userTimezone, entryMode])
+
+  // Should we show share/media controls?
+  // - Not for personal blocks
+  // - Not for future-scheduled NEW blocks (only show on completion)
+  // - For existing blocks being edited, only if it's log-now/past or already has media/share set
+  const showShareMediaControls = useMemo(() => {
+    // Personal blocks never show share/media
+    if (blockType === 'personal') return false
+
+    // Check if block type is share-eligible
+    if (!SHARE_ELIGIBLE_TYPES.includes(blockType)) return false
+
+    // For editing existing blocks - always show (they can update)
+    if (editingBlock) return true
+
+    // For new blocks - only show if it's log-now/past (not future-scheduled)
+    return !isScheduledFuture
+  }, [blockType, editingBlock, isScheduledFuture])
+
   return (
     <Modal
       isOpen={isOpen}
@@ -321,18 +383,38 @@ export function BlockModal({
       {/* Step 1: Quick Entry */}
       {step === 1 && !editingBlock && (
         <div className="p-4 space-y-5">
-          {/* Block Type Selector */}
+          {/* Schedule vs Log Toggle */}
+          <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
+            <button
+              type="button"
+              onClick={() => setEntryMode('schedule')}
+              className={cn(
+                'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
+                entryMode === 'schedule'
+                  ? 'bg-[#3b82f6] text-white'
+                  : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
+              )}
+            >
+              Schedule
+            </button>
+            <button
+              type="button"
+              onClick={() => setEntryMode('log')}
+              className={cn(
+                'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
+                entryMode === 'log'
+                  ? 'bg-[#3b82f6] text-white'
+                  : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
+              )}
+            >
+              Log
+            </button>
+          </div>
+
+          {/* Block Type Selector - unified accent colour */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
             {blockTypeOptions.map((option) => {
               const isSelected = blockType === option.value
-              const colorMap: Record<string, string> = {
-                workout: '#f97316',
-                habit: '#10b981',
-                nutrition: '#0ea5e9',
-                checkin: '#8b5cf6',
-                challenge: '#f59e0b',
-                personal: '#f43f5e',
-              }
               return (
                 <button
                   key={option.value}
@@ -341,10 +423,9 @@ export function BlockModal({
                   className={cn(
                     'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
                     isSelected
-                      ? 'text-white border-transparent'
-                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
+                      ? 'bg-[#3b82f6] text-white border-[#3b82f6]'
+                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.65)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(59,130,246,0.4)] hover:text-[rgba(238,242,255,0.85)]'
                   )}
-                  style={isSelected ? { backgroundColor: colorMap[option.value] } : undefined}
                 >
                   {option.label}
                 </button>
@@ -464,49 +545,51 @@ export function BlockModal({
             </button>
           )}
 
-          {/* Quick info rows when editing */}
+          {/* Clean date/time edit section */}
           {editingBlock && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)]">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-[#3b82f6]" />
-                  <span className="text-[14px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
+            <div className="p-4 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-4">
+              {/* Date Row */}
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.50)] flex-shrink-0" />
+                <div className="flex-1">
+                  <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">Date</label>
+                  <Input
+                    type="date"
+                    {...form.register('date')}
+                    className="w-full"
+                  />
                 </div>
-                <Input
-                  type="date"
-                  {...form.register('date')}
-                  className="w-auto"
-                />
               </div>
-              <div className="p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-[#3b82f6]" />
-                    <span className="text-[14px] text-[#eef2ff]">
-                      {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'}
-                      {endTime && (
-                        <span className="text-[12px] text-[rgba(238,242,255,0.45)] ml-2">
-                          ({calculateMinutesBetween(startTime, endTime) || 0} min)
-                        </span>
-                      )}
-                    </span>
+
+              {/* Time Row */}
+              <div className="flex items-start gap-3">
+                <Clock className="h-4 w-4 text-[rgba(238,242,255,0.50)] flex-shrink-0 mt-6" />
+                <div className="flex-1 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">Start</label>
+                    <Input
+                      type="time"
+                      {...form.register('start_time')}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">End</label>
+                    <Input
+                      type="time"
+                      {...form.register('end_time')}
+                      className="w-full"
+                    />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="time"
-                    label="Start"
-                    {...form.register('start_time')}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="time"
-                    label="End"
-                    {...form.register('end_time')}
-                    className="flex-1"
-                  />
-                </div>
               </div>
+
+              {/* Duration display */}
+              {endTime && (
+                <p className="text-[11px] text-[rgba(238,242,255,0.40)] text-right">
+                  Duration: {calculateMinutesBetween(startTime, endTime) || 0} min
+                </p>
+              )}
             </div>
           )}
 
@@ -515,49 +598,61 @@ export function BlockModal({
             {renderForm()}
           </div>
 
-          {/* Media Upload - only for existing blocks */}
-          {editingBlock && userId && onMediaUpload && onMediaDelete && (
-            <MediaUploader
-              blockId={editingBlock.id}
-              userId={userId}
-              media={blockMedia}
-              onUpload={onMediaUpload}
-              onDelete={onMediaDelete}
-            />
+          {/* Media & Share Section - conditionally shown based on scheduling */}
+          {showShareMediaControls && (
+            <>
+              {/* Media Upload - only for existing blocks */}
+              {editingBlock && userId && onMediaUpload && onMediaDelete && (
+                <MediaUploader
+                  blockId={editingBlock.id}
+                  userId={userId}
+                  media={blockMedia}
+                  onUpload={onMediaUpload}
+                  onDelete={onMediaDelete}
+                />
+              )}
+
+              {/* Share to Feed Toggle */}
+              <div className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)]">
+                <div>
+                  <p className="text-[13px] font-medium text-[#eef2ff]">Share to Feed</p>
+                  <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
+                    {blockType === 'challenge' ? 'Required for challenges' : 'Post to community feed on completion'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (blockType === 'challenge') return // forced
+                    const current = form.getValues('shared_to_feed' as any)
+                    form.setValue('shared_to_feed' as any, !current)
+                  }}
+                  className={cn(
+                    'relative w-11 h-6 rounded-full transition-colors duration-200',
+                    (blockType === 'challenge' || form.watch('shared_to_feed' as any))
+                      ? 'bg-[#3b82f6]'
+                      : 'bg-[rgba(255,255,255,0.12)]'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200',
+                      (blockType === 'challenge' || form.watch('shared_to_feed' as any))
+                        ? 'translate-x-5'
+                        : 'translate-x-0'
+                    )}
+                  />
+                </button>
+              </div>
+            </>
           )}
 
-          {/* Share to Feed Toggle - not for personal blocks */}
-          {blockType !== 'personal' && (
-            <div className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)]">
-              <div>
-                <p className="text-[13px] font-medium text-[#eef2ff]">Share to Feed</p>
-                <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
-                  {blockType === 'challenge' ? 'Required for challenges' : 'Post to community feed on completion'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (blockType === 'challenge') return // forced
-                  const current = form.getValues('shared_to_feed' as any)
-                  form.setValue('shared_to_feed' as any, !current)
-                }}
-                className={cn(
-                  'relative w-11 h-6 rounded-full transition-colors duration-200',
-                  (blockType === 'challenge' || form.watch('shared_to_feed' as any))
-                    ? 'bg-[#3b82f6]'
-                    : 'bg-[rgba(255,255,255,0.12)]'
-                )}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200',
-                    (blockType === 'challenge' || form.watch('shared_to_feed' as any))
-                      ? 'translate-x-5'
-                      : 'translate-x-0'
-                  )}
-                />
-              </button>
+          {/* Future-scheduled info notice (when share/media is hidden) */}
+          {!showShareMediaControls && blockType !== 'personal' && !editingBlock && isScheduledFuture && (
+            <div className="p-3 bg-[rgba(59,130,246,0.08)] rounded-[12px] border border-[rgba(59,130,246,0.2)]">
+              <p className="text-[12px] text-[rgba(238,242,255,0.72)]">
+                📸 You can add photos and share to the feed when you complete this block.
+              </p>
             </div>
           )}
 

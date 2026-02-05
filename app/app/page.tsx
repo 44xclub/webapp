@@ -9,13 +9,15 @@ import {
   ViewModeToggle,
   DayView,
   WeekOverview,
+  SharePromptModal,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useBlocks, useBlockMedia, useProfile, useFrameworks } from '@/lib/hooks'
+import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2, Flame } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
+import { StreakCard } from '@/components/shared/StreakCard'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
@@ -37,6 +39,7 @@ export default function AppPage() {
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
+  const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -67,6 +70,7 @@ export default function AppPage() {
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
+  const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -105,7 +109,33 @@ export default function AppPage() {
     if (editingBlock) await updateBlock(editingBlock.id, data)
     else await createBlock(data)
   }, [editingBlock, createBlock, updateBlock])
-  const handleToggleComplete = useCallback(async (block: Block) => await toggleComplete(block), [toggleComplete])
+  // Determine if block should show share prompt on completion
+  const isShareEligible = useCallback((block: Block) => {
+    const shareTypes = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+    return shareTypes.includes(block.block_type) && block.block_type !== 'personal'
+  }, [])
+
+  const handleToggleComplete = useCallback(async (block: Block) => {
+    // If completing (not un-completing) and share eligible, show share prompt
+    if (!block.completed_at && isShareEligible(block)) {
+      // Complete the block first
+      await toggleComplete(block)
+      // Then show share prompt
+      setSharePromptBlock(block)
+    } else {
+      // Just toggle without prompt
+      await toggleComplete(block)
+    }
+  }, [toggleComplete, isShareEligible])
+
+  const handleSharePromptConfirm = useCallback(async (shareToFeed: boolean) => {
+    if (!sharePromptBlock || !user?.id) return
+    // Update block with share_to_feed setting and create feed post if needed
+    if (shareToFeed) {
+      await updateBlock(sharePromptBlock.id, { shared_to_feed: true } as any)
+    }
+    setSharePromptBlock(null)
+  }, [sharePromptBlock, user?.id, updateBlock])
   const handleDuplicate = useCallback(async (block: Block) => await duplicateBlock(block), [duplicateBlock])
   const handleDelete = useCallback(async (block: Block) => await deleteBlock(block.id), [deleteBlock])
 
@@ -121,38 +151,25 @@ export default function AppPage() {
     <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Streak Module */}
+      {/* Streak Module - using shared component */}
       {profile && (
-        <div className="mx-4 mt-2 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-[12px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
-                <Flame className="h-5 w-5 text-[#f59e0b]" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Current Streak</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[20px] font-semibold text-[#eef2ff]">{profile.current_streak || 0}</span>
-                  <span className="text-[13px] text-[rgba(238,242,255,0.60)]">days</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Personal Best</p>
-              <div className="flex items-baseline gap-1 justify-end">
-                <span className="text-[16px] font-semibold text-[#22d3ee]">{profile.best_streak || 0}</span>
-                <span className="text-[12px] text-[rgba(238,242,255,0.52)]">days</span>
-              </div>
-            </div>
-          </div>
+        <div className="mx-3 mt-2">
+          <StreakCard
+            currentStreak={profile.current_streak || 0}
+            bestStreak={profile.best_streak || 0}
+            variant="compact"
+          />
         </div>
       )}
 
-      <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} onWeekChange={handleWeekChange} blocksByDate={blocksByDate} />
-
-      <div className="px-4 py-3 flex justify-center border-b border-[rgba(255,255,255,0.07)] bg-[#07090d]">
-        <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
-      </div>
+      <WeekStrip
+        selectedDate={selectedDate}
+        onSelectDate={handleSelectDate}
+        onWeekChange={handleWeekChange}
+        blocksByDate={blocksByDate}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+      />
 
       {/* Active Framework Card - same as Structure page */}
       {viewMode === 'day' && !frameworkLoading && (
@@ -191,9 +208,33 @@ export default function AppPage() {
 
       <BottomNav />
 
-      <BlockModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveBlock} initialDate={addingToDate || selectedDate} editingBlock={editingBlock} blockMedia={editingBlock?.block_media || []} userId={user?.id} onMediaUpload={uploadMedia} onMediaDelete={deleteMedia} userHasHeight={hasHeight} />
+      <BlockModal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveBlock}
+        initialDate={addingToDate || selectedDate}
+        editingBlock={editingBlock}
+        blockMedia={editingBlock?.block_media || []}
+        userId={user?.id}
+        onMediaUpload={uploadMedia}
+        onMediaDelete={deleteMedia}
+        userHasHeight={hasHeight}
+        activeProgramme={activeProgramme}
+        programmeSessions={programmeSessions}
+        userTimezone={profile?.timezone}
+      />
 
       <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
+
+      <SharePromptModal
+        isOpen={!!sharePromptBlock}
+        onClose={() => setSharePromptBlock(null)}
+        block={sharePromptBlock}
+        userId={user?.id}
+        onMediaUpload={uploadMedia}
+        onMediaDelete={deleteMedia}
+        onConfirm={handleSharePromptConfirm}
+      />
     </div>
   )
 }
