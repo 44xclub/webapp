@@ -271,62 +271,98 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
 
   const fetchTeamData = async () => {
     setLoading(true)
+    console.log('[Team] Fetching team data for userId:', userId)
+
     try {
-      // Fetch user's team membership
-      const { data: membership, error: membershipError } = await supabase
+      // Step 1: Fetch user's team membership (without join first to debug)
+      const { data: memberships, error: membershipError } = await supabase
         .from('team_members')
-        .select('team_id, role, teams(id, team_number)')
+        .select('team_id, role')
         .eq('user_id', userId)
         .is('left_at', null)
-        .single()
+
+      console.log('[Team] Raw membership query result:', { memberships, membershipError })
 
       if (membershipError) {
-        console.error('Membership query error:', membershipError)
-      }
-      console.log('Membership data:', membership)
-
-      if (membership?.team_id) {
-        // Fetch team members with profiles
-        // Use profiles:user_id hint since team_members.user_id -> auth.users.id and profiles.id -> auth.users.id
-        const { data: members, error: membersError } = await supabase
-          .from('team_members')
-          .select('user_id, role, joined_at, profiles:user_id(display_name, avatar_path, discipline_score)')
-          .eq('team_id', membership.team_id)
-          .is('left_at', null)
-          .order('role', { ascending: false })
-
-        if (membersError) {
-          console.error('Members query error:', membersError)
-        }
-        console.log('Members data:', members)
-
-        // Fetch latest daily overview
-        const today = new Date().toISOString().split('T')[0]
-        const { data: overview, error: overviewError } = await supabase
-          .from('team_daily_overviews')
-          .select('*')
-          .eq('team_id', membership.team_id)
-          .lte('date', today)
-          .order('date', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (overviewError && overviewError.code !== 'PGRST116') {
-          // PGRST116 = no rows returned, which is expected if no overviews exist
-          console.error('Overview query error:', overviewError)
-        }
-
-        setTeamData({
-          team: membership.teams,
-          members: (members || []) as TeamMemberData[],
-          role: membership.role,
-          dailyOverview: overview as TeamDailyOverview | null,
-        })
-      } else {
+        console.error('[Team] Membership query error:', membershipError)
         setTeamData(null)
+        return
       }
+
+      if (!memberships || memberships.length === 0) {
+        console.log('[Team] No team membership found for user')
+        setTeamData(null)
+        return
+      }
+
+      const membership = memberships[0]
+      console.log('[Team] Found membership:', membership)
+
+      // Step 2: Fetch team details separately
+      const { data: team, error: teamError } = await supabase
+        .from('teams')
+        .select('id, team_number')
+        .eq('id', membership.team_id)
+        .single()
+
+      console.log('[Team] Team query result:', { team, teamError })
+
+      if (teamError || !team) {
+        console.error('[Team] Team query error:', teamError)
+        setTeamData(null)
+        return
+      }
+
+      // Step 3: Fetch team members with profiles
+      const { data: members, error: membersError } = await supabase
+        .from('team_members')
+        .select('user_id, role, joined_at')
+        .eq('team_id', membership.team_id)
+        .is('left_at', null)
+        .order('role', { ascending: false })
+
+      console.log('[Team] Members query result:', { members, membersError })
+
+      // Step 4: Fetch profiles for members separately (more reliable than join)
+      let membersWithProfiles: TeamMemberData[] = []
+      if (members && members.length > 0) {
+        const userIds = members.map((m: { user_id: string }) => m.user_id)
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, display_name, avatar_path, discipline_score')
+          .in('id', userIds)
+
+        console.log('[Team] Profiles query result:', { profiles, profilesError })
+
+        // Map profiles to members
+        const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
+        membersWithProfiles = members.map((m: any) => ({
+          ...m,
+          profiles: profileMap.get(m.user_id) || null
+        })) as TeamMemberData[]
+      }
+
+      // Step 5: Fetch latest daily overview (optional)
+      const today = new Date().toISOString().split('T')[0]
+      const { data: overview } = await supabase
+        .from('team_daily_overviews')
+        .select('*')
+        .eq('team_id', membership.team_id)
+        .lte('date', today)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      console.log('[Team] Final team data:', { team, membersWithProfiles, overview })
+
+      setTeamData({
+        team: team,
+        members: membersWithProfiles,
+        role: membership.role,
+        dailyOverview: overview as TeamDailyOverview | null,
+      })
     } catch (err) {
-      console.error('Failed to fetch team:', err)
+      console.error('[Team] Failed to fetch team:', err)
       setTeamData(null)
     } finally {
       setLoading(false)
