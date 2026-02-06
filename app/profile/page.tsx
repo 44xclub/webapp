@@ -16,16 +16,24 @@ import {
   Clock,
   Check,
   X,
+  ChevronRight,
+  BookOpen,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useProfile, useRank, useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
-import { ReflectionSection } from '@/components/profile/ReflectionSection'
+import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
-import type { DisciplineBadge, Block } from '@/lib/types'
+import type { DisciplineBadge, Block, BlockMedia } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+// Extended Block type with media
+interface BlockWithMedia extends Block {
+  block_media: BlockMedia[]
+}
 
 const TIMEZONES = [
   'Europe/London',
@@ -54,7 +62,7 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [checkinBlocks, setCheckinBlocks] = useState<Block[]>([])
+  const [checkinBlocks, setCheckinBlocks] = useState<BlockWithMedia[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
 
   const [formData, setFormData] = useState({
@@ -92,7 +100,7 @@ export default function ProfilePage() {
 
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
-  const { cycles, loading: reflectionLoading, saving: reflectionSaving, saveEntry } = useReflection(user?.id)
+  const { cycles, currentCycle } = useReflection(user?.id)
 
   useEffect(() => {
     async function fetchCheckins() {
@@ -101,14 +109,14 @@ export default function ProfilePage() {
       try {
         const { data, error } = await supabase
           .from('blocks')
-          .select('*')
+          .select('*, block_media(*)')
           .eq('user_id', user.id)
           .eq('block_type', 'checkin')
           .is('deleted_at', null)
           .order('date', { ascending: false })
           .limit(10)
         if (error) throw error
-        setCheckinBlocks(data as Block[] || [])
+        setCheckinBlocks(data as BlockWithMedia[] || [])
       } catch (err) {
         console.error('Failed to fetch check-ins:', err)
       } finally {
@@ -179,6 +187,14 @@ export default function ProfilePage() {
     setEditing(false)
   }
 
+  const handleAvatarUpload = async (path: string) => {
+    try {
+      await updateProfile({ avatar_path: path })
+    } catch (err) {
+      console.error('Failed to update avatar path:', err)
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
@@ -207,9 +223,14 @@ export default function ProfilePage() {
         <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
           <div className="p-5 flex flex-col items-center">
             <div className="mb-3">
-              <div className="h-20 w-20 rounded-[14px] bg-[rgba(255,255,255,0.04)] flex items-center justify-center border border-[rgba(255,255,255,0.08)]">
-                <span className="text-[18px] font-semibold text-[rgba(238,242,255,0.65)]">{initials}</span>
-              </div>
+              {user && (
+                <AvatarUpload
+                  userId={user.id}
+                  currentPath={profile?.avatar_path || null}
+                  displayName={displayName}
+                  onUploadComplete={handleAvatarUpload}
+                />
+              )}
             </div>
             <h2 className="text-[18px] font-semibold text-[#eef2ff] mb-0.5">{displayName}</h2>
             <p className="text-[13px] text-[rgba(238,242,255,0.45)]">{user?.email}</p>
@@ -283,13 +304,36 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Reflection & Planning */}
-        <ReflectionSection
-          cycles={cycles}
-          loading={reflectionLoading}
-          saving={reflectionSaving}
-          onSave={saveEntry}
-        />
+        {/* Reflection & Planning - Link to dedicated page */}
+        <Link
+          href="/profile/reflection"
+          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+        >
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[10px] bg-[rgba(59,130,246,0.1)] flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-[#3b82f6]" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Reflection & Planning</h3>
+                {currentCycle && (
+                  <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                    Current: {currentCycle.label.replace('Reflection — ', '')}
+                    {' · '}
+                    <span className={
+                      currentCycle.displayStatus === 'submitted' ? 'text-emerald-400' :
+                      currentCycle.displayStatus === 'draft' ? 'text-amber-400' : ''
+                    }>
+                      {currentCycle.displayStatus === 'not_started' ? 'Not started' :
+                       currentCycle.displayStatus === 'draft' ? 'Draft' : 'Submitted'}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+          </div>
+        </Link>
 
         {/* Check-ins */}
         <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
@@ -304,16 +348,33 @@ export default function ProfilePage() {
             ) : (
               checkinBlocks.map((block) => {
                 const payload = block.payload as { weight?: number; body_fat_percent?: number }
+                const media = block.block_media || []
                 return (
-                  <div key={block.id} className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Scale className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
-                      <div>
-                        <p className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
-                        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <div key={block.id} className="px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Scale className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+                        <div>
+                          <p className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
+                          <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
                       </div>
+                      {payload?.body_fat_percent && <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{payload.body_fat_percent}% BF</span>}
                     </div>
-                    {payload?.body_fat_percent && <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{payload.body_fat_percent}% BF</span>}
+                    {/* Media thumbnails */}
+                    {media.length > 0 && (
+                      <div className="mt-2 ml-7 flex gap-2">
+                        {media.slice(0, 3).map((item) => (
+                          <div key={item.id} className="h-12 w-12 rounded-[6px] overflow-hidden bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)]">
+                            <img
+                              src={supabase.storage.from('block-media').getPublicUrl(item.storage_path).data.publicUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )
               })

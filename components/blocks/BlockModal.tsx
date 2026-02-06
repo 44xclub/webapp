@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal, Button, Input } from '@/components/ui'
 import { MediaUploader } from './MediaUploader'
+import { type PendingMedia } from './InlineMediaUpload'
 import {
   WorkoutForm,
   HabitForm,
@@ -173,6 +174,12 @@ export function BlockModal({
   const [customDurationValue, setCustomDurationValue] = useState<string>('')
   const [customDurationUnit, setCustomDurationUnit] = useState<'min' | 'hr'>('min')
   const [entryMode, setEntryMode] = useState<'schedule' | 'log'>('schedule') // Schedule (future) vs Log (now/past)
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]) // For check-in inline uploads
+
+  // Handle media change from CheckinForm
+  const handleCheckinMediaChange = useCallback((media: PendingMedia[]) => {
+    setPendingMedia(media)
+  }, [])
 
   // Compute actual duration in minutes
   const actualDuration = useMemo(() => {
@@ -301,6 +308,7 @@ export function BlockModal({
         setCustomDurationValue('')
         setCustomDurationUnit('min')
         setEntryMode('schedule') // Reset to schedule mode for new blocks
+        setPendingMedia([]) // Clear pending media
         form.reset({
           date: formatDateForApi(initialDate),
           start_time: roundToNearest5Minutes(),
@@ -358,6 +366,22 @@ export function BlockModal({
 
       // Pass entry mode for new blocks (not editing)
       const createdBlock = await onSave(enrichedData, editingBlock ? undefined : entryMode)
+
+      // Upload pending media for check-in blocks
+      if (createdBlock && blockType === 'checkin' && pendingMedia.length > 0 && onMediaUpload) {
+        // Upload all pending media in parallel
+        await Promise.all(
+          pendingMedia.map(async (item) => {
+            // Create a File from the compressed blob
+            const file = new File([item.blob], `checkin-${Date.now()}.webp`, {
+              type: 'image/webp',
+            })
+            await onMediaUpload(createdBlock.id, file)
+          })
+        )
+        setPendingMedia([]) // Clear pending media after upload
+      }
+
       setStep(1)
       onClose()
 
@@ -396,6 +420,7 @@ export function BlockModal({
           <CheckinForm
             form={form as ReturnType<typeof useForm<typeof checkinSchema._type>>}
             userHasHeight={userHasHeight}
+            onMediaChange={!editingBlock ? handleCheckinMediaChange : undefined}
           />
         )
       case 'personal':
