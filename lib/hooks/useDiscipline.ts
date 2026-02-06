@@ -184,11 +184,16 @@ export function useFrameworks(userId: string | undefined) {
 
       // Fetch user's active framework
       if (userId) {
-        const { data: userFrameworkData } = await supabase
+        const { data: userFrameworkData, error: userFrameworkError } = await supabase
           .from('user_frameworks')
           .select('*, framework_template:framework_templates(*)')
           .eq('user_id', userId)
-          .single()
+          .maybeSingle()
+
+        // maybeSingle returns null if no row found (not an error)
+        if (userFrameworkError) {
+          console.error('[Frameworks] Failed to fetch user framework:', userFrameworkError)
+        }
 
         setActiveFramework(userFrameworkData as UserFramework | null)
 
@@ -345,12 +350,24 @@ export function useFrameworks(userId: string | undefined) {
   const deactivateFramework = useCallback(async () => {
     if (!userId) throw new Error('Not authenticated')
 
-    const { error } = await supabase
+    // Use select() to verify the delete actually happened
+    const { data: deletedRows, error } = await supabase
       .from('user_frameworks')
       .delete()
       .eq('user_id', userId)
+      .select()
 
-    if (error) throw error
+    if (error) {
+      console.error('[Frameworks] Delete failed:', error)
+      throw error
+    }
+
+    // Log for debugging - if no rows deleted, RLS might be blocking
+    if (!deletedRows || deletedRows.length === 0) {
+      console.warn('[Frameworks] No rows deleted - check RLS policies')
+    } else {
+      console.log('[Frameworks] Successfully deactivated framework')
+    }
 
     setActiveFramework(null)
     setTodayItems([])

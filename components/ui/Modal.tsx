@@ -90,7 +90,7 @@ export function Modal({
   )
 }
 
-// Dropdown menu component for block actions
+// Dropdown menu component for block actions - uses portal to escape overflow:hidden
 interface DropdownMenuProps {
   isOpen: boolean
   onClose: () => void
@@ -101,6 +101,7 @@ interface DropdownMenuProps {
     icon?: ReactNode
   }[]
   className?: string
+  anchorRect?: DOMRect | null
 }
 
 export function DropdownMenu({
@@ -108,17 +109,61 @@ export function DropdownMenu({
   onClose,
   items,
   className,
+  anchorRect,
 }: DropdownMenuProps) {
   useEffect(() => {
     if (isOpen) {
       const handleClickOutside = () => onClose()
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
+      // Use mousedown to catch clicks before they propagate
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen, onClose])
 
   if (!isOpen) return null
 
+  // If anchorRect is provided, use portal with fixed positioning
+  if (anchorRect) {
+    // Position menu below and to the left of anchor (right-aligned)
+    const menuWidth = 180
+    const top = anchorRect.bottom + 4
+    const left = anchorRect.right - menuWidth
+
+    return createPortal(
+      <div
+        className={cn(
+          'fixed z-[9999] min-w-[180px] bg-[rgba(9,11,16,0.96)] border border-[rgba(255,255,255,0.10)] rounded-[14px] py-2 px-2 animate-fadeIn backdrop-blur-[14px] shadow-2xl',
+          className
+        )}
+        style={{
+          top: `${top}px`,
+          left: `${Math.max(8, left)}px`,
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {items.map((item, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              item.onClick()
+              onClose()
+            }}
+            className={cn(
+              'w-full px-3 py-2.5 text-left text-[13px] font-bold text-[rgba(238,242,255,0.86)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(238,242,255,0.96)] rounded-[12px] transition-all duration-[140ms] flex items-center gap-2',
+              item.variant === 'destructive' && 'text-danger hover:bg-danger/10'
+            )}
+          >
+            {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+            {item.label}
+          </button>
+        ))}
+      </div>,
+      document.body
+    )
+  }
+
+  // Fallback: absolute positioning (for backwards compatibility)
   return (
     <div
       className={cn(

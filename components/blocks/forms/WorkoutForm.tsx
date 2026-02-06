@@ -208,27 +208,29 @@ export function WorkoutForm({
             {...register('payload.description')}
           />
 
-          {/* Optional metrics for running/sport/other */}
-          <div>
-            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
-              Metrics (optional)
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="number"
-                step="0.1"
-                placeholder="Distance (km)"
-                {...register('payload.distance_km', {
-                  valueAsNumber: true,
-                  setValueAs: (v: any) => (v === '' ? undefined : Number(v)),
-                })}
-              />
-              <Input
-                placeholder="Pace (e.g., 5:30/km)"
-                {...register('payload.pace')}
-              />
+          {/* Optional metrics - ONLY for Running (not Sport/Other) */}
+          {category === 'running' && (
+            <div>
+              <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+                Metrics (optional)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="Distance (km)"
+                  {...register('payload.distance_km', {
+                    valueAsNumber: true,
+                    setValueAs: (v: any) => (v === '' ? undefined : Number(v)),
+                  })}
+                />
+                <Input
+                  placeholder="Pace (e.g., 5:30/km)"
+                  {...register('payload.pace')}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

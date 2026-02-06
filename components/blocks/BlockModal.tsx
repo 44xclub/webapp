@@ -44,12 +44,12 @@ interface BlockModalProps {
 }
 
 const blockTypeOptions = [
-  { value: 'workout', label: 'Workout' },
-  { value: 'habit', label: 'Habit' },
-  { value: 'nutrition', label: 'Nutrition' },
-  { value: 'checkin', label: 'Check-in' },
-  { value: 'challenge', label: 'Challenge' },
-  { value: 'personal', label: 'Personal' },
+  { value: 'workout', label: 'Workout', schedulable: true },
+  { value: 'habit', label: 'Habit', schedulable: true },
+  { value: 'nutrition', label: 'Nutrition', schedulable: true },
+  { value: 'checkin', label: 'Check-in', schedulable: false },
+  { value: 'challenge', label: 'Challenge', schedulable: false },
+  { value: 'personal', label: 'Personal', schedulable: true },
 ]
 
 const durationOptions = [
@@ -59,6 +59,7 @@ const durationOptions = [
   { value: 60, label: '1h' },
   { value: 90, label: '1.5h' },
   { value: 120, label: '2h' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 function getSchemaForType(type: BlockType) {
@@ -168,8 +169,27 @@ export function BlockModal({
   const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedDuration, setSelectedDuration] = useState<number>(30)
+  const [selectedDuration, setSelectedDuration] = useState<number | 'custom'>(30)
+  const [customDurationValue, setCustomDurationValue] = useState<string>('')
+  const [customDurationUnit, setCustomDurationUnit] = useState<'min' | 'hr'>('min')
   const [entryMode, setEntryMode] = useState<'schedule' | 'log'>('schedule') // Schedule (future) vs Log (now/past)
+
+  // Compute actual duration in minutes
+  const actualDuration = useMemo(() => {
+    if (selectedDuration === 'custom') {
+      const val = parseFloat(customDurationValue) || 0
+      return customDurationUnit === 'hr' ? Math.round(val * 60) : Math.round(val)
+    }
+    return selectedDuration
+  }, [selectedDuration, customDurationValue, customDurationUnit])
+
+  // Filter block types based on entry mode (Schedule hides Check-in/Challenge)
+  const filteredBlockTypes = useMemo(() => {
+    return blockTypeOptions.filter(opt => {
+      if (entryMode === 'schedule') return opt.schedulable
+      return true
+    })
+  }, [entryMode])
 
   const schema = useMemo(() => getSchemaForType(blockType), [blockType])
 
@@ -213,17 +233,17 @@ export function BlockModal({
   useEffect(() => {
     // Don't auto-update for existing blocks being edited
     if (editingBlock) return
-    
-    if (startTime && selectedDuration && step === 1) {
-      const newEndTime = addMinutesToTime(startTime, selectedDuration)
+
+    if (startTime && actualDuration > 0 && step === 1) {
+      const newEndTime = addMinutesToTime(startTime, actualDuration)
       form.setValue('end_time', newEndTime)
-      
+
       // Auto-fill duration for workout blocks
       if (blockType === 'workout') {
-        form.setValue('payload.duration', selectedDuration)
+        form.setValue('payload.duration', actualDuration)
       }
     }
-  }, [startTime, selectedDuration, blockType, form, editingBlock, step])
+  }, [startTime, actualDuration, blockType, form, editingBlock, step])
 
   // For edit mode: sync payload.duration when times change (for workout blocks)
   useEffect(() => {
@@ -242,12 +262,28 @@ export function BlockModal({
         setStep(2) // Go directly to step 2 when editing
         setBlockType(editingBlock.block_type)
         
-        // Calculate duration from existing times
-        const existingDuration = calculateMinutesBetween(
+        // Calculate duration from existing times or payload
+        const existingDuration = (editingBlock.payload as any)?.duration_minutes || calculateMinutesBetween(
           editingBlock.start_time.slice(0, 5),
           editingBlock.end_time?.slice(0, 5) || null
         )
-        if (existingDuration) setSelectedDuration(existingDuration)
+        if (existingDuration) {
+          // Check if it matches a preset
+          const presetValues = [15, 30, 45, 60, 90, 120]
+          if (presetValues.includes(existingDuration)) {
+            setSelectedDuration(existingDuration)
+          } else {
+            // Custom duration
+            setSelectedDuration('custom')
+            if (existingDuration >= 60 && existingDuration % 60 === 0) {
+              setCustomDurationValue(String(existingDuration / 60))
+              setCustomDurationUnit('hr')
+            } else {
+              setCustomDurationValue(String(existingDuration))
+              setCustomDurationUnit('min')
+            }
+          }
+        }
         
         form.reset({
           date: editingBlock.date,
@@ -262,6 +298,8 @@ export function BlockModal({
       } else {
         setStep(1)
         setSelectedDuration(30)
+        setCustomDurationValue('')
+        setCustomDurationUnit('min')
         setEntryMode('schedule') // Reset to schedule mode for new blocks
         form.reset({
           date: formatDateForApi(initialDate),
@@ -280,8 +318,8 @@ export function BlockModal({
   const handleBlockTypeChange = (newType: BlockType) => {
     if (editingBlock) return
     setBlockType(newType)
-    // Challenge blocks can only be logged, not scheduled
-    if (newType === 'challenge') {
+    // Check-in and Challenge blocks can only be logged, not scheduled
+    if (newType === 'challenge' || newType === 'checkin') {
       setEntryMode('log')
     }
     form.reset({
@@ -308,8 +346,18 @@ export function BlockModal({
   const handleSubmit = async (data: BlockFormData) => {
     setIsSubmitting(true)
     try {
+      // Add duration_minutes to payload and compute end_time
+      const enrichedData = {
+        ...data,
+        end_time: addMinutesToTime(data.start_time, actualDuration),
+        payload: {
+          ...data.payload,
+          duration_minutes: actualDuration,
+        },
+      } as BlockFormData
+
       // Pass entry mode for new blocks (not editing)
-      const createdBlock = await onSave(data, editingBlock ? undefined : entryMode)
+      const createdBlock = await onSave(enrichedData, editingBlock ? undefined : entryMode)
       setStep(1)
       onClose()
 
@@ -357,7 +405,14 @@ export function BlockModal({
     }
   }
 
-  const endTime = endTimeWatched
+  // Compute end time from start time + actual duration
+  const endTime = useMemo(() => {
+    if (endTimeWatched) return endTimeWatched
+    if (startTime && actualDuration > 0) {
+      return addMinutesToTime(startTime, actualDuration)
+    }
+    return null
+  }, [endTimeWatched, startTime, actualDuration])
 
   // Determine if this block is future-scheduled (for share/media gating)
   // For new blocks, use the entryMode toggle; for editing, compute from date/time
@@ -435,9 +490,9 @@ export function BlockModal({
             </div>
           )}
 
-          {/* Block Type Selector - unified accent colour */}
+          {/* Block Type Selector - filtered by entry mode */}
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-            {blockTypeOptions.map((option) => {
+            {filteredBlockTypes.map((option) => {
               const isSelected = blockType === option.value
               return (
                 <button
@@ -508,7 +563,14 @@ export function BlockModal({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setSelectedDuration(option.value)}
+                  onClick={() => {
+                    setSelectedDuration(option.value as number | 'custom')
+                    // Pre-fill custom input when switching from preset
+                    if (option.value === 'custom' && typeof selectedDuration === 'number') {
+                      setCustomDurationValue(String(selectedDuration))
+                      setCustomDurationUnit('min')
+                    }
+                  }}
                   className={cn(
                     'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
                     selectedDuration === option.value
@@ -520,6 +582,31 @@ export function BlockModal({
                 </button>
               ))}
             </div>
+
+            {/* Custom Duration Input */}
+            {selectedDuration === 'custom' && (
+              <div className="mt-3 flex gap-2 items-center">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    placeholder="e.g., 75"
+                    min={1}
+                    max={600}
+                    value={customDurationValue}
+                    onChange={(e) => setCustomDurationValue(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <select
+                  value={customDurationUnit}
+                  onChange={(e) => setCustomDurationUnit(e.target.value as 'min' | 'hr')}
+                  className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[#0d1014] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none"
+                >
+                  <option value="min">min</option>
+                  <option value="hr">hr</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Continue Button */}
@@ -547,7 +634,7 @@ export function BlockModal({
                 </div>
                 <div>
                   <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
-                    {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'} ({selectedDuration} min)
+                    {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'} ({actualDuration} min)
                   </p>
                   <p className="text-[14px] font-semibold text-[#eef2ff]">
                     {titleValue || blockTypeLabels[blockType]}
