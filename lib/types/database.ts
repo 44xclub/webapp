@@ -541,6 +541,61 @@ export interface Database {
           created_at?: string
         }
       }
+      reflection_cycles: {
+        Row: {
+          id: string
+          start_date: string
+          end_date: string
+          label: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          start_date: string
+          end_date: string
+          label: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          start_date?: string
+          end_date?: string
+          label?: string
+          created_at?: string
+        }
+      }
+      reflection_entries: {
+        Row: {
+          id: string
+          user_id: string
+          cycle_id: string
+          answers: Json
+          status: 'draft' | 'submitted'
+          submitted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cycle_id: string
+          answers?: Json
+          status?: 'draft' | 'submitted'
+          submitted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cycle_id?: string
+          answers?: Json
+          status?: 'draft' | 'submitted'
+          submitted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -945,4 +1000,45 @@ export function getBadgeForLevel(level: number): DisciplineBadge {
   if (level <= 23) return 'Elite'
   if (level <= 33) return 'Forged'
   return '44-Pro'
+}
+
+// ============================================
+// Reflection & Planning Types
+// ============================================
+
+export type ReflectionStatus = 'not_started' | 'draft' | 'submitted'
+
+export interface ReflectionCycle {
+  id: string
+  start_date: string
+  end_date: string
+  label: string
+  created_at: string
+}
+
+export interface ReflectionAnswers {
+  q1?: string // What went well?
+  q2?: string // What didn't go as planned?
+  q3?: string // What did I learn?
+  q4?: string // What will I do differently?
+  q5?: string // What am I grateful for?
+  q6?: string // What are my priorities for next cycle?
+  q7?: string // What support do I need?
+  q8?: string // One word to describe how I feel
+}
+
+export interface ReflectionEntry {
+  id: string
+  user_id: string
+  cycle_id: string
+  answers: ReflectionAnswers
+  status: 'draft' | 'submitted'
+  submitted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReflectionCycleWithEntry extends ReflectionCycle {
+  entry?: ReflectionEntry | null
+  displayStatus: ReflectionStatus
 }

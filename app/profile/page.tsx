@@ -17,10 +17,11 @@ import {
   Check,
   X,
 } from 'lucide-react'
-import { useProfile, useRank } from '@/lib/hooks'
+import { useProfile, useRank, useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
+import { ReflectionSection } from '@/components/profile/ReflectionSection'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block } from '@/lib/types'
@@ -91,6 +92,7 @@ export default function ProfilePage() {
 
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
+  const { cycles, loading: reflectionLoading, saving: reflectionSaving, saveEntry } = useReflection(user?.id)
 
   useEffect(() => {
     async function fetchCheckins() {
@@ -280,6 +282,14 @@ export default function ProfilePage() {
             />
           </div>
         </div>
+
+        {/* Reflection & Planning */}
+        <ReflectionSection
+          cycles={cycles}
+          loading={reflectionLoading}
+          saving={reflectionSaving}
+          onSave={saveEntry}
+        />
 
         {/* Check-ins */}
         <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
