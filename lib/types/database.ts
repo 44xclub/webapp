@@ -166,6 +166,11 @@ export interface Database {
           description: string | null
           start_date: string
           end_date: string
+          card_image_path: string | null
+          hero_image_path: string | null
+          cover_image_path: string | null
+          is_published: boolean
+          sort_order: number
           created_at: string
           updated_at: string
         }
@@ -175,6 +180,11 @@ export interface Database {
           description?: string | null
           start_date: string
           end_date: string
+          card_image_path?: string | null
+          hero_image_path?: string | null
+          cover_image_path?: string | null
+          is_published?: boolean
+          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -184,6 +194,11 @@ export interface Database {
           description?: string | null
           start_date?: string
           end_date?: string
+          card_image_path?: string | null
+          hero_image_path?: string | null
+          cover_image_path?: string | null
+          is_published?: boolean
+          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -606,6 +621,11 @@ export interface CommunityChallenge {
   description: string | null
   start_date: string
   end_date: string
+  card_image_path: string | null
+  hero_image_path: string | null
+  cover_image_path: string | null
+  is_published: boolean
+  sort_order: number
   created_at: string
   updated_at: string
 }

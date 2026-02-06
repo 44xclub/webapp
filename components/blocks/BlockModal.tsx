@@ -43,12 +43,12 @@ interface BlockModalProps {
   userTimezone?: string
 }
 
+// Challenge is handled by ChallengeLogModal (requires media + preview)
 const blockTypeOptions = [
   { value: 'workout', label: 'Workout', schedulable: true },
   { value: 'habit', label: 'Habit', schedulable: true },
   { value: 'nutrition', label: 'Nutrition', schedulable: true },
   { value: 'checkin', label: 'Check-in', schedulable: false },
-  { value: 'challenge', label: 'Challenge', schedulable: false },
   { value: 'personal', label: 'Personal', schedulable: true },
 ]
 

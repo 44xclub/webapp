@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
-import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes } from '@/lib/hooks'
+import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
+import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
@@ -29,6 +30,7 @@ export default function StructurePage() {
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
+  const [challengeModalOpen, setChallengeModalOpen] = useState(false)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -56,9 +58,15 @@ export default function StructurePage() {
   }, [router, supabase])
 
   const { profile, loading: profileLoading } = useProfile(user?.id)
-  const { challenge, todayBlock, loading: challengeLoading, logChallenge, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
+  const { rank } = useRank(user?.id)
+  const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
+
+  const handleChallengeLogSuccess = () => {
+    refetchChallenge()
+    setChallengeModalOpen(false)
+  }
 
   if (authLoading) {
     return (
@@ -94,7 +102,11 @@ export default function StructurePage() {
                   <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
                 </div>
               ) : (
-                <ChallengeCard challenge={challenge} todayBlock={todayBlock} onLogChallenge={logChallenge} onRefetch={refetchChallenge} />
+                <ChallengeCard
+                  challenge={challenge}
+                  todayBlock={todayBlock}
+                  onLogToday={() => setChallengeModalOpen(true)}
+                />
               )}
             </div>
 
@@ -147,6 +159,18 @@ export default function StructurePage() {
         onToggleItem={toggleFrameworkItem}
         onDeactivate={deactivateFramework}
       />
+
+      {challenge && user && (
+        <ChallengeLogModal
+          isOpen={challengeModalOpen}
+          onClose={() => setChallengeModalOpen(false)}
+          challenge={challenge}
+          userId={user.id}
+          userProfile={profile}
+          userRank={rank}
+          onSuccess={handleChallengeLogSuccess}
+        />
+      )}
     </div>
   )
 }
