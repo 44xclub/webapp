@@ -64,12 +64,16 @@ export function SharePromptModal({
     switch (block.block_type) {
       case 'workout':
         const exercises = payload?.exercise_matrix || payload?.exercises || []
+        const category = payload?.category || 'weight_lifting'
+        const isMatrixType = ['weight_lifting', 'hyrox', 'hybrid'].includes(category)
+
         basePayload.workout = {
           is_programme: !!block.programme_session_id,
           session_title: payload?.session_title,
           rpe: payload?.rpe,
           duration_min: payload?.duration,
-          exercises: exercises.map((ex: any) => ({
+          kind: category, // Include workout kind for proper rendering
+          exercises: isMatrixType ? exercises.map((ex: any) => ({
             name: ex.exercise || ex.name || 'Exercise',
             sets: Array.isArray(ex.sets)
               ? ex.sets
@@ -77,13 +81,29 @@ export function SharePromptModal({
                   reps: ex.reps,
                   weight: ex.weight,
                 })),
-          })),
+          })) : [],
+          // Include details for running/sport/other
+          details: !isMatrixType ? {
+            description: payload?.description,
+            distance_km: payload?.distance_km,
+            pace: payload?.pace,
+          } : undefined,
         }
         break
 
       case 'nutrition':
+        // Include macros if available
+        const hasMacros = payload?.calories || payload?.protein || payload?.carbs || payload?.fat
         basePayload.nutrition = {
-          meals: payload?.meals || [],
+          meals: [{
+            meal_type: payload?.meal_type,
+            description: payload?.meal_name,
+            calories: payload?.calories,
+            protein: payload?.protein,
+            carbs: payload?.carbs,
+            fat: payload?.fat,
+          }],
+          has_macros: hasMacros,
         }
         break
 

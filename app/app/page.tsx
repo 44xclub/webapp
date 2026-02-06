@@ -107,9 +107,19 @@ export default function AppPage() {
   const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
   const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null) }, [])
   const handleSaveBlock = useCallback(async (data: BlockFormData, entryMode?: 'schedule' | 'log') => {
-    if (editingBlock) await updateBlock(editingBlock.id, data)
-    else await createBlock(data, entryMode || 'schedule')
+    if (editingBlock) {
+      await updateBlock(editingBlock.id, data)
+      return undefined
+    } else {
+      return await createBlock(data, entryMode || 'schedule')
+    }
   }, [editingBlock, createBlock, updateBlock])
+
+  // Handle showing share preview for logged blocks (called from BlockModal after save)
+  const handleShowSharePreview = useCallback((block: Block) => {
+    setSharePromptBlock(block)
+  }, [])
+
   // Determine if block should show share prompt on completion
   const isShareEligible = useCallback((block: Block) => {
     const shareTypes = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
@@ -214,6 +224,7 @@ export default function AppPage() {
         isOpen={modalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveBlock}
+        onShowSharePreview={handleShowSharePreview}
         initialDate={addingToDate || selectedDate}
         editingBlock={editingBlock}
         blockMedia={editingBlock?.block_media || []}

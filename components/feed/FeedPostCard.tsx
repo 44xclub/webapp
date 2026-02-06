@@ -15,10 +15,17 @@ export interface FeedPostPayload {
     session_title?: string
     rpe?: number
     duration_min?: number
+    kind?: 'weight_lifting' | 'hyrox' | 'hybrid' | 'running' | 'sport' | 'other'
     exercises: Array<{
       name: string
       sets: Array<{ reps?: number; weight?: number }>
     }>
+    // For running/sport/other workouts
+    details?: {
+      description?: string
+      distance_km?: number
+      pace?: string
+    }
   }
   nutrition?: {
     meals: Array<{
@@ -29,6 +36,7 @@ export interface FeedPostPayload {
       fat?: number
       description?: string
     }>
+    has_macros?: boolean
   }
   checkin?: {
     weight_kg: number
@@ -250,6 +258,57 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   const legacyMatrix = (payload as any)?.workout_matrix || (payload as any)?.exercises
 
   const exercises = workout?.exercises || legacyMatrix || []
+  const kind = workout?.kind || (payload as any)?.category || 'weight_lifting'
+  const isDetailsType = ['running', 'sport', 'other'].includes(kind)
+  const details = workout?.details || {}
+
+  // For running/sport/other, show session details instead of exercise matrix
+  if (isDetailsType || (exercises.length === 0 && details?.description)) {
+    return (
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 mb-3">
+        {workout?.session_title && (
+          <p className="text-[12px] font-medium text-[#3b82f6] mb-2">{workout.session_title}</p>
+        )}
+        <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">
+          {kind === 'running' ? 'Run' : kind === 'sport' ? 'Sport' : 'Workout'} Details
+        </p>
+
+        {/* Description */}
+        {details?.description && (
+          <p className="text-[13px] text-[rgba(238,242,255,0.72)] mb-3">{details.description}</p>
+        )}
+
+        {/* Tags row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {details?.distance_km && (
+            <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
+              {details.distance_km} km
+            </span>
+          )}
+          {details?.pace && (
+            <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
+              {details.pace}
+            </span>
+          )}
+          {(workout?.duration_min || (payload as any)?.duration) && (
+            <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
+              {workout?.duration_min || (payload as any)?.duration} min
+            </span>
+          )}
+          {(workout?.rpe || (payload as any)?.rpe) && (
+            <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
+              RPE {workout?.rpe || (payload as any)?.rpe}
+            </span>
+          )}
+          <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)] capitalize">
+            {kind.replace('_', ' ')}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Matrix-based workout (weight_lifting, hyrox, hybrid)
   if (exercises.length === 0) return null
 
   return (
@@ -292,6 +351,11 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
             Programme
           </span>
         )}
+        {workout?.kind && (
+          <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)] capitalize">
+            {workout.kind.replace('_', ' ')}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -325,12 +389,13 @@ function NutritionDataPanel({ payload }: { payload: FeedPostPayload }) {
   const nutrition = payload?.nutrition
   const meals = nutrition?.meals || (payload as any)?.meals || []
 
+  // Check if any macros are present
+  const hasMacros = meals.some((meal: any) =>
+    meal.calories || meal.protein || meal.carbs || meal.fat
+  )
+
   if (meals.length === 0) {
-    return (
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 mb-3">
-        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Macros not logged</p>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -339,17 +404,29 @@ function NutritionDataPanel({ payload }: { payload: FeedPostPayload }) {
         Nutrition Breakdown
       </p>
       <div className="space-y-2">
-        {meals.map((meal: any, idx: number) => (
-          <div key={idx} className="flex items-center justify-between text-[13px]">
-            <span className="text-[#eef2ff] font-medium capitalize">{meal.meal_type}</span>
-            <div className="flex items-center gap-3 text-[rgba(238,242,255,0.52)]">
-              {meal.calories && <span>{meal.calories} cal</span>}
-              {meal.protein && <span>{meal.protein}P</span>}
-              {meal.carbs && <span>{meal.carbs}C</span>}
-              {meal.fat && <span>{meal.fat}F</span>}
+        {meals.map((meal: any, idx: number) => {
+          const mealHasMacros = meal.calories || meal.protein || meal.carbs || meal.fat
+          return (
+            <div key={idx}>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-[#eef2ff] font-medium capitalize">{meal.meal_type}</span>
+                {mealHasMacros ? (
+                  <div className="flex items-center gap-3 text-[rgba(238,242,255,0.52)]">
+                    {meal.calories && <span>{meal.calories} cal</span>}
+                    {meal.protein && <span>{meal.protein}P</span>}
+                    {meal.carbs && <span>{meal.carbs}C</span>}
+                    {meal.fat && <span>{meal.fat}F</span>}
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-[rgba(238,242,255,0.35)]">Macros not logged</span>
+                )}
+              </div>
+              {meal.description && (
+                <p className="text-[12px] text-[rgba(238,242,255,0.52)] mt-1">{meal.description}</p>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 import { Input, Textarea, Select } from '@/components/ui'
 import { mealTypeLabels, repeatPatternLabels, weekdayLabels } from '@/lib/utils'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { NutritionFormData } from '@/lib/schemas'
 
 interface NutritionFormProps {
@@ -10,6 +12,8 @@ interface NutritionFormProps {
 }
 
 export function NutritionForm({ form }: NutritionFormProps) {
+  const [macrosExpanded, setMacrosExpanded] = useState(false)
+
   const {
     register,
     watch,
@@ -19,6 +23,9 @@ export function NutritionForm({ form }: NutritionFormProps) {
 
   const repeatPattern = watch('repeat_rule.pattern') || 'none'
   const selectedWeekdays = watch('repeat_rule.weekdays') || []
+
+  // Auto-expand if any macro values are already set (e.g., when editing)
+  const hasMacros = watch('payload.calories') || watch('payload.protein') || watch('payload.carbs') || watch('payload.fat')
 
   const toggleWeekday = (day: number) => {
     const current = selectedWeekdays || []
@@ -49,45 +56,61 @@ export function NutritionForm({ form }: NutritionFormProps) {
         error={errors.payload?.meal_name?.message}
       />
 
-      {/* Macros */}
-      <div>
-        <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
-          Macros (optional)
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="number"
-            placeholder="Calories"
-            {...register('payload.calories', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' ? undefined : Number(v)),
-            })}
-          />
-          <Input
-            type="number"
-            placeholder="Protein (g)"
-            {...register('payload.protein', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' ? undefined : Number(v)),
-            })}
-          />
-          <Input
-            type="number"
-            placeholder="Carbs (g)"
-            {...register('payload.carbs', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' ? undefined : Number(v)),
-            })}
-          />
-          <Input
-            type="number"
-            placeholder="Fat (g)"
-            {...register('payload.fat', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' ? undefined : Number(v)),
-            })}
-          />
-        </div>
+      {/* Macros - Collapsible Section */}
+      <div className="border border-[rgba(255,255,255,0.06)] rounded-[10px] overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setMacrosExpanded(!macrosExpanded)}
+          className="w-full flex items-center justify-between px-3 py-2.5 text-left bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+        >
+          <span className="text-[13px] font-medium text-[rgba(238,242,255,0.72)]">
+            Add macros (optional)
+          </span>
+          {(macrosExpanded || hasMacros) ? (
+            <ChevronDown className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+          )}
+        </button>
+
+        {(macrosExpanded || hasMacros) && (
+          <div className="p-3 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="number"
+                placeholder="Calories"
+                {...register('payload.calories', {
+                  valueAsNumber: true,
+                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                })}
+              />
+              <Input
+                type="number"
+                placeholder="Protein (g)"
+                {...register('payload.protein', {
+                  valueAsNumber: true,
+                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                })}
+              />
+              <Input
+                type="number"
+                placeholder="Carbs (g)"
+                {...register('payload.carbs', {
+                  valueAsNumber: true,
+                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                })}
+              />
+              <Input
+                type="number"
+                placeholder="Fat (g)"
+                {...register('payload.fat', {
+                  valueAsNumber: true,
+                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                })}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Repeat Pattern */}

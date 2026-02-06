@@ -29,7 +29,8 @@ import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 interface BlockModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: BlockFormData, entryMode?: 'schedule' | 'log') => Promise<void>
+  onSave: (data: BlockFormData, entryMode?: 'schedule' | 'log') => Promise<Block | void>
+  onShowSharePreview?: (block: Block) => void
   initialDate: Date
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
@@ -152,6 +153,7 @@ export function BlockModal({
   isOpen,
   onClose,
   onSave,
+  onShowSharePreview,
   initialDate,
   editingBlock,
   blockMedia = [],
@@ -307,9 +309,19 @@ export function BlockModal({
     setIsSubmitting(true)
     try {
       // Pass entry mode for new blocks (not editing)
-      await onSave(data, editingBlock ? undefined : entryMode)
+      const createdBlock = await onSave(data, editingBlock ? undefined : entryMode)
       setStep(1)
       onClose()
+
+      // For Log mode with share toggle ON, show preview modal immediately after save
+      // (Block is already completed, we just need to let user preview and confirm the feed post)
+      const shareEnabled = (data as any).shared_to_feed === true || blockType === 'challenge'
+      const isNewLoggedBlock = !editingBlock && entryMode === 'log' && createdBlock
+
+      if (isNewLoggedBlock && shareEnabled && SHARE_ELIGIBLE_TYPES.includes(blockType) && onShowSharePreview) {
+        // Small delay to let modal close animation complete
+        setTimeout(() => onShowSharePreview(createdBlock), 150)
+      }
     } catch (error) {
       console.error('Failed to save block:', error)
     } finally {
