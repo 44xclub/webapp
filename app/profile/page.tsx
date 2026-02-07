@@ -18,6 +18,9 @@ import {
   X,
   ChevronRight,
   BookOpen,
+  TrendingDown,
+  TrendingUp,
+  Image as ImageIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useProfile, useRank, useReflection } from '@/lib/hooks'
@@ -107,14 +110,16 @@ export default function ProfilePage() {
       if (!user?.id) return
       setCheckinsLoading(true)
       try {
+        // Fetch last 2 check-ins for preview, ordered by performed_at then created_at
         const { data, error } = await supabase
           .from('blocks')
           .select('*, block_media(*)')
           .eq('user_id', user.id)
           .eq('block_type', 'checkin')
           .is('deleted_at', null)
-          .order('date', { ascending: false })
-          .limit(10)
+          .order('performed_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(2)
         if (error) throw error
         setCheckinBlocks(data as BlockWithMedia[] || [])
       } catch (err) {
@@ -335,52 +340,88 @@ export default function ProfilePage() {
           </div>
         </Link>
 
-        {/* Check-ins */}
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
-          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Recent Check-ins</h3>
+        {/* Check-ins - Link to dedicated page */}
+        <Link
+          href="/profile/check-ins"
+          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+        >
+          <div className="px-4 py-3 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[10px] bg-[rgba(34,197,94,0.1)] flex items-center justify-center">
+                <Scale className="h-4 w-4 text-[#22c55e]" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Check-ins</h3>
+                <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                  Track your weight & progress
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
           </div>
+
+          {/* Last 2 check-ins preview */}
           <div className="divide-y divide-[rgba(255,255,255,0.06)]">
             {checkinsLoading ? (
-              <div className="p-4 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" /></div>
+              <div className="p-4 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+              </div>
             ) : checkinBlocks.length === 0 ? (
-              <div className="p-4 text-center text-[12px] text-[rgba(238,242,255,0.40)]">No check-ins recorded yet</div>
+              <div className="p-4 text-center text-[12px] text-[rgba(238,242,255,0.40)]">
+                No check-ins yet. Tap to add one.
+              </div>
             ) : (
-              checkinBlocks.map((block) => {
+              checkinBlocks.map((block, index) => {
                 const payload = block.payload as { weight?: number; body_fat_percent?: number }
                 const media = block.block_media || []
+
+                // Calculate delta from previous (next in array since sorted desc)
+                let delta: number | null = null
+                if (index === 0 && checkinBlocks.length > 1) {
+                  const prevPayload = checkinBlocks[1].payload as { weight?: number }
+                  if (payload?.weight && prevPayload?.weight) {
+                    delta = payload.weight - prevPayload.weight
+                  }
+                }
+
                 return (
-                  <div key={block.id} className="px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Scale className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
-                        <div>
-                          <p className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
-                          <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                        </div>
+                  <div
+                    key={block.id}
+                    className="px-4 py-3 flex items-center justify-between"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      router.push(`/profile/check-ins?open=${block.id}`)
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-[12px] text-[rgba(238,242,255,0.45)] w-12">
+                        {new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </div>
-                      {payload?.body_fat_percent && <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{payload.body_fat_percent}% BF</span>}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold text-[#eef2ff]">
+                          {payload?.weight ? `${payload.weight} kg` : '—'}
+                        </span>
+                        {delta !== null && delta !== 0 && (
+                          <span className={`text-[11px] font-medium flex items-center gap-0.5 ${delta < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                            {Math.abs(delta).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {/* Media thumbnails */}
-                    {media.length > 0 && (
-                      <div className="mt-2 ml-7 flex gap-2">
-                        {media.slice(0, 3).map((item) => (
-                          <div key={item.id} className="h-12 w-12 rounded-[6px] overflow-hidden bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)]">
-                            <img
-                              src={supabase.storage.from('block-media').getPublicUrl(item.storage_path).data.publicUrl}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {media.length > 0 && (
+                        <span className="text-[10px] text-[rgba(238,242,255,0.40)] flex items-center gap-1">
+                          <ImageIcon className="h-3 w-3" /> {media.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )
               })
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Statistics */}
         <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
