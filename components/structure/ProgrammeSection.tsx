@@ -120,9 +120,12 @@ export function ProgrammeSection({
         <SectionHeader title="Active Programme" subtitle="Your current training plan" />
 
         {/* Compact Active Programme Card - clickable to open modal */}
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setDetailModalOpen(true)}
-          className="w-full text-left bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden transition-all duration-200 hover:border-[rgba(255,255,255,0.10)] group"
+          onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
+          className="w-full text-left bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden transition-all duration-200 hover:border-[rgba(255,255,255,0.10)] group cursor-pointer"
         >
           {/* Image Banner */}
           <div className="relative h-[110px]">
@@ -164,7 +167,7 @@ export function ProgrammeSection({
               </Button>
             </div>
           </div>
-        </button>
+        </div>
       </div>
 
       {/* Programme Detail Modal with Sessions */}
