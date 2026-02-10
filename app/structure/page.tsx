@@ -124,7 +124,16 @@ export default function StructurePage() {
               </div>
             )}
 
-            {/* Personal Discipline Framework Link */}
+            {/* Available Frameworks */}
+            {frameworksLoading ? (
+              <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+              </div>
+            ) : (
+              <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
+            )}
+
+            {/* Personal Discipline Framework Link - Below Available Frameworks */}
             <Link
               href="/personal-framework"
               className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
@@ -140,19 +149,21 @@ export default function StructurePage() {
               </div>
               <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
             </Link>
-
-            {/* Available Frameworks */}
-            {frameworksLoading ? (
+          </>
+        ) : (
+          <>
+            {programmesLoading ? (
               <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
                 <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
               </div>
             ) : (
-              <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
+              <>
+                <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} fetchProgrammeSessions={fetchProgrammeSessions} />
+                <ProgrammeCatalogue programmes={programmes} activeProgrammeId={activeProgramme?.programme_template_id} onActivate={activateProgramme} onRefetch={refetchProgrammes} fetchProgrammeSessions={fetchProgrammeSessions} />
+              </>
             )}
-          </>
-        ) : (
-          <>
-            {/* Personal Programmes Link */}
+
+            {/* Personal Programmes Link - Below Available Programmes */}
             <Link
               href="/programmes"
               className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
@@ -168,17 +179,6 @@ export default function StructurePage() {
               </div>
               <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
             </Link>
-
-            {programmesLoading ? (
-              <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
-              </div>
-            ) : (
-              <>
-                <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} fetchProgrammeSessions={fetchProgrammeSessions} />
-                <ProgrammeCatalogue programmes={programmes} activeProgrammeId={activeProgramme?.programme_template_id} onActivate={activateProgramme} onRefetch={refetchProgrammes} fetchProgrammeSessions={fetchProgrammeSessions} />
-              </>
-            )}
           </>
         )}
       </main>

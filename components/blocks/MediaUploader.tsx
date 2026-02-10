@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
@@ -23,8 +23,45 @@ export function MediaUploader({
 }: MediaUploaderProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({})
+  const [urlsLoading, setUrlsLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
+  // Pre-fetch signed URLs for all media items
+  useEffect(() => {
+    const fetchUrls = async () => {
+      if (media.length === 0) {
+        setUrlsLoading(false)
+        return
+      }
+
+      setUrlsLoading(true)
+      const urls: Record<string, string> = {}
+
+      for (const item of media) {
+        // Try signed URL first (for private buckets)
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from('block-media')
+          .createSignedUrl(item.storage_path, 3600) // 1 hour expiry
+
+        if (!signedError && signedData?.signedUrl) {
+          urls[item.storage_path] = signedData.signedUrl
+        } else {
+          // Fallback to public URL
+          const { data } = supabase.storage
+            .from('block-media')
+            .getPublicUrl(item.storage_path)
+          urls[item.storage_path] = data.publicUrl
+        }
+      }
+
+      setMediaUrls(urls)
+      setUrlsLoading(false)
+    }
+
+    fetchUrls()
+  }, [media, supabase])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -44,7 +81,18 @@ export function MediaUploader({
 
     setIsUploading(true)
     try {
-      await onUpload(blockId, file)
+      const newMedia = await onUpload(blockId, file)
+
+      // Generate URL for newly uploaded media
+      if (newMedia?.storage_path) {
+        const { data: signedData } = await supabase.storage
+          .from('block-media')
+          .createSignedUrl(newMedia.storage_path, 3600)
+
+        if (signedData?.signedUrl) {
+          setMediaUrls(prev => ({ ...prev, [newMedia.storage_path]: signedData.signedUrl }))
+        }
+      }
     } catch (error) {
       console.error('Upload failed:', error)
       alert('Failed to upload file')
@@ -69,13 +117,6 @@ export function MediaUploader({
     }
   }
 
-  const getMediaUrl = (storagePath: string) => {
-    const { data } = supabase.storage
-      .from('block-media')
-      .getPublicUrl(storagePath)
-    return data.publicUrl
-  }
-
   return (
     <div>
       <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
@@ -87,15 +128,23 @@ export function MediaUploader({
         <div className="grid grid-cols-3 gap-2 mb-3">
           {media.map((item) => (
             <div key={item.id} className="relative aspect-square">
-              {item.media_type === 'image' ? (
+              {urlsLoading || !mediaUrls[item.storage_path] ? (
+                <div className="w-full h-full bg-[rgba(255,255,255,0.05)] rounded-lg flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+                </div>
+              ) : item.media_type === 'image' ? (
                 <img
-                  src={getMediaUrl(item.storage_path)}
+                  src={mediaUrls[item.storage_path]}
                   alt=""
                   className="w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    console.error('Image load error for:', item.storage_path)
+                    ;(e.target as HTMLImageElement).src = '/placeholder-image.png'
+                  }}
                 />
               ) : (
                 <video
-                  src={getMediaUrl(item.storage_path)}
+                  src={mediaUrls[item.storage_path]}
                   className="w-full h-full object-cover rounded-lg"
                 />
               )}
