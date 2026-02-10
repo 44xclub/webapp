@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Users, Activity, Trophy, Zap, Shield, Award, Crown, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
+import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -26,21 +26,32 @@ interface TeamMemberData {
   } | null
 }
 
-const badgeIcons: Record<DisciplineBadge, typeof Trophy> = {
+// Badge icons for each tier
+const badgeIcons: Record<DisciplineBadge, typeof Shield> = {
   'Initiated': Shield,
-  'Committed': Zap,
+  'Aligned': Target,
+  'Committed': Flame,
+  'Disciplined': Swords,
   'Elite': Award,
-  'Forged': Trophy,
-  '44-Pro': Crown,
+  'Forged': Anvil,
+  'Vanguard': Rocket,
+  '44 Pro': Crown,
 }
 
+// Badge colors for each tier
 const badgeColors: Record<DisciplineBadge, string> = {
   'Initiated': 'text-slate-400',
+  'Aligned': 'text-emerald-400',
   'Committed': 'text-blue-400',
+  'Disciplined': 'text-indigo-400',
   'Elite': 'text-cyan-400',
   'Forged': 'text-amber-400',
-  '44-Pro': 'text-yellow-400',
+  'Vanguard': 'text-rose-400',
+  '44 Pro': 'text-purple-400',
 }
+
+// Roman numerals for badge levels
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V']
 
 const communityTabs = [
   { value: 'team', label: 'Team' },
@@ -399,6 +410,8 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
             {teamData.members.map((member) => {
               const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
               const BadgeIcon = badgeIcons[level.badge]
+              const badgeColor = badgeColors[level.badge]
+              const badgeDisplay = `${level.badge} ${romanNumerals[level.badgeLevel - 1] || 'I'}`
               const displayName = member.profiles?.display_name || 'Member'
               const initials = displayName.slice(0, 2).toUpperCase()
 
@@ -418,9 +431,9 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
                         )}
                       </p>
                       <div className="flex items-center gap-1">
-                        <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                        <span className={`text-[11px] ${badgeColors[level.badge]}`}>
-                          Lv.{level.level}
+                        <BadgeIcon className={`h-3 w-3 ${badgeColor}`} />
+                        <span className={`text-[11px] ${badgeColor}`}>
+                          {badgeDisplay}
                         </span>
                       </div>
                     </div>

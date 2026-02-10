@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
+import { Lock } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { Profile, DisciplineBadge, ProfileRank } from '@/lib/types'
-import { DisciplineScoreModule, badgeIcons, badgeColors, badgeBgColors } from './DisciplineScoreModule'
+import { DisciplineScoreModule, badgeIcons, badgeColors, badgeBgColors, romanNumerals } from './DisciplineScoreModule'
 
 interface HeaderStripProps {
   profile: Profile | null
@@ -14,20 +15,30 @@ interface HeaderStripProps {
 
 export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
   // Use rank data if available (from v_profiles_rank view), otherwise calculate from profile
-  const disciplineLevel = useMemo(() => {
+  const disciplineData = useMemo(() => {
     if (rank) {
       return {
-        level: rank.level,
-        badge: rank.badge_tier,
-        progress: rank.level_progress_pct,
-        scoreIntoLevel: 0,
-        toNextLevel: 0,
+        badge: rank.badge,
+        badgeLevel: rank.badge_level,
+        progress: rank.badge_progress_pct,
+        score: rank.discipline_score,
+        canWearBadge: rank.can_wear_badge,
       }
     }
-    return profile ? calculateDisciplineLevel(profile.discipline_score) : null
+    if (profile) {
+      const calc = calculateDisciplineLevel(profile.discipline_score)
+      return {
+        badge: calc.badge,
+        badgeLevel: calc.badgeLevel,
+        progress: calc.progressInBadge,
+        score: profile.discipline_score,
+        canWearBadge: true, // Assume eligible when no rank data
+      }
+    }
+    return null
   }, [profile, rank])
 
-  if (loading || !profile || !disciplineLevel) {
+  if (loading || !profile || !disciplineData) {
     return (
       <div className="sticky top-0 z-50 bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] px-4 py-3">
         <div className="flex items-center justify-between">
@@ -46,9 +57,10 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
   const displayName = profile.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
-  const BadgeIcon = badgeIcons[disciplineLevel.badge]
-  const badgeColor = badgeColors[disciplineLevel.badge]
-  const badgeBgColor = badgeBgColors[disciplineLevel.badge]
+  const BadgeIcon = badgeIcons[disciplineData.badge]
+  const badgeColor = badgeColors[disciplineData.badge]
+  const badgeBgColor = badgeBgColors[disciplineData.badge]
+  const badgeDisplay = `${disciplineData.badge} ${romanNumerals[disciplineData.badgeLevel - 1] || 'I'}`
 
   return (
     <div className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
@@ -63,8 +75,13 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
                 {displayName}
               </p>
               <div className="flex items-center gap-1.5">
-                <BadgeIcon className={`h-3.5 w-3.5 ${badgeColor}`} />
-                <span className="text-[12px] font-medium text-[rgba(238,242,255,0.60)]">{disciplineLevel.badge}</span>
+                {!disciplineData.canWearBadge && (
+                  <Lock className="h-3 w-3 text-[rgba(238,242,255,0.40)]" />
+                )}
+                <BadgeIcon className={`h-3.5 w-3.5 ${disciplineData.canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]'}`} />
+                <span className={`text-[12px] font-medium ${disciplineData.canWearBadge ? 'text-[rgba(238,242,255,0.60)]' : 'text-[rgba(238,242,255,0.40)]'}`}>
+                  {badgeDisplay}
+                </span>
               </div>
             </div>
           </Link>
@@ -80,30 +97,35 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
         </div>
       </div>
 
-      {/* Progress Bar - only show if not max level */}
-      {disciplineLevel.level < 44 && disciplineLevel.toNextLevel > 0 && (
+      {/* Progress Bar - show progress within badge */}
+      {disciplineData.badge !== '44 Pro' && (
         <div className="px-4 pb-3">
           <div className="flex items-center justify-between text-[10px] font-medium text-[rgba(238,242,255,0.52)] mb-1.5">
-            <span>Level {disciplineLevel.level}</span>
+            <span>{badgeDisplay}</span>
             <span className="text-[rgba(238,242,255,0.60)]">
-              {disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} pts
+              {Math.round(disciplineData.progress)}%
             </span>
-            <span>Level {disciplineLevel.level + 1}</span>
+            <span>
+              {disciplineData.badgeLevel < 5
+                ? `${disciplineData.badge} ${romanNumerals[disciplineData.badgeLevel] || 'II'}`
+                : 'Next Badge'
+              }
+            </span>
           </div>
           <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${badgeBgColor}`}
-              style={{ width: `${Math.min(disciplineLevel.progress, 100)}%` }}
+              className={`h-full rounded-full transition-all duration-500 ${disciplineData.canWearBadge ? badgeBgColor : 'bg-[rgba(238,242,255,0.20)]'}`}
+              style={{ width: `${Math.min(disciplineData.progress, 100)}%` }}
             />
           </div>
         </div>
       )}
-      
-      {/* Max level indicator */}
-      {disciplineLevel.level >= 44 && (
+
+      {/* Max badge indicator */}
+      {disciplineData.badge === '44 Pro' && disciplineData.badgeLevel >= 5 && (
         <div className="px-4 pb-3">
-          <div className="text-center text-[12px] font-medium text-[#a78bfa]">
-            Maximum Level Achieved
+          <div className="text-center text-[12px] font-medium text-purple-400">
+            Maximum Badge Achieved
           </div>
         </div>
       )}

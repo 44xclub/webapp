@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, Trash2, Loader2, MoreHorizontal, Trophy, Zap, Shield, Award, Crown, ChevronDown, ChevronUp } from 'lucide-react'
+import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge } from '@/lib/types'
 
@@ -83,21 +83,32 @@ interface FeedPostCardProps {
   deleting?: boolean
 }
 
-const badgeIcons: Record<DisciplineBadge, typeof Trophy> = {
+// Badge icons for each tier
+const badgeIcons: Record<DisciplineBadge, typeof Shield> = {
   'Initiated': Shield,
-  'Committed': Zap,
+  'Aligned': Target,
+  'Committed': Flame,
+  'Disciplined': Swords,
   'Elite': Award,
-  'Forged': Trophy,
-  '44-Pro': Crown,
+  'Forged': Anvil,
+  'Vanguard': Rocket,
+  '44 Pro': Crown,
 }
 
+// Badge colors for each tier
 const badgeColors: Record<DisciplineBadge, string> = {
   'Initiated': 'text-slate-400',
+  'Aligned': 'text-emerald-400',
   'Committed': 'text-blue-400',
+  'Disciplined': 'text-indigo-400',
   'Elite': 'text-cyan-400',
   'Forged': 'text-amber-400',
-  '44-Pro': 'text-yellow-400',
+  'Vanguard': 'text-rose-400',
+  '44 Pro': 'text-purple-400',
 }
+
+// Roman numerals for badge levels
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V']
 
 // Format relative time
 function formatRelativeTime(dateString: string): string {
@@ -125,6 +136,8 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
   const initials = displayName.slice(0, 2).toUpperCase()
   const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
   const BadgeIcon = badgeIcons[level.badge]
+  const badgeColor = badgeColors[level.badge]
+  const badgeDisplay = `${level.badge} ${romanNumerals[level.badgeLevel - 1] || 'I'}`
   const isOwnPost = post.user_id === userId
 
   const payload = post.payload as FeedPostPayload
@@ -144,8 +157,8 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
             <div className="flex items-center gap-2">
               <p className="text-[13px] font-medium text-[#eef2ff]">{displayName}</p>
               <div className="flex items-center gap-1">
-                <BadgeIcon className={`h-3 w-3 ${badgeColors[level.badge]}`} />
-                <span className={`text-[10px] ${badgeColors[level.badge]}`}>Lv.{level.level}</span>
+                <BadgeIcon className={`h-3 w-3 ${badgeColor}`} />
+                <span className={`text-[10px] ${badgeColor}`}>{badgeDisplay}</span>
               </div>
             </div>
             <p className="text-[11px] text-[rgba(238,242,255,0.40)]">

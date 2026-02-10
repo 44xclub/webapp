@@ -940,18 +940,70 @@ export interface FeedRespect {
 }
 
 // ============================================
-// Discipline Score Helpers (derived, no table)
+// Discipline Score & Badge System
+// Based on 44CLUB Discipline Score Spec
 // ============================================
 
+/**
+ * Badge tiers based on LIFETIME DISCIPLINE SCORE (not level)
+ * 8 badges total for long-term progression
+ */
+export type DisciplineBadge =
+  | 'Initiated'    // 0-100
+  | 'Aligned'      // 101-250
+  | 'Committed'    // 251-450
+  | 'Disciplined'  // 451-700
+  | 'Elite'        // 701-1200
+  | 'Forged'       // 1201-2000
+  | 'Vanguard'     // 2001-3200
+  | '44 Pro'       // 3201+
+
+/**
+ * Badge thresholds - score ranges for each badge
+ */
+export const BADGE_THRESHOLDS: { badge: DisciplineBadge; min: number; max: number }[] = [
+  { badge: 'Initiated', min: 0, max: 100 },
+  { badge: 'Aligned', min: 101, max: 250 },
+  { badge: 'Committed', min: 251, max: 450 },
+  { badge: 'Disciplined', min: 451, max: 700 },
+  { badge: 'Elite', min: 701, max: 1200 },
+  { badge: 'Forged', min: 1201, max: 2000 },
+  { badge: 'Vanguard', min: 2001, max: 3200 },
+  { badge: '44 Pro', min: 3201, max: Infinity },
+]
+
+/**
+ * Discipline level info derived from lifetime score
+ * Each badge has 5 internal levels (1-5)
+ */
 export interface DisciplineLevel {
-  level: number
   badge: DisciplineBadge
-  progress: number // 0-100 percentage to next level
-  scoreIntoLevel: number
-  toNextLevel: number
+  badgeLevel: number            // 1-5 within the badge
+  lifetimeScore: number         // Total accumulated score
+  progressInBadge: number       // 0-100 percentage within current badge
+  scoreInBadge: number          // Points earned within this badge tier
+  toNextBadge: number           // Points needed for next badge (0 if max)
 }
 
-export type DisciplineBadge = 'Initiated' | 'Committed' | 'Elite' | 'Forged' | '44-Pro'
+/**
+ * Badge wear eligibility - determines if badge can be displayed
+ * Based on recent 7-day behavior
+ */
+export interface BadgeEligibility {
+  canWearBadge: boolean
+  executedDays: number          // Days with execution >= 60% (need >= 4 of 7)
+  avgExecution: number          // Average execution % over 7 days (need >= 70%)
+  zeroPlanDays: number          // Days with 0 planned blocks in last 5 (need 0)
+  reason?: string               // Reason if ineligible
+}
+
+/**
+ * Complete discipline info for a user
+ */
+export interface DisciplineInfo {
+  level: DisciplineLevel
+  eligibility: BadgeEligibility
+}
 
 // v_profiles_rank view response (DB-provided rank data)
 export interface ProfileRank {
@@ -959,50 +1011,165 @@ export interface ProfileRank {
   display_name: string | null
   avatar_path: string | null
   discipline_score: number
-  level: number
-  badge_tier: DisciplineBadge
-  level_progress_pct: number
+  badge: DisciplineBadge
+  badge_level: number           // 1-5 within badge
+  badge_progress_pct: number    // 0-100 progress within badge
+  can_wear_badge: boolean
   current_streak: number
   best_streak: number
   is_paused: boolean
+  // Eligibility details (optional)
+  executed_days_7d?: number
+  avg_execution_7d?: number
+  zero_plan_days_5d?: number
 }
 
 /**
- * Calculate discipline level from score
- * Formula: level = floor( (-1 + sqrt(1 + 4*S)) / 2 ), capped at 44
- * Note: Prefer using v_profiles_rank view for DB-provided values
+ * Get badge from lifetime discipline score
+ */
+export function getBadgeFromScore(score: number): DisciplineBadge {
+  const s = Math.max(score, 0)
+  for (const t of BADGE_THRESHOLDS) {
+    if (s >= t.min && s <= t.max) return t.badge
+  }
+  return '44 Pro'
+}
+
+/**
+ * Get badge threshold info
+ */
+export function getBadgeThreshold(badge: DisciplineBadge): { min: number; max: number } {
+  const threshold = BADGE_THRESHOLDS.find(t => t.badge === badge)
+  return threshold || { min: 0, max: 100 }
+}
+
+/**
+ * Calculate discipline level from lifetime score
+ * Badge determined by score range, badge level (1-5) determined by progress within badge
  */
 export function calculateDisciplineLevel(score: number): DisciplineLevel {
-  const S = Math.max(score, 0)
-  let level = Math.floor((-1 + Math.sqrt(1 + 4 * S)) / 2)
-  level = Math.min(level, 44)
+  const s = Math.max(score, 0)
+  const badge = getBadgeFromScore(s)
+  const threshold = getBadgeThreshold(badge)
 
-  let progress = 100
-  let scoreIntoLevel = 0
-  let toNextLevel = 0
+  // Calculate progress within badge
+  const badgeRange = threshold.max === Infinity ? 1000 : threshold.max - threshold.min + 1
+  const scoreInBadge = s - threshold.min
+  const progressInBadge = threshold.max === Infinity
+    ? Math.min((scoreInBadge / 1000) * 100, 100)
+    : (scoreInBadge / badgeRange) * 100
 
-  if (level < 44) {
-    const levelMin = level * (level + 1)
-    scoreIntoLevel = S - levelMin
-    toNextLevel = 2 * (level + 1)
-    progress = (scoreIntoLevel / toNextLevel) * 100
+  // Calculate badge level (1-5) based on progress
+  // Each level represents 20% of the badge range
+  let badgeLevel = Math.floor(progressInBadge / 20) + 1
+  badgeLevel = Math.min(badgeLevel, 5)
+
+  // Points to next badge
+  const toNextBadge = threshold.max === Infinity ? 0 : threshold.max - s + 1
+
+  return {
+    badge,
+    badgeLevel,
+    lifetimeScore: s,
+    progressInBadge: Math.min(progressInBadge, 100),
+    scoreInBadge,
+    toNextBadge: Math.max(toNextBadge, 0),
   }
-
-  const badge = getBadgeForLevel(level)
-
-  return { level, badge, progress, scoreIntoLevel, toNextLevel }
 }
 
 /**
- * Get badge tier from level
- * 0-3: Initiated, 4-13: Committed, 14-23: Elite, 24-33: Forged, 34-44: 44-Pro
+ * Calculate badge eligibility from recent daily scores
+ * Requirements:
+ * - >= 4 executed days in last 7 (execution >= 60%)
+ * - Average execution >= 70% over last 7 days
+ * - No days with 0 planned blocks in last 5 days
  */
-export function getBadgeForLevel(level: number): DisciplineBadge {
-  if (level <= 3) return 'Initiated'
-  if (level <= 13) return 'Committed'
-  if (level <= 23) return 'Elite'
-  if (level <= 33) return 'Forged'
-  return '44-Pro'
+export function calculateBadgeEligibility(
+  dailyScores: Array<{ date: string; planned: number; completed: number }>
+): BadgeEligibility {
+  if (dailyScores.length === 0) {
+    return {
+      canWearBadge: false,
+      executedDays: 0,
+      avgExecution: 0,
+      zeroPlanDays: 0,
+      reason: 'No recent activity data',
+    }
+  }
+
+  // Sort by date descending
+  const sorted = [...dailyScores].sort((a, b) => b.date.localeCompare(a.date))
+  const last7 = sorted.slice(0, 7)
+  const last5 = sorted.slice(0, 5)
+
+  // Count executed days (planned > 0 AND execution >= 60%)
+  let executedDays = 0
+  let totalExecution = 0
+  let daysWithPlanned = 0
+
+  for (const day of last7) {
+    if (day.planned > 0) {
+      daysWithPlanned++
+      const execRate = day.completed / day.planned
+      totalExecution += execRate
+      if (execRate >= 0.6) executedDays++
+    }
+  }
+
+  const avgExecution = daysWithPlanned > 0 ? (totalExecution / daysWithPlanned) * 100 : 0
+
+  // Count zero-plan days in last 5
+  const zeroPlanDays = last5.filter(d => d.planned === 0).length
+
+  // Check eligibility
+  const reasons: string[] = []
+  if (executedDays < 4) reasons.push(`Only ${executedDays}/4 executed days`)
+  if (avgExecution < 70) reasons.push(`Avg execution ${avgExecution.toFixed(0)}% (need 70%)`)
+  if (zeroPlanDays > 0) reasons.push(`${zeroPlanDays} day(s) with no plans`)
+
+  return {
+    canWearBadge: reasons.length === 0,
+    executedDays,
+    avgExecution,
+    zeroPlanDays,
+    reason: reasons.length > 0 ? reasons.join(', ') : undefined,
+  }
+}
+
+/**
+ * Scoring constants per the spec
+ */
+export const SCORING = {
+  // Base points (completed only)
+  WORKOUT: 2,
+  HABIT: 1,
+  NUTRITION: 1,
+  CHALLENGE: 3,
+  FRAMEWORK_ITEM: 1,  // Per checked item
+
+  // Penalties (daily only, never reduce lifetime)
+  MISSED_BLOCK: -2,
+  MISSED_BLOCK_CAP: -8,
+  PLANNED_ZERO_COMPLETED: -5,
+  FRAMEWORK_ZERO_PROGRESS: -3,
+
+  // Execution multipliers
+  MULTIPLIER_100: 1.5,
+  MULTIPLIER_80_99: 1.2,
+  MULTIPLIER_60_79: 1.0,
+  MULTIPLIER_40_59: 0.5,
+  MULTIPLIER_BELOW_40: 0,
+} as const
+
+/**
+ * Get execution multiplier from rate
+ */
+export function getExecutionMultiplier(executionRate: number): number {
+  if (executionRate >= 1.0) return SCORING.MULTIPLIER_100
+  if (executionRate >= 0.8) return SCORING.MULTIPLIER_80_99
+  if (executionRate >= 0.6) return SCORING.MULTIPLIER_60_79
+  if (executionRate >= 0.4) return SCORING.MULTIPLIER_40_59
+  return SCORING.MULTIPLIER_BELOW_40
 }
 
 // ============================================

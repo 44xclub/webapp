@@ -1,36 +1,62 @@
 'use client'
 
 import { useState } from 'react'
-import { Shield, Zap, Award, Trophy, Crown } from 'lucide-react'
+import { Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, Lock } from 'lucide-react'
 import { DisciplineSystemModal } from './DisciplineSystemModal'
-import type { DisciplineBadge, ProfileRank } from '@/lib/types'
+import type { DisciplineBadge, ProfileRank, DisciplineLevel } from '@/lib/types'
 import { calculateDisciplineLevel } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-// Badge icons and colors
+// Badge icons for each tier
 const badgeIcons: Record<DisciplineBadge, typeof Shield> = {
   'Initiated': Shield,
-  'Committed': Zap,
+  'Aligned': Target,
+  'Committed': Flame,
+  'Disciplined': Swords,
   'Elite': Award,
-  'Forged': Trophy,
-  '44-Pro': Crown,
+  'Forged': Anvil,
+  'Vanguard': Rocket,
+  '44 Pro': Crown,
 }
 
+// Badge text colors
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-[rgba(238,242,255,0.60)]',
-  'Committed': 'text-[#60a5fa]',
-  'Elite': 'text-[#22d3ee]',
-  'Forged': 'text-[#f59e0b]',
-  '44-Pro': 'text-[#a78bfa]',
+  'Initiated': 'text-slate-400',
+  'Aligned': 'text-emerald-400',
+  'Committed': 'text-blue-400',
+  'Disciplined': 'text-indigo-400',
+  'Elite': 'text-cyan-400',
+  'Forged': 'text-amber-400',
+  'Vanguard': 'text-rose-400',
+  '44 Pro': 'text-purple-400',
 }
 
+// Badge background colors for progress bars
 const badgeBgColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'bg-[rgba(238,242,255,0.60)]',
-  'Committed': 'bg-[#60a5fa]',
-  'Elite': 'bg-[#22d3ee]',
-  'Forged': 'bg-[#f59e0b]',
-  '44-Pro': 'bg-[#a78bfa]',
+  'Initiated': 'bg-slate-400',
+  'Aligned': 'bg-emerald-400',
+  'Committed': 'bg-blue-400',
+  'Disciplined': 'bg-indigo-400',
+  'Elite': 'bg-cyan-400',
+  'Forged': 'bg-amber-400',
+  'Vanguard': 'bg-rose-400',
+  '44 Pro': 'bg-purple-400',
 }
+
+// Badge glow colors for active state
+const badgeGlowColors: Record<DisciplineBadge, string> = {
+  'Initiated': 'shadow-slate-400/30',
+  'Aligned': 'shadow-emerald-400/30',
+  'Committed': 'shadow-blue-400/30',
+  'Disciplined': 'shadow-indigo-400/30',
+  'Elite': 'shadow-cyan-400/30',
+  'Forged': 'shadow-amber-400/30',
+  'Vanguard': 'shadow-rose-400/30',
+  '44 Pro': 'shadow-purple-400/30',
+}
+
+// Roman numerals for badge levels
+const romanNumerals = ['I', 'II', 'III', 'IV', 'V']
 
 interface DisciplineScoreModuleProps {
   // Either use ProfileRank from v_profiles_rank view (preferred)
@@ -58,31 +84,47 @@ export function DisciplineScoreModule({
   const [modalOpen, setModalOpen] = useState(false)
 
   // Get level data from rank (preferred) or calculate from score
-  const levelData = rank
+  const levelData: {
+    badge: DisciplineBadge
+    badgeLevel: number
+    progress: number
+    score: number
+    canWearBadge: boolean
+    eligibilityReason?: string
+  } | null = rank
     ? {
-        level: rank.level,
-        badge: rank.badge_tier,
-        progress: rank.level_progress_pct,
+        badge: rank.badge,
+        badgeLevel: rank.badge_level,
+        progress: rank.badge_progress_pct,
         score: rank.discipline_score,
+        canWearBadge: rank.can_wear_badge,
+        eligibilityReason: !rank.can_wear_badge
+          ? `${rank.executed_days_7d ?? 0}/4 days executed, ${Math.round(rank.avg_execution_7d ?? 0)}% avg`
+          : undefined,
       }
     : score !== undefined
     ? (() => {
         const calc = calculateDisciplineLevel(score)
         return {
-          level: calc.level,
           badge: calc.badge,
-          progress: calc.progress,
+          badgeLevel: calc.badgeLevel,
+          progress: calc.progressInBadge,
           score,
+          canWearBadge: true, // Assume eligible when no rank data
         }
       })()
     : null
 
   if (!levelData) return null
 
-  const { level, badge, progress, score: displayScore } = levelData
+  const { badge, badgeLevel, progress, score: displayScore, canWearBadge, eligibilityReason } = levelData
   const BadgeIcon = badgeIcons[badge]
   const badgeColor = badgeColors[badge]
   const badgeBgColor = badgeBgColors[badge]
+  const badgeGlow = badgeGlowColors[badge]
+
+  // Badge display name with roman numeral level
+  const badgeDisplay = `${badge} ${romanNumerals[badgeLevel - 1] || 'I'}`
 
   const handleClick = () => {
     if (clickable) setModalOpen(true)
@@ -97,13 +139,18 @@ export function DisciplineScoreModule({
           className={cn(
             'flex items-center gap-1.5',
             clickable && 'cursor-pointer hover:opacity-80 transition-opacity',
+            !canWearBadge && 'opacity-50',
             className
           )}
           disabled={!clickable}
         >
-          <BadgeIcon className={cn('h-3.5 w-3.5', badgeColor)} />
-          <span className="text-[11px] font-medium text-[rgba(238,242,255,0.60)]">
-            Lv.{level}
+          {!canWearBadge && <Lock className="h-2.5 w-2.5 text-[rgba(238,242,255,0.40)]" />}
+          <BadgeIcon className={cn('h-3.5 w-3.5', canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]')} />
+          <span className={cn(
+            'text-[11px] font-medium',
+            canWearBadge ? 'text-[rgba(238,242,255,0.60)]' : 'text-[rgba(238,242,255,0.40)]'
+          )}>
+            {badgeDisplay}
           </span>
         </button>
         {clickable && <DisciplineSystemModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />}
@@ -124,13 +171,15 @@ export function DisciplineScoreModule({
           )}
           disabled={!clickable}
         >
-          <div className="flex items-center gap-1.5">
-            <BadgeIcon className={cn('h-4 w-4', badgeColor)} />
-            <span className={cn('text-[12px] font-medium', badgeColor)}>{badge}</span>
+          <div className={cn('flex items-center gap-1.5', !canWearBadge && 'opacity-50')}>
+            {!canWearBadge && <Lock className="h-3 w-3 text-[rgba(238,242,255,0.40)]" />}
+            <BadgeIcon className={cn('h-4 w-4', canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]')} />
+            <span className={cn('text-[12px] font-medium', canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]')}>
+              {badgeDisplay}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-[12px]">
-            <span className="text-[rgba(238,242,255,0.60)]">Lv.{level}</span>
-            <span className="text-[#3b82f6] font-semibold">{displayScore}</span>
+            <span className="text-[#3b82f6] font-semibold">{displayScore} pts</span>
           </div>
         </button>
         {clickable && <DisciplineSystemModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />}
@@ -149,27 +198,62 @@ export function DisciplineScoreModule({
           className
         )}
       >
+        {/* Badge and Score Display */}
         <div className="flex items-center gap-4">
-          <div className="text-center min-w-[48px]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Level</p>
-            <p className="text-[22px] font-semibold text-[#eef2ff]">{level}</p>
+          {/* Badge Section */}
+          <div className={cn(
+            'flex items-center gap-2 px-3 py-2 rounded-[10px] border transition-all',
+            canWearBadge
+              ? `bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] shadow-lg ${badgeGlow}`
+              : 'bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.04)]'
+          )}>
+            {!canWearBadge && <Lock className="h-3.5 w-3.5 text-[rgba(238,242,255,0.40)]" />}
+            <BadgeIcon className={cn('h-5 w-5', canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]')} />
+            <div>
+              <p className={cn(
+                'text-[14px] font-semibold leading-tight',
+                canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]'
+              )}>
+                {badgeDisplay}
+              </p>
+              {!canWearBadge && (
+                <p className="text-[10px] text-rose-400 leading-tight">Locked</p>
+              )}
+            </div>
           </div>
+
           <div className="w-px h-10 bg-[rgba(255,255,255,0.07)]" />
-          <div className="text-center min-w-[52px]">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">Score</p>
-            <p className="text-[22px] font-semibold text-[#3b82f6]">{displayScore}</p>
+
+          {/* Score Section */}
+          <div className="text-center min-w-[60px]">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)] mb-0.5">
+              Lifetime Score
+            </p>
+            <p className="text-[22px] font-semibold text-[#eef2ff]">{displayScore}</p>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        {showProgress && level < 44 && (
+        {/* Locked Badge Reason */}
+        {!canWearBadge && eligibilityReason && (
+          <div className="mt-2 px-3 py-1.5 rounded-[8px] bg-rose-500/10 border border-rose-500/20">
+            <p className="text-[11px] text-rose-400">
+              <Lock className="inline h-3 w-3 mr-1" />
+              Standards not maintained: {eligibilityReason}
+            </p>
+          </div>
+        )}
+
+        {/* Progress Bar - shows progress within current badge */}
+        {showProgress && canWearBadge && badge !== '44 Pro' && (
           <div className="mt-3">
             <div className="flex items-center justify-between text-[10px] font-medium text-[rgba(238,242,255,0.52)] mb-1.5">
-              <span>Level {level}</span>
+              <span>{badge} {romanNumerals[badgeLevel - 1] || 'I'}</span>
               <span className="text-[rgba(238,242,255,0.60)]">
                 {Math.round(progress)}%
               </span>
-              <span>Level {level + 1}</span>
+              <span>
+                {badgeLevel < 5 ? `${badge} ${romanNumerals[badgeLevel] || 'II'}` : 'Next Badge'}
+              </span>
             </div>
             <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
               <div
@@ -180,10 +264,10 @@ export function DisciplineScoreModule({
           </div>
         )}
 
-        {/* Max level indicator */}
-        {showProgress && level >= 44 && (
-          <div className="mt-3 text-center text-[12px] font-medium text-[#a78bfa]">
-            Maximum Level Achieved
+        {/* Max badge indicator */}
+        {showProgress && badge === '44 Pro' && badgeLevel >= 5 && (
+          <div className="mt-3 text-center text-[12px] font-medium text-purple-400">
+            Maximum Badge Achieved
           </div>
         )}
       </div>
@@ -194,4 +278,4 @@ export function DisciplineScoreModule({
 }
 
 // Export badge styling utilities for use in other components
-export { badgeIcons, badgeColors, badgeBgColors }
+export { badgeIcons, badgeColors, badgeBgColors, badgeGlowColors, romanNumerals }

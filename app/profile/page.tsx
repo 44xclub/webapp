@@ -52,12 +52,16 @@ const TIMEZONES = [
   'Australia/Sydney',
 ]
 
+// Badge colors for each tier
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-[rgba(238,242,255,0.50)]',
-  'Committed': 'text-[#60a5fa]',
-  'Elite': 'text-[#22d3ee]',
-  'Forged': 'text-[#f59e0b]',
-  '44-Pro': 'text-[#a78bfa]',
+  'Initiated': 'text-slate-400',
+  'Aligned': 'text-emerald-400',
+  'Committed': 'text-blue-400',
+  'Disciplined': 'text-indigo-400',
+  'Elite': 'text-cyan-400',
+  'Forged': 'text-amber-400',
+  'Vanguard': 'text-rose-400',
+  '44 Pro': 'text-purple-400',
 }
 
 export default function ProfilePage() {
