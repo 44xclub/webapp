@@ -354,7 +354,7 @@ export function ChallengeLogModal({
               <div className="flex items-center gap-2">
                 {userRank && (
                   <span className="text-[11px] font-medium text-[#3b82f6]">
-                    {userRank.badge_tier} L{userRank.level}
+                    {userRank.badge} L{userRank.badge_level}
                   </span>
                 )}
                 <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Just now</span>
