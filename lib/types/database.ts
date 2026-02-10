@@ -944,7 +944,7 @@ export interface FeedRespect {
 // ============================================
 
 export type ProgrammeFocus = 'strength' | 'hypertrophy' | 'conditioning' | 'hybrid'
-export type ProgrammeStatus = 'draft' | 'active' | 'archived'
+export type PersonalProgrammeStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
 
 export interface PersonalProgramme {
   id: string
@@ -952,9 +952,10 @@ export interface PersonalProgramme {
   title: string
   days_per_week: number
   focus: ProgrammeFocus
-  status: ProgrammeStatus
+  status: PersonalProgrammeStatus
   created_at: string
   updated_at: string
+  deleted_at: string | null
   // Joined data
   days?: PersonalProgrammeDay[]
 }
@@ -972,14 +973,13 @@ export interface PersonalProgrammeDay {
 
 export interface PersonalProgrammeExercise {
   id: string
-  day_id: string
+  programme_day_id: string
   sort_order: number
-  name: string
+  exercise_name: string
   sets: number | null
   reps: string | null
   notes: string | null
   created_at: string
-  updated_at: string
 }
 
 // Snapshot stored in block payload when scheduling
@@ -1014,7 +1014,7 @@ export interface PersonalFrameworkTemplate extends FrameworkTemplate {
 // ============================================
 
 export type ReviewEntityType = 'programme' | 'framework'
-export type ReviewStatus = 'pending' | 'reviewed' | 'approved' | 'rejected'
+export type ReviewStatus = 'open' | 'reviewed' | 'dismissed'
 
 export interface AdminReviewEntry {
   id: string
@@ -1022,7 +1022,7 @@ export interface AdminReviewEntry {
   entity_id: string
   user_id: string
   status: ReviewStatus
-  admin_notes: string | null
+  notes: string | null
   created_at: string
   reviewed_at: string | null
 }

@@ -133,11 +133,11 @@ export default function ProgrammeEditorPage() {
             </div>
             {programme.status === 'draft' && (
               <button
-                onClick={() => updateProgramme(programme.id, { status: 'active' })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-emerald-500/20 text-emerald-400 text-[13px] font-medium"
+                onClick={() => updateProgramme(programme.id, { status: 'submitted' })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-blue-500/20 text-blue-400 text-[13px] font-medium"
               >
                 <Save className="h-4 w-4" />
-                Activate
+                Submit
               </button>
             )}
           </div>
@@ -324,13 +324,13 @@ function ExerciseRow({
   onDelete: () => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [name, setName] = useState(exercise.name)
+  const [name, setName] = useState(exercise.exercise_name)
   const [sets, setSets] = useState(exercise.sets?.toString() || '')
   const [reps, setReps] = useState(exercise.reps || '')
 
   const handleSave = () => {
     onUpdate({
-      name: name.trim() || exercise.name,
+      name: name.trim() || exercise.exercise_name,
       sets: sets ? parseInt(sets) : null,
       reps: reps || null,
     })
@@ -388,7 +388,7 @@ function ExerciseRow({
     <div className={`px-4 py-2.5 flex items-center gap-3 group ${!isLast ? 'border-b border-[rgba(255,255,255,0.06)]' : ''}`}>
       <GripVertical className="h-4 w-4 text-[rgba(238,242,255,0.25)] cursor-grab" />
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] text-[#eef2ff] truncate">{exercise.name}</p>
+        <p className="text-[13px] text-[#eef2ff] truncate">{exercise.exercise_name}</p>
       </div>
       {(exercise.sets || exercise.reps) && (
         <div className="flex items-center gap-1 text-[12px] text-[rgba(238,242,255,0.52)]">

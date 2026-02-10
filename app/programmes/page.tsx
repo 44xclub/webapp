@@ -12,7 +12,6 @@ import {
   Trash2,
   Edit,
   Play,
-  Archive,
 } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { usePersonalProgrammes } from '@/lib/hooks/usePersonalProgrammes'
@@ -142,8 +141,7 @@ export default function PersonalProgrammesPage() {
                 key={programme.id}
                 programme={programme}
                 onEdit={() => router.push(`/programmes/${programme.id}`)}
-                onActivate={() => updateProgramme(programme.id, { status: 'active' })}
-                onArchive={() => updateProgramme(programme.id, { status: 'archived' })}
+                onSubmit={() => updateProgramme(programme.id, { status: 'submitted' })}
                 onDelete={() => deleteProgramme(programme.id)}
               />
             ))
@@ -185,14 +183,12 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 function ProgrammeCard({
   programme,
   onEdit,
-  onActivate,
-  onArchive,
+  onSubmit,
   onDelete,
 }: {
   programme: PersonalProgramme
   onEdit: () => void
-  onActivate: () => void
-  onArchive: () => void
+  onSubmit: () => void
   onDelete: () => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
@@ -222,9 +218,19 @@ function ProgrammeCard({
                   Draft
                 </span>
               )}
-              {programme.status === 'active' && (
+              {programme.status === 'submitted' && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded-[4px] text-blue-400 bg-blue-500/10">
+                  Submitted
+                </span>
+              )}
+              {programme.status === 'approved' && (
                 <span className="text-[11px] px-1.5 py-0.5 rounded-[4px] text-emerald-400 bg-emerald-500/10">
-                  Active
+                  Approved
+                </span>
+              )}
+              {programme.status === 'rejected' && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded-[4px] text-rose-400 bg-rose-500/10">
+                  Rejected
                 </span>
               )}
             </div>
@@ -255,20 +261,11 @@ function ProgrammeCard({
           </button>
           {programme.status === 'draft' && (
             <button
-              onClick={() => { onActivate(); setShowMenu(false) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => { onSubmit(); setShowMenu(false) }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] text-blue-400 hover:bg-blue-500/10"
             >
               <Play className="h-3.5 w-3.5" />
-              Activate
-            </button>
-          )}
-          {programme.status === 'active' && (
-            <button
-              onClick={() => { onArchive(); setShowMenu(false) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.06)]"
-            >
-              <Archive className="h-3.5 w-3.5" />
-              Archive
+              Submit
             </button>
           )}
           <button

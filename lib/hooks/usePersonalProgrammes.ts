@@ -7,12 +7,12 @@ import type {
   PersonalProgrammeDay,
   PersonalProgrammeExercise,
   ProgrammeFocus,
-  ProgrammeStatus,
+  PersonalProgrammeStatus,
 } from '@/lib/types'
 
 interface UsePersonalProgrammesOptions {
   userId?: string
-  status?: ProgrammeStatus
+  status?: PersonalProgrammeStatus
 }
 
 interface UsePersonalProgrammesReturn {
@@ -42,7 +42,7 @@ interface UpdateProgrammeData {
   title?: string
   days_per_week?: number
   focus?: ProgrammeFocus
-  status?: ProgrammeStatus
+  status?: PersonalProgrammeStatus
 }
 
 interface CreateDayData {
@@ -98,10 +98,20 @@ export function usePersonalProgrammes(
           *,
           days:personal_programme_days(
             *,
-            exercises:personal_programme_exercises(*)
+            exercises:personal_programme_exercises(
+              id,
+              programme_day_id,
+              sort_order,
+              exercise_name,
+              sets,
+              reps,
+              notes,
+              created_at
+            )
           )
         `)
         .eq('user_id', userId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
       if (status) {
@@ -298,8 +308,8 @@ export function usePersonalProgrammes(
         const { data: exercise, error } = await supabase
           .from('personal_programme_exercises')
           .insert({
-            day_id: dayId,
-            name: data.name,
+            programme_day_id: dayId,
+            exercise_name: data.name,
             sets: data.sets ?? null,
             reps: data.reps ?? null,
             notes: data.notes ?? null,
@@ -325,9 +335,17 @@ export function usePersonalProgrammes(
   const updateExercise = useCallback(
     async (exerciseId: string, data: UpdateExerciseData): Promise<boolean> => {
       try {
+        // Map interface fields to DB column names
+        const updateData: Record<string, any> = {}
+        if (data.name !== undefined) updateData.exercise_name = data.name
+        if (data.sets !== undefined) updateData.sets = data.sets
+        if (data.reps !== undefined) updateData.reps = data.reps
+        if (data.notes !== undefined) updateData.notes = data.notes
+        if (data.sort_order !== undefined) updateData.sort_order = data.sort_order
+
         const { error } = await supabase
           .from('personal_programme_exercises')
-          .update({ ...data, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq('id', exerciseId)
 
         if (error) throw error
