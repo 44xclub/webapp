@@ -4,7 +4,8 @@ export interface CompressionOptions {
   maxWidth: number
   maxHeight: number
   quality: number
-  maxSizeKB: number
+  targetSizeKB: number
+  hardLimitKB: number
   format: 'webp' | 'jpeg'
 }
 
@@ -16,22 +17,30 @@ export interface CompressedImage {
   compressedSize: number
 }
 
-// Default options for avatars (256x256 square, <200KB)
+// Avatar options: 512px square, 0.80 quality, target ≤300KB, hard limit 1MB
 export const AVATAR_OPTIONS: CompressionOptions = {
-  maxWidth: 256,
-  maxHeight: 256,
-  quality: 0.8,
-  maxSizeKB: 200,
+  maxWidth: 512,
+  maxHeight: 512,
+  quality: 0.80,
+  targetSizeKB: 300,
+  hardLimitKB: 1024, // 1MB
   format: 'webp',
 }
 
-// Default options for block media (1440px max dimension, <800KB)
+// Block media options: 1440px max edge, 0.78 quality, target ≤1.2MB, hard limit 3MB
 export const BLOCK_MEDIA_OPTIONS: CompressionOptions = {
   maxWidth: 1440,
   maxHeight: 1440,
-  quality: 0.8,
-  maxSizeKB: 800,
+  quality: 0.78,
+  targetSizeKB: 1200,
+  hardLimitKB: 3072, // 3MB
   format: 'webp',
+}
+
+// Video constraints
+export const VIDEO_OPTIONS = {
+  maxSizeMB: 10,
+  allowedTypes: ['video/mp4', 'video/quicktime'],
 }
 
 /**
@@ -95,33 +104,33 @@ async function canvasToBlob(
   canvas: HTMLCanvasElement,
   format: 'webp' | 'jpeg',
   initialQuality: number,
-  maxSizeKB: number
+  targetSizeKB: number
 ): Promise<Blob> {
   const mimeType = format === 'webp' ? 'image/webp' : 'image/jpeg'
   let quality = initialQuality
   let blob: Blob | null = null
 
-  // Try progressively lower quality until size constraint is met
+  // Try progressively lower quality until target size is met
   while (quality >= 0.1) {
     blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((b) => resolve(b), mimeType, quality)
     })
 
-    if (blob && blob.size <= maxSizeKB * 1024) {
+    if (blob && blob.size <= targetSizeKB * 1024) {
       return blob
     }
 
-    quality -= 0.1
+    quality -= 0.05 // Smaller steps for better quality retention
   }
 
-  // Return whatever we got, even if over size limit
+  // Return whatever we got (will be checked against hard limit by caller)
   if (blob) return blob
 
   throw new Error('Failed to compress image')
 }
 
 /**
- * Compress an image file for avatar use (square crop, 256x256)
+ * Compress an image file for avatar use (square crop, 512x512)
  */
 export async function compressAvatar(file: File): Promise<CompressedImage> {
   const img = await loadImage(file)
@@ -132,16 +141,22 @@ export async function compressAvatar(file: File): Promise<CompressedImage> {
     throw new Error('Failed to get canvas context')
   }
 
-  // Crop to square and resize to 256x256
+  // Crop to square and resize to 512x512
   cropToSquare(img, canvas, ctx, AVATAR_OPTIONS.maxWidth)
 
-  // Convert to webp with size constraint
+  // Convert to webp with target size
   const blob = await canvasToBlob(
     canvas,
     AVATAR_OPTIONS.format,
     AVATAR_OPTIONS.quality,
-    AVATAR_OPTIONS.maxSizeKB
+    AVATAR_OPTIONS.targetSizeKB
   )
+
+  // Check against hard limit
+  if (blob.size > AVATAR_OPTIONS.hardLimitKB * 1024) {
+    URL.revokeObjectURL(img.src)
+    throw new Error(`Avatar image exceeds maximum size of ${AVATAR_OPTIONS.hardLimitKB / 1024}MB`)
+  }
 
   // Clean up object URL
   URL.revokeObjectURL(img.src)
@@ -156,7 +171,7 @@ export async function compressAvatar(file: File): Promise<CompressedImage> {
 }
 
 /**
- * Compress an image file for block media (max 1440px, maintain aspect ratio)
+ * Compress an image file for block media (max 1440px edge, maintain aspect ratio)
  */
 export async function compressBlockMedia(file: File): Promise<CompressedImage> {
   const img = await loadImage(file)
@@ -176,13 +191,19 @@ export async function compressBlockMedia(file: File): Promise<CompressedImage> {
     BLOCK_MEDIA_OPTIONS.maxHeight
   )
 
-  // Convert to webp with size constraint
+  // Convert to webp with target size
   const blob = await canvasToBlob(
     canvas,
     BLOCK_MEDIA_OPTIONS.format,
     BLOCK_MEDIA_OPTIONS.quality,
-    BLOCK_MEDIA_OPTIONS.maxSizeKB
+    BLOCK_MEDIA_OPTIONS.targetSizeKB
   )
+
+  // Check against hard limit
+  if (blob.size > BLOCK_MEDIA_OPTIONS.hardLimitKB * 1024) {
+    URL.revokeObjectURL(img.src)
+    throw new Error(`Image exceeds maximum size of ${BLOCK_MEDIA_OPTIONS.hardLimitKB / 1024}MB`)
+  }
 
   // Clean up object URL
   URL.revokeObjectURL(img.src)
@@ -219,8 +240,47 @@ export function isValidImageFile(file: File): boolean {
 }
 
 /**
+ * Validate that a file is an acceptable video type
+ */
+export function isValidVideoFile(file: File): boolean {
+  return VIDEO_OPTIONS.allowedTypes.includes(file.type.toLowerCase())
+}
+
+/**
+ * Validate video file size
+ */
+export function validateVideoSize(file: File): { valid: boolean; error?: string } {
+  const maxBytes = VIDEO_OPTIONS.maxSizeMB * 1024 * 1024
+  if (file.size > maxBytes) {
+    return {
+      valid: false,
+      error: `Video exceeds maximum size of ${VIDEO_OPTIONS.maxSizeMB}MB`,
+    }
+  }
+  return { valid: true }
+}
+
+/**
+ * Check if file is an image or video
+ */
+export function getMediaType(file: File): 'image' | 'video' | 'unknown' {
+  if (isValidImageFile(file)) return 'image'
+  if (isValidVideoFile(file)) return 'video'
+  return 'unknown'
+}
+
+/**
  * Get file extension for storage
  */
 export function getFileExtension(format: 'webp' | 'jpeg'): string {
   return format === 'webp' ? '.webp' : '.jpg'
+}
+
+/**
+ * Get video file extension
+ */
+export function getVideoExtension(file: File): string {
+  if (file.type === 'video/mp4') return '.mp4'
+  if (file.type === 'video/quicktime') return '.mov'
+  return '.mp4' // fallback
 }
