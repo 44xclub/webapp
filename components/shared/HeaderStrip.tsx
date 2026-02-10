@@ -6,6 +6,7 @@ import { Lock } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { Profile, DisciplineBadge, ProfileRank } from '@/lib/types'
 import { DisciplineScoreModule, badgeIcons, badgeColors, badgeBgColors, romanNumerals } from './DisciplineScoreModule'
+import { NotificationBell } from './NotificationBell'
 
 interface HeaderStripProps {
   profile: Profile | null
@@ -86,14 +87,19 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
             </div>
           </Link>
 
-          {/* Discipline Score Module - clickable to open explanation */}
-          <DisciplineScoreModule
-            rank={rank}
-            score={profile.discipline_score}
-            variant="full"
-            showProgress={false}
-            clickable={true}
-          />
+          <div className="flex items-center gap-2">
+            {/* Notifications */}
+            <NotificationBell userId={profile.id} />
+
+            {/* Discipline Score Module - clickable to open explanation */}
+            <DisciplineScoreModule
+              rank={rank}
+              score={profile.discipline_score}
+              variant="full"
+              showProgress={false}
+              clickable={true}
+            />
+          </div>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ import { useProfile } from '@/lib/hooks'
 import { usePersonalProgrammes } from '@/lib/hooks/usePersonalProgrammes'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { useToast } from '@/components/shared/Toast'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgramme, ProgrammeFocus } from '@/lib/types'
 
@@ -81,6 +82,7 @@ export default function PersonalProgrammesPage() {
   }, [router, supabase])
 
   const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { showToast } = useToast()
   const {
     programmes,
     loading: programmesLoading,
@@ -94,6 +96,13 @@ export default function PersonalProgrammesPage() {
     if (programme) {
       setShowCreateModal(false)
       router.push(`/programmes/${programme.id}`)
+    }
+  }
+
+  const handleSubmit = async (programmeId: string) => {
+    const success = await updateProgramme(programmeId, { status: 'submitted' })
+    if (success) {
+      showToast('status', 'Programme submitted for review.')
     }
   }
 
@@ -141,7 +150,7 @@ export default function PersonalProgrammesPage() {
                 key={programme.id}
                 programme={programme}
                 onEdit={() => router.push(`/programmes/${programme.id}`)}
-                onSubmit={() => updateProgramme(programme.id, { status: 'submitted' })}
+                onSubmit={() => handleSubmit(programme.id)}
                 onDelete={() => deleteProgramme(programme.id)}
               />
             ))

@@ -14,6 +14,7 @@ import {
   Save,
 } from 'lucide-react'
 import { usePersonalProgrammes, usePersonalProgramme } from '@/lib/hooks/usePersonalProgrammes'
+import { useToast } from '@/components/shared/Toast'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgrammeDay, PersonalProgrammeExercise, ProgrammeFocus } from '@/lib/types'
 
@@ -57,6 +58,7 @@ export default function ProgrammeEditorPage() {
   }, [router, supabase])
 
   const { programme, loading, refetch } = usePersonalProgramme(programmeId)
+  const { showToast } = useToast()
   const {
     addDay,
     updateDay,
@@ -85,6 +87,15 @@ export default function ProgrammeEditorPage() {
     })
     if (day) {
       setExpandedDay(day.id)
+      refetch()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!programme) return
+    const success = await updateProgramme(programme.id, { status: 'submitted' })
+    if (success) {
+      showToast('status', 'Programme submitted for review.')
       refetch()
     }
   }
@@ -133,7 +144,7 @@ export default function ProgrammeEditorPage() {
             </div>
             {programme.status === 'draft' && (
               <button
-                onClick={() => updateProgramme(programme.id, { status: 'submitted' })}
+                onClick={handleSubmit}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-blue-500/20 text-blue-400 text-[13px] font-medium"
               >
                 <Save className="h-4 w-4" />

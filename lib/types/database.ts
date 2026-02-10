@@ -1261,6 +1261,32 @@ export function getExecutionMultiplier(executionRate: number): number {
 }
 
 // ============================================
+// Notifications
+// ============================================
+
+export type NotificationType =
+  | 'programme_approved'
+  | 'programme_rejected'
+  | 'framework_approved'
+  | 'framework_rejected'
+  | 'streak_milestone'
+  | 'badge_earned'
+  | 'challenge_complete'
+  | 'reflection_reminder'
+  | 'team_update'
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  payload: Json
+  read_at: string | null
+  created_at: string
+}
+
+// ============================================
 // Reflection & Planning Types
 // ============================================
 
