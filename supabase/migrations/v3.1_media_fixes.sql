@@ -113,3 +113,41 @@ DROP POLICY IF EXISTS "Users can delete own reflection entries" ON reflection_en
 CREATE POLICY "Users can delete own reflection entries"
   ON reflection_entries FOR DELETE
   USING (auth.uid() = user_id);
+
+-- =====================================================
+-- USER_FRAMEWORKS RLS POLICIES (if table exists)
+-- Ensure users can manage their own framework activation
+-- =====================================================
+
+DO $$
+BEGIN
+  -- Only run if table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_frameworks') THEN
+    -- Enable RLS
+    ALTER TABLE user_frameworks ENABLE ROW LEVEL SECURITY;
+
+    -- Drop existing policies to recreate
+    DROP POLICY IF EXISTS "Users can read own framework" ON user_frameworks;
+    DROP POLICY IF EXISTS "Users can insert own framework" ON user_frameworks;
+    DROP POLICY IF EXISTS "Users can update own framework" ON user_frameworks;
+    DROP POLICY IF EXISTS "Users can delete own framework" ON user_frameworks;
+
+    -- Create policies
+    CREATE POLICY "Users can read own framework"
+      ON user_frameworks FOR SELECT
+      USING (auth.uid() = user_id);
+
+    CREATE POLICY "Users can insert own framework"
+      ON user_frameworks FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+
+    CREATE POLICY "Users can update own framework"
+      ON user_frameworks FOR UPDATE
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+
+    CREATE POLICY "Users can delete own framework"
+      ON user_frameworks FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;

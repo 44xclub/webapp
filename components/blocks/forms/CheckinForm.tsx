@@ -32,6 +32,7 @@ export function CheckinForm({ form, userHasHeight = false, onMediaChange }: Chec
         step="0.1"
         {...register('payload.weight', {
           valueAsNumber: true,
+          setValueAs: (v) => (v === '' || v === 0 ? undefined : Number(v)),
         })}
         error={errors.payload?.weight?.message}
       />

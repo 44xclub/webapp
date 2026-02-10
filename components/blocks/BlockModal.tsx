@@ -93,7 +93,7 @@ function getDefaultPayload(type: BlockType) {
     case 'nutrition':
       return { meal_type: 'breakfast', meal_name: '' }
     case 'checkin':
-      return { weight: 0 }
+      return {}
     case 'challenge':
       return {}
     default:
