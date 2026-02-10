@@ -36,7 +36,7 @@ interface BlockModalProps {
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
   userId?: string
-  onMediaUpload?: (blockId: string, file: File) => Promise<BlockMedia | void>
+  onMediaUpload?: (blockId: string, file: File, position?: number) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   userHasHeight?: boolean
   activeProgramme?: UserProgramme | null
@@ -83,6 +83,8 @@ function getSchemaForType(type: BlockType) {
 function getDefaultPayload(type: BlockType) {
   switch (type) {
     case 'workout':
+      // Default to weight_lifting with exercise matrix initialized
+      // For running/sport/other, exercise_matrix will be cleared by WorkoutForm
       return {
         subtype: 'custom',
         category: 'weight_lifting',
@@ -354,29 +356,32 @@ export function BlockModal({
   const handleSubmit = async (data: BlockFormData) => {
     setIsSubmitting(true)
     try {
+      // Check-in blocks are point-in-time - no duration
+      const isCheckin = blockType === 'checkin'
+
       // Add duration_minutes to payload and compute end_time
       const enrichedData = {
         ...data,
-        end_time: addMinutesToTime(data.start_time, actualDuration),
+        end_time: isCheckin ? data.start_time : addMinutesToTime(data.start_time, actualDuration),
         payload: {
           ...data.payload,
-          duration_minutes: actualDuration,
+          ...(isCheckin ? {} : { duration_minutes: actualDuration }),
         },
       } as BlockFormData
 
       // Pass entry mode for new blocks (not editing)
       const createdBlock = await onSave(enrichedData, editingBlock ? undefined : entryMode)
 
-      // Upload pending media for check-in blocks
+      // Upload pending media for check-in blocks (with position for ordering)
       if (createdBlock && blockType === 'checkin' && pendingMedia.length > 0 && onMediaUpload) {
-        // Upload all pending media in parallel
+        // Upload all pending media in parallel, passing position index
         await Promise.all(
-          pendingMedia.map(async (item) => {
+          pendingMedia.map(async (item, index) => {
             // Create a File from the compressed blob
-            const file = new File([item.blob], `checkin-${Date.now()}.webp`, {
+            const file = new File([item.blob], `checkin-${Date.now()}-${index}.webp`, {
               type: 'image/webp',
             })
-            await onMediaUpload(createdBlock.id, file)
+            await onMediaUpload(createdBlock.id, file, index)
           })
         )
         setPendingMedia([]) // Clear pending media after upload
@@ -564,7 +569,9 @@ export function BlockModal({
 
           {/* Time Section */}
           <div>
-            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Start Time</label>
+            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+              {blockType === 'checkin' ? 'Time' : 'Start Time'}
+            </label>
             <div className="flex items-center gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -573,66 +580,71 @@ export function BlockModal({
                   className="w-full"
                 />
               </div>
-              <div className="flex items-center gap-2 text-[14px] text-[rgba(238,242,255,0.52)]">
-                <span>to</span>
-                <span className="text-[#eef2ff] font-medium">{endTime ? formatDisplayTime(endTime) : '--:--'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Duration Quick Select */}
-          <div>
-            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Duration</label>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {durationOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDuration(option.value as number | 'custom')
-                    // Pre-fill custom input when switching from preset
-                    if (option.value === 'custom' && typeof selectedDuration === 'number') {
-                      setCustomDurationValue(String(selectedDuration))
-                      setCustomDurationUnit('min')
-                    }
-                  }}
-                  className={cn(
-                    'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
-                    selectedDuration === option.value
-                      ? 'bg-[#3b82f6] text-white border-transparent'
-                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Duration Input */}
-            {selectedDuration === 'custom' && (
-              <div className="mt-3 flex gap-2 items-center">
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    placeholder="e.g., 75"
-                    min={1}
-                    max={600}
-                    value={customDurationValue}
-                    onChange={(e) => setCustomDurationValue(e.target.value)}
-                    className="w-full"
-                  />
+              {/* Only show end time for blocks with duration */}
+              {blockType !== 'checkin' && (
+                <div className="flex items-center gap-2 text-[14px] text-[rgba(238,242,255,0.52)]">
+                  <span>to</span>
+                  <span className="text-[#eef2ff] font-medium">{endTime ? formatDisplayTime(endTime) : '--:--'}</span>
                 </div>
-                <select
-                  value={customDurationUnit}
-                  onChange={(e) => setCustomDurationUnit(e.target.value as 'min' | 'hr')}
-                  className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[#0d1014] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none"
-                >
-                  <option value="min">min</option>
-                  <option value="hr">hr</option>
-                </select>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+
+          {/* Duration Quick Select - hidden for check-in (point-in-time) */}
+          {blockType !== 'checkin' && (
+            <div>
+              <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Duration</label>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {durationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDuration(option.value as number | 'custom')
+                      // Pre-fill custom input when switching from preset
+                      if (option.value === 'custom' && typeof selectedDuration === 'number') {
+                        setCustomDurationValue(String(selectedDuration))
+                        setCustomDurationUnit('min')
+                      }
+                    }}
+                    className={cn(
+                      'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
+                      selectedDuration === option.value
+                        ? 'bg-[#3b82f6] text-white border-transparent'
+                        : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Duration Input */}
+              {selectedDuration === 'custom' && (
+                <div className="mt-3 flex gap-2 items-center">
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      placeholder="e.g., 75"
+                      min={1}
+                      max={600}
+                      value={customDurationValue}
+                      onChange={(e) => setCustomDurationValue(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <select
+                    value={customDurationUnit}
+                    onChange={(e) => setCustomDurationUnit(e.target.value as 'min' | 'hr')}
+                    className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[#0d1014] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none"
+                  >
+                    <option value="min">min</option>
+                    <option value="hr">hr</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Continue Button */}
           <Button
@@ -659,7 +671,10 @@ export function BlockModal({
                 </div>
                 <div>
                   <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
-                    {formatDisplayTime(startTime)} – {endTime ? formatDisplayTime(endTime) : '--:--'} ({actualDuration} min)
+                    {blockType === 'checkin'
+                      ? formatDisplayTime(startTime)
+                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} (${actualDuration} min)`
+                    }
                   </p>
                   <p className="text-[14px] font-semibold text-[#eef2ff]">
                     {titleValue || blockTypeLabels[blockType]}

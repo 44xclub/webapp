@@ -262,13 +262,13 @@ export function useBlockMedia(userId: string | undefined) {
   const supabase = useMemo(() => createClient(), [])
 
   const uploadMedia = useCallback(
-    async (blockId: string, file: File) => {
+    async (blockId: string, file: File, position: number = 0) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Generate unique filename
-      const ext = file.name.split('.').pop()
-      const filename = `${blockId}-${Date.now()}.${ext}`
-      const storagePath = `${userId}/${filename}`
+      // Storage path: block-media/<user_id>/<block_id>/<filename>
+      const ext = file.name.split('.').pop() || 'webp'
+      const filename = `${Date.now()}-${position}.${ext}`
+      const storagePath = `${userId}/${blockId}/${filename}`
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -286,6 +286,7 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
+          position: position,
         })
         .select()
         .single()

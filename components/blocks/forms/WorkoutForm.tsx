@@ -26,6 +26,9 @@ const workoutCategories: { value: WorkoutCategory; label: string }[] = [
 // Categories that show the exercise matrix
 const matrixCategories: WorkoutCategory[] = ['weight_lifting', 'hyrox', 'hybrid']
 
+// Categories that use description instead of exercise matrix
+const descriptionCategories: WorkoutCategory[] = ['running', 'sport', 'other']
+
 export function WorkoutForm({
   form,
   activeProgramme,
@@ -179,7 +182,19 @@ export function WorkoutForm({
               <button
                 key={cat.value}
                 type="button"
-                onClick={() => setValue('payload.category', cat.value)}
+                onClick={() => {
+                  setValue('payload.category', cat.value)
+                  // Clear exercise_matrix when switching to description-based category
+                  if (descriptionCategories.includes(cat.value)) {
+                    setValue('payload.exercise_matrix', undefined)
+                  }
+                  // Initialize exercise_matrix when switching to matrix-based category
+                  if (matrixCategories.includes(cat.value) && !watch('payload.exercise_matrix')?.length) {
+                    setValue('payload.exercise_matrix', [
+                      { exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }
+                    ])
+                  }
+                }}
                 className={cn(
                   'px-3 py-1.5 rounded-[8px] text-[12px] font-medium whitespace-nowrap transition-all duration-150 border',
                   category === cat.value

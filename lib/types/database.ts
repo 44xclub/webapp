@@ -648,6 +648,7 @@ export interface BlockMedia {
   user_id: string
   storage_path: string
   media_type: 'image' | 'video'
+  position: number
   created_at: string
 }
 
