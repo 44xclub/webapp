@@ -51,7 +51,7 @@ function TableRow({
   value,
   valueColor = 'text-[rgba(238,242,255,0.72)]',
   isLast = false,
-  icon?: React.ReactNode,
+  icon,
 }: {
   label: string
   value: string
