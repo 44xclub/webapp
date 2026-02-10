@@ -286,7 +286,7 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
-          position: position,
+          sort_order: position,
         })
         .select()
         .single()

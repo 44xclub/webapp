@@ -648,7 +648,9 @@ export interface BlockMedia {
   user_id: string
   storage_path: string
   media_type: 'image' | 'video'
-  position: number
+  sort_order: number
+  slot?: 'generic' | 'front' | 'side' | 'back' | null
+  meta?: Record<string, unknown>
   created_at: string
 }
 
