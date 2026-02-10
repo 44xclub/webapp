@@ -51,12 +51,22 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     fetchBlocks()
   }, [fetchBlocks])
 
-  // Create a new block
+  // Create a new block (with optional share-to-feed)
+  // entryMode: 'schedule' = future planning (is_planned=true), 'log' = past/now logging (is_planned=false, auto-complete)
   const createBlock = useCallback(
-    async (data: BlockFormData) => {
+    async (data: BlockFormData, entryMode: 'schedule' | 'log' = 'schedule') => {
       if (!userId) throw new Error('Not authenticated')
 
-      const insertData = {
+      const sharedToFeed = (data as any).shared_to_feed === true || data.block_type === 'challenge'
+
+      // Schedule mode = planned, Log mode = unplanned (already done)
+      const isLogMode = entryMode === 'log'
+      // Challenge blocks are always unplanned (DB enforces this via trigger)
+      const isPlanned = !isLogMode && data.block_type !== 'challenge'
+
+      const now = new Date().toISOString()
+
+      const insertData: Record<string, unknown> = {
         user_id: userId,
         date: data.date,
         start_time: data.start_time,
@@ -66,6 +76,14 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         notes: data.notes || null,
         payload: data.payload || {},
         repeat_rule: data.repeat_rule || null,
+        shared_to_feed: sharedToFeed,
+        is_planned: isPlanned,
+      }
+
+      // Auto-set completed_at and performed_at for Log mode (logging something already done)
+      if (isLogMode) {
+        insertData.completed_at = now
+        insertData.performed_at = now
       }
 
       const { data: newBlock, error } = await supabase
@@ -115,7 +133,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     [userId, supabase]
   )
 
-  // Toggle completion (optimistic update)
+  // Toggle completion (optimistic update) + create feed post if shared
   const toggleComplete = useCallback(
     async (block: Block) => {
       if (!userId) throw new Error('Not authenticated')
@@ -137,6 +155,23 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
           .eq('user_id', userId)
 
         if (error) throw error
+
+        // Create feed post when completing a shared block (not when un-completing)
+        if (newCompletedAt && block.shared_to_feed && block.block_type !== 'personal') {
+          try {
+            await supabase
+              .from('feed_posts')
+              .upsert({
+                user_id: userId,
+                block_id: block.id,
+                title: block.title || `${block.block_type.charAt(0).toUpperCase() + block.block_type.slice(1)} completed`,
+                payload: block.payload || {},
+              }, { onConflict: 'block_id' })
+          } catch (feedErr) {
+            // Don't fail the completion if feed post fails
+            console.error('Feed post creation failed:', feedErr)
+          }
+        }
       } catch (err) {
         // Revert on error
         setBlocks((prev) =>
@@ -227,13 +262,13 @@ export function useBlockMedia(userId: string | undefined) {
   const supabase = useMemo(() => createClient(), [])
 
   const uploadMedia = useCallback(
-    async (blockId: string, file: File) => {
+    async (blockId: string, file: File, position: number = 0) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Generate unique filename
-      const ext = file.name.split('.').pop()
-      const filename = `${blockId}-${Date.now()}.${ext}`
-      const storagePath = `${userId}/${filename}`
+      // Storage path: block-media/<user_id>/<block_id>/<filename>
+      const ext = file.name.split('.').pop() || 'webp'
+      const filename = `${Date.now()}-${position}.${ext}`
+      const storagePath = `${userId}/${blockId}/${filename}`
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -251,6 +286,7 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
+          sort_order: position,
         })
         .select()
         .single()

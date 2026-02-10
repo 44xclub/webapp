@@ -17,7 +17,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={id}
-            className="block text-sm font-medium text-foreground mb-1.5"
+            className="block text-[13px] font-medium text-[#eef2ff] mb-1.5"
           >
             {label}
           </label>
@@ -25,8 +25,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <div className="relative">
           <select
             className={cn(
-              'flex h-10 w-full appearance-none rounded-md border border-input bg-input px-3 py-2 pr-10 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50',
-              error && 'border-destructive focus:ring-destructive',
+              'flex h-10 w-full appearance-none rounded-[10px] border border-[rgba(255,255,255,0.08)] bg-[#0d1014] px-3 py-2 pr-10 text-[13px] text-[#eef2ff] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50',
+              error && 'border-rose-500 focus:ring-rose-500',
               className
             )}
             ref={ref}
@@ -39,10 +39,10 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[rgba(238,242,255,0.45)] pointer-events-none" />
         </div>
         {error && (
-          <p className="mt-1 text-xs text-destructive">{error}</p>
+          <p className="mt-1 text-xs text-rose-400">{error}</p>
         )}
       </div>
     )

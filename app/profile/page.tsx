@@ -6,8 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   LogOut,
-  Flame,
-  Trophy,
   Calendar,
   Dumbbell,
   User as UserIcon,
@@ -18,18 +16,27 @@ import {
   Clock,
   Check,
   X,
+  ChevronRight,
+  BookOpen,
+  TrendingDown,
+  TrendingUp,
+  Image as ImageIcon,
 } from 'lucide-react'
-import { useProfile } from '@/lib/hooks'
+import Link from 'next/link'
+import { useProfile, useRank, useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { StreakCard } from '@/components/shared/StreakCard'
+import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
+import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
-import type { DisciplineBadge, Block } from '@/lib/types'
+import type { DisciplineBadge, Block, BlockMedia } from '@/lib/types'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-/*
-  44CLUB Profile Page
-  Status. Stats. Settings.
-*/
+// Extended Block type with media
+interface BlockWithMedia extends Block {
+  block_media: BlockMedia[]
+}
 
 const TIMEZONES = [
   'Europe/London',
@@ -45,12 +52,16 @@ const TIMEZONES = [
   'Australia/Sydney',
 ]
 
+// Badge colors for each tier
 const badgeColors: Record<DisciplineBadge, string> = {
-  'Initiated': 'text-text-muted',
-  'Committed': 'text-accent-blue',
-  'Elite': 'text-accent',
-  'Forged': 'text-warning',
-  '44-Pro': 'text-success',
+  'Initiated': 'text-slate-400',
+  'Aligned': 'text-emerald-400',
+  'Committed': 'text-blue-400',
+  'Disciplined': 'text-indigo-400',
+  'Elite': 'text-cyan-400',
+  'Forged': 'text-amber-400',
+  'Vanguard': 'text-rose-400',
+  '44 Pro': 'text-purple-400',
 }
 
 export default function ProfilePage() {
@@ -58,7 +69,7 @@ export default function ProfilePage() {
   const [authLoading, setAuthLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [checkinBlocks, setCheckinBlocks] = useState<Block[]>([])
+  const [checkinBlocks, setCheckinBlocks] = useState<BlockWithMedia[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
 
   const [formData, setFormData] = useState({
@@ -95,22 +106,26 @@ export default function ProfilePage() {
   }, [router, supabase])
 
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
+  const { rank } = useRank(user?.id)
+  const { cycles, currentCycle } = useReflection(user?.id)
 
   useEffect(() => {
     async function fetchCheckins() {
       if (!user?.id) return
       setCheckinsLoading(true)
       try {
+        // Fetch last 2 check-ins for preview, ordered by performed_at then created_at
         const { data, error } = await supabase
           .from('blocks')
-          .select('*')
+          .select('*, block_media(*)')
           .eq('user_id', user.id)
           .eq('block_type', 'checkin')
           .is('deleted_at', null)
-          .order('date', { ascending: false })
-          .limit(10)
+          .order('performed_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(2)
         if (error) throw error
-        setCheckinBlocks(data as Block[] || [])
+        setCheckinBlocks(data as BlockWithMedia[] || [])
       } catch (err) {
         console.error('Failed to fetch check-ins:', err)
       } finally {
@@ -181,10 +196,18 @@ export default function ProfilePage() {
     setEditing(false)
   }
 
+  const handleAvatarUpload = async (path: string) => {
+    try {
+      await updateProfile({ avatar_path: path })
+    } catch (err) {
+      console.error('Failed to update avatar path:', err)
+    }
+  }
+
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
       </div>
     )
   }
@@ -193,12 +216,12 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-canvas pb-20">
+    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
       {/* Page Header */}
-      <header className="bg-surface border-b border-border">
-        <div className="flex items-center justify-between px-4 py-4">
-          <h1 className="text-page-title font-semibold text-text-primary">Profile</h1>
-          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-text-muted hover:text-text-secondary hover:bg-canvas-card transition-colors">
+      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="text-[20px] font-semibold text-[#eef2ff]">Profile</h1>
+          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
@@ -206,58 +229,49 @@ export default function ProfilePage() {
 
       <main className="px-4 py-4 space-y-4">
         {/* Profile Card */}
-        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
-          <div className="p-6 flex flex-col items-center">
-            <div className="mb-4">
-              <div className="h-24 w-24 rounded-[16px] bg-canvas-card flex items-center justify-center border border-border">
-                <span className="text-section-title font-semibold text-text-secondary">{initials}</span>
-              </div>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="p-5 flex flex-col items-center">
+            <div className="mb-3">
+              {user && (
+                <AvatarUpload
+                  userId={user.id}
+                  currentPath={profile?.avatar_path || null}
+                  displayName={displayName}
+                  onUploadComplete={handleAvatarUpload}
+                />
+              )}
             </div>
-            <h2 className="text-page-title font-semibold text-text-primary mb-1">{displayName}</h2>
-            <p className="text-secondary text-text-muted">{user?.email}</p>
+            <h2 className="text-[18px] font-semibold text-[#eef2ff] mb-0.5">{displayName}</h2>
+            <p className="text-[13px] text-[rgba(238,242,255,0.45)]">{user?.email}</p>
           </div>
 
-          {/* Discipline Stats */}
-          {disciplineLevel && (
-            <div className="border-t border-border px-6 py-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className={`text-body font-semibold ${badgeColors[disciplineLevel.badge]}`}>{disciplineLevel.badge}</span>
-                  <span className="text-secondary text-text-muted">Level {disciplineLevel.level}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-body font-bold text-text-primary">{profile?.discipline_score}</span>
-                  <span className="text-secondary text-text-muted ml-1">pts</span>
-                </div>
-              </div>
-              {disciplineLevel.level < 44 && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-meta text-text-muted">
-                    <span>{disciplineLevel.scoreIntoLevel} / {disciplineLevel.toNextLevel} to next</span>
-                    <span>{Math.round(disciplineLevel.progress)}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-canvas-card rounded-full overflow-hidden">
-                    <div className="h-full bg-accent transition-all duration-500" style={{ width: `${disciplineLevel.progress}%` }} />
-                  </div>
-                </div>
-              )}
+          {/* Discipline Stats - clickable to open explanation modal */}
+          {(rank || disciplineLevel) && (
+            <div className="border-t border-[rgba(255,255,255,0.06)] px-5 py-3.5">
+              <DisciplineScoreModule
+                rank={rank}
+                score={profile?.discipline_score}
+                variant="full"
+                showProgress={true}
+                clickable={true}
+              />
             </div>
           )}
         </div>
 
         {/* Edit Profile Section */}
-        <div className="bg-surface rounded-[16px] border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-body font-medium text-text-primary">Profile Details</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleCancelEdit} className="p-1.5 text-text-muted hover:text-text-secondary"><X className="h-4 w-4" /></button>
-                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-accent hover:text-accent/80">
+                <button onClick={handleCancelEdit} className="p-1.5 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"><X className="h-4 w-4" /></button>
+                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-[#3b82f6] hover:text-[#60a5fa]">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="text-secondary text-accent hover:underline">Edit</button>
+              <button onClick={() => setEditing(true)} className="text-[12px] font-medium text-[#3b82f6] hover:underline">Edit</button>
             )}
           </div>
 
@@ -273,7 +287,7 @@ export default function ProfilePage() {
                 <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
               </>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <ProfileRow icon={UserIcon} label="Display Name" value={profile?.display_name || 'Not set'} />
                 <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
                 <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
@@ -285,74 +299,153 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Streak Stats */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Streaks</h3>
+        {/* Streak Stats - using shared component */}
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Streaks</h3>
           </div>
-          <div className="p-4 grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
-              <Flame className="h-8 w-8 text-warning mx-auto mb-2" />
-              <p className="text-section-title font-bold text-text-primary">{profile?.current_streak || 0}</p>
-              <p className="text-meta text-text-muted">Current Streak</p>
-            </div>
-            <div className="text-center p-4 bg-canvas-card rounded-[10px] border border-border">
-              <Trophy className="h-8 w-8 text-success mx-auto mb-2" />
-              <p className="text-section-title font-bold text-text-primary">{profile?.best_streak || 0}</p>
-              <p className="text-meta text-text-muted">Best Streak</p>
-            </div>
+          <div className="p-4">
+            <StreakCard
+              currentStreak={profile?.current_streak || 0}
+              bestStreak={profile?.best_streak || 0}
+              variant="full"
+            />
           </div>
         </div>
 
-        {/* Check-ins */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Recent Check-ins</h3>
+        {/* Reflection & Planning - Link to dedicated page */}
+        <Link
+          href="/profile/reflection"
+          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+        >
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[10px] bg-[rgba(59,130,246,0.1)] flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-[#3b82f6]" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Reflection & Planning</h3>
+                {currentCycle && (
+                  <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                    Current: {currentCycle.label.replace('Reflection — ', '')}
+                    {' · '}
+                    <span className={
+                      currentCycle.displayStatus === 'submitted' ? 'text-emerald-400' :
+                      currentCycle.displayStatus === 'draft' ? 'text-amber-400' : ''
+                    }>
+                      {currentCycle.displayStatus === 'not_started' ? 'Not started' :
+                       currentCycle.displayStatus === 'draft' ? 'Draft' : 'Submitted'}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
           </div>
-          <div className="divide-y divide-border">
+        </Link>
+
+        {/* Check-ins - Link to dedicated page */}
+        <Link
+          href="/profile/check-ins"
+          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+        >
+          <div className="px-4 py-3 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[10px] bg-[rgba(34,197,94,0.1)] flex items-center justify-center">
+                <Scale className="h-4 w-4 text-[#22c55e]" />
+              </div>
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Check-ins</h3>
+                <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                  Track your weight & progress
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+          </div>
+
+          {/* Last 2 check-ins preview */}
+          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
             {checkinsLoading ? (
-              <div className="p-4 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-text-muted" /></div>
+              <div className="p-4 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+              </div>
             ) : checkinBlocks.length === 0 ? (
-              <div className="p-4 text-center text-text-muted text-secondary">No check-ins recorded yet</div>
+              <div className="p-4 text-center text-[12px] text-[rgba(238,242,255,0.40)]">
+                No check-ins yet. Tap to add one.
+              </div>
             ) : (
-              checkinBlocks.map((block) => {
+              checkinBlocks.map((block, index) => {
                 const payload = block.payload as { weight?: number; body_fat_percent?: number }
+                const media = block.block_media || []
+
+                // Calculate delta from previous (next in array since sorted desc)
+                let delta: number | null = null
+                if (index === 0 && checkinBlocks.length > 1) {
+                  const prevPayload = checkinBlocks[1].payload as { weight?: number }
+                  if (payload?.weight && prevPayload?.weight) {
+                    delta = payload.weight - prevPayload.weight
+                  }
+                }
+
                 return (
-                  <div key={block.id} className="px-4 py-3 flex items-center justify-between">
+                  <div
+                    key={block.id}
+                    className="px-4 py-3 flex items-center justify-between"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      router.push(`/profile/check-ins?open=${block.id}`)
+                    }}
+                  >
                     <div className="flex items-center gap-3">
-                      <Scale className="h-5 w-5 text-text-muted" />
-                      <div>
-                        <p className="text-secondary font-medium text-text-primary">{payload?.weight ? `${payload.weight} kg` : 'Check-in'}</p>
-                        <p className="text-meta text-text-muted">{new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <div className="text-[12px] text-[rgba(238,242,255,0.45)] w-12">
+                        {new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold text-[#eef2ff]">
+                          {payload?.weight ? `${payload.weight} kg` : '—'}
+                        </span>
+                        {delta !== null && delta !== 0 && (
+                          <span className={`text-[11px] font-medium flex items-center gap-0.5 ${delta < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                            {Math.abs(delta).toFixed(1)}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    {payload?.body_fat_percent && <span className="text-secondary text-text-muted">{payload.body_fat_percent}% BF</span>}
+                    <div className="flex items-center gap-2">
+                      {media.length > 0 && (
+                        <span className="text-[10px] text-[rgba(238,242,255,0.40)] flex items-center gap-1">
+                          <ImageIcon className="h-3 w-3" /> {media.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )
               })
             )}
           </div>
-        </div>
+        </Link>
 
         {/* Statistics */}
-        <div className="bg-surface rounded-[16px] border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-body font-medium text-text-primary">Statistics</h3>
+        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Statistics</h3>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-text-muted" />
-                <span className="text-secondary text-text-primary">Member since</span>
+                <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Member since</span>
               </div>
-              <span className="text-secondary text-text-muted">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
+              <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
             </div>
             <div className="px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Dumbbell className="h-5 w-5 text-text-muted" />
-                <span className="text-secondary text-text-primary">Total Points</span>
+                <Dumbbell className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Total Points</span>
               </div>
-              <span className="text-secondary font-medium text-text-primary">{profile?.discipline_score || 0}</span>
+              <span className="text-[13px] font-medium text-[#eef2ff]">{profile?.discipline_score || 0}</span>
             </div>
           </div>
         </div>
@@ -369,11 +462,11 @@ export default function ProfilePage() {
 
 function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <Icon className="h-5 w-5 text-text-muted" />
+    <div className="flex items-center gap-3 py-1">
+      <Icon className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
       <div>
-        <p className="text-meta text-text-muted">{label}</p>
-        <p className="text-secondary text-text-primary">{value}</p>
+        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{label}</p>
+        <p className="text-[13px] text-[rgba(238,242,255,0.85)]">{value}</p>
       </div>
     </div>
   )

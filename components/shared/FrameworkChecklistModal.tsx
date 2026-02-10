@@ -36,19 +36,19 @@ export function FrameworkChecklistModal({
     if (!framework?.criteria) return []
     const criteria = framework.criteria as FrameworkCriteria | FrameworkCriteriaItem[]
     const rawItems = Array.isArray(criteria) ? criteria : (criteria.items || [])
-    
+
     const items = rawItems.map((item: FrameworkCriteriaItem & { id?: string }) => ({
       ...item,
       key: item.key || item.id || '',
     }))
-    
+
     if (items.length === 0 && framework) {
       console.warn('[FrameworkChecklist] Empty criteria:', {
         framework_template_id: framework.id,
         criteria_raw: framework.criteria,
       })
     }
-    
+
     return items
   }, [framework])
 
@@ -93,18 +93,18 @@ export function FrameworkChecklistModal({
       <div className="space-y-4 px-2">
         <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] mx-1">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-text-muted mb-1">Today&apos;s Progress</p>
+            <p className="text-[11px] uppercase tracking-wide text-[rgba(238,242,255,0.45)] mb-1">Today&apos;s Progress</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-[28px] font-bold text-text-primary">{completionCount.completed}</span>
-              <span className="text-[16px] text-text-muted">/ {completionCount.total}</span>
+              <span className="text-[28px] font-bold text-[#eef2ff]">{completionCount.completed}</span>
+              <span className="text-[16px] text-[rgba(238,242,255,0.45)]">/ {completionCount.total}</span>
             </div>
           </div>
           <div className={`px-4 py-2 rounded-full text-[12px] font-semibold ${
-            isComplete 
+            isComplete
               ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               : completionCount.completed > 0
               ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-              : 'bg-[#1a1d21] text-text-muted border border-[rgba(255,255,255,0.08)]'
+              : 'bg-[#1a1d21] text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.08)]'
           }`}>
             {isComplete ? 'Complete' : completionCount.completed > 0 ? 'In Progress' : 'Not Started'}
           </div>
@@ -149,12 +149,12 @@ export function FrameworkChecklistModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-[15px] font-medium leading-tight ${
-                    isCompleted ? 'text-emerald-400' : 'text-text-primary'
+                    isCompleted ? 'text-emerald-400' : 'text-[#eef2ff]'
                   }`}>
                     {item.label}
                   </p>
                   {item.description && (
-                    <p className="text-[12px] text-text-muted mt-1">{item.description}</p>
+                    <p className="text-[12px] text-[rgba(238,242,255,0.45)] mt-1">{item.description}</p>
                   )}
                 </div>
               </button>

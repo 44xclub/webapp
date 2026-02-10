@@ -1,19 +1,26 @@
 'use client'
 
+import { useCallback } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 import { Input, Textarea } from '@/components/ui'
+import { InlineMediaUpload, type PendingMedia } from '../InlineMediaUpload'
 import type { CheckinFormData } from '@/lib/schemas'
 
 interface CheckinFormProps {
   form: UseFormReturn<CheckinFormData>
   userHasHeight?: boolean
+  onMediaChange?: (media: PendingMedia[]) => void
 }
 
-export function CheckinForm({ form, userHasHeight = false }: CheckinFormProps) {
+export function CheckinForm({ form, userHasHeight = false, onMediaChange }: CheckinFormProps) {
   const {
     register,
     formState: { errors },
   } = form
+
+  const handleMediaChange = useCallback((media: PendingMedia[]) => {
+    onMediaChange?.(media)
+  }, [onMediaChange])
 
   return (
     <div className="space-y-4">
@@ -25,6 +32,7 @@ export function CheckinForm({ form, userHasHeight = false }: CheckinFormProps) {
         step="0.1"
         {...register('payload.weight', {
           valueAsNumber: true,
+          setValueAs: (v) => (v === '' || v === 0 ? undefined : Number(v)),
         })}
         error={errors.payload?.weight?.message}
       />
@@ -63,10 +71,12 @@ export function CheckinForm({ form, userHasHeight = false }: CheckinFormProps) {
         {...register('notes')}
       />
 
-      {/* Note about images */}
-      <p className="text-xs text-muted-foreground">
-        You can add front/back/side photos after saving the block.
-      </p>
+      {/* Progress Photos */}
+      <InlineMediaUpload
+        maxFiles={3}
+        onChange={handleMediaChange}
+        label="Progress Photos"
+      />
     </div>
   )
 }

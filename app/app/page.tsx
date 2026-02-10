@@ -9,16 +9,19 @@ import {
   ViewModeToggle,
   DayView,
   WeekOverview,
+  SharePromptModal,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useBlocks, useBlockMedia, useProfile, useFrameworks } from '@/lib/hooks'
+import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2, Flame } from 'lucide-react'
+import { Plus, Loader2, Target } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
+import { StreakCard } from '@/components/shared/StreakCard'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
+import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -37,6 +40,8 @@ export default function AppPage() {
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
+  const [challengeModalOpen, setChallengeModalOpen] = useState(false)
+  const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -66,7 +71,15 @@ export default function AppPage() {
   const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
+  const { rank, loading: rankLoading } = useRank(user?.id)
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
+  const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
+  const { challenge, todayBlock: challengeTodayBlock, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
+
+  const handleChallengeLogSuccess = useCallback(() => {
+    refetchChallenge()
+    setChallengeModalOpen(false)
+  }, [refetchChallenge])
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -101,11 +114,48 @@ export default function AppPage() {
   const handleAddBlock = useCallback((date: Date) => { setAddingToDate(date); setEditingBlock(null); setModalOpen(true) }, [])
   const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
   const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null) }, [])
-  const handleSaveBlock = useCallback(async (data: BlockFormData) => {
-    if (editingBlock) await updateBlock(editingBlock.id, data)
-    else await createBlock(data)
+  const handleSaveBlock = useCallback(async (data: BlockFormData, entryMode?: 'schedule' | 'log') => {
+    if (editingBlock) {
+      await updateBlock(editingBlock.id, data)
+      return undefined
+    } else {
+      return await createBlock(data, entryMode || 'schedule')
+    }
   }, [editingBlock, createBlock, updateBlock])
-  const handleToggleComplete = useCallback(async (block: Block) => await toggleComplete(block), [toggleComplete])
+
+  // Handle showing share preview for logged blocks (called from BlockModal after save)
+  const handleShowSharePreview = useCallback((block: Block) => {
+    setSharePromptBlock(block)
+  }, [])
+
+  // Determine if block should show share prompt on completion
+  const isShareEligible = useCallback((block: Block) => {
+    const shareTypes = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+    return shareTypes.includes(block.block_type) && block.block_type !== 'personal'
+  }, [])
+
+  const handleToggleComplete = useCallback(async (block: Block) => {
+    // If completing (not un-completing) and share eligible, show share prompt
+    // But don't show prompt if already shared to feed
+    if (!block.completed_at && isShareEligible(block) && !block.shared_to_feed) {
+      // Complete the block first
+      await toggleComplete(block)
+      // Then show share prompt
+      setSharePromptBlock(block)
+    } else {
+      // Just toggle without prompt
+      await toggleComplete(block)
+    }
+  }, [toggleComplete, isShareEligible])
+
+  const handleSharePromptConfirm = useCallback(async (shareToFeed: boolean) => {
+    if (!sharePromptBlock || !user?.id) return
+    // Update block with share_to_feed setting and create feed post if needed
+    if (shareToFeed) {
+      await updateBlock(sharePromptBlock.id, { shared_to_feed: true } as any)
+    }
+    setSharePromptBlock(null)
+  }, [sharePromptBlock, user?.id, updateBlock])
   const handleDuplicate = useCallback(async (block: Block) => await duplicateBlock(block), [duplicateBlock])
   const handleDelete = useCallback(async (block: Block) => await deleteBlock(block.id), [deleteBlock])
 
@@ -119,40 +169,27 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
-      <HeaderStrip profile={profile} loading={profileLoading} />
+      <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
-      {/* Streak Module */}
+      {/* Streak Module - using shared component */}
       {profile && (
-        <div className="mx-4 mt-2 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-[12px] bg-gradient-to-b from-[rgba(245,158,11,0.16)] to-[rgba(245,158,11,0.06)] flex items-center justify-center border border-[rgba(245,158,11,0.26)]">
-                <Flame className="h-5 w-5 text-[#f59e0b]" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Current Streak</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[20px] font-semibold text-[#eef2ff]">{profile.current_streak || 0}</span>
-                  <span className="text-[13px] text-[rgba(238,242,255,0.60)]">days</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">Personal Best</p>
-              <div className="flex items-baseline gap-1 justify-end">
-                <span className="text-[16px] font-semibold text-[#22d3ee]">{profile.best_streak || 0}</span>
-                <span className="text-[12px] text-[rgba(238,242,255,0.52)]">days</span>
-              </div>
-            </div>
-          </div>
+        <div className="mx-3 mt-2">
+          <StreakCard
+            currentStreak={profile.current_streak || 0}
+            bestStreak={profile.best_streak || 0}
+            variant="compact"
+          />
         </div>
       )}
 
-      <WeekStrip selectedDate={selectedDate} onSelectDate={handleSelectDate} onWeekChange={handleWeekChange} blocksByDate={blocksByDate} />
-
-      <div className="px-4 py-3 flex justify-center border-b border-[rgba(255,255,255,0.07)] bg-[#07090d]">
-        <ViewModeToggle mode={viewMode} onModeChange={handleViewModeChange} />
-      </div>
+      <WeekStrip
+        selectedDate={selectedDate}
+        onSelectDate={handleSelectDate}
+        onWeekChange={handleWeekChange}
+        blocksByDate={blocksByDate}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+      />
 
       {/* Active Framework Card - same as Structure page */}
       {viewMode === 'day' && !frameworkLoading && (
@@ -166,10 +203,30 @@ export default function AppPage() {
         </div>
       )}
 
+      {/* Challenge Quick Action - show if active challenge and not completed today */}
+      {viewMode === 'day' && challenge && !challengeTodayBlock?.completed_at && (
+        <div className="mx-4 mt-3">
+          <button
+            onClick={() => setChallengeModalOpen(true)}
+            className="w-full flex items-center gap-3 p-3 rounded-[12px] bg-[rgba(59,130,246,0.08)] border border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.12)] transition-colors text-left"
+          >
+            <div className="p-2 rounded-[10px] bg-[rgba(59,130,246,0.15)]">
+              <Target className="h-4 w-4 text-[#3b82f6]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-[#eef2ff] truncate">
+                {challenge.title}
+              </p>
+              <p className="text-[11px] text-[#3b82f6]">Tap to log today&apos;s challenge</p>
+            </div>
+          </button>
+        </div>
+      )}
+
       <main className="flex-1 pb-8 overflow-y-auto">
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
+            <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
           </div>
         ) : viewMode === 'day' ? (
           <div className="pt-2">
@@ -191,9 +248,47 @@ export default function AppPage() {
 
       <BottomNav />
 
-      <BlockModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleSaveBlock} initialDate={addingToDate || selectedDate} editingBlock={editingBlock} blockMedia={editingBlock?.block_media || []} userId={user?.id} onMediaUpload={uploadMedia} onMediaDelete={deleteMedia} userHasHeight={hasHeight} />
+      <BlockModal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveBlock}
+        onShowSharePreview={handleShowSharePreview}
+        initialDate={addingToDate || selectedDate}
+        editingBlock={editingBlock}
+        blockMedia={editingBlock?.block_media || []}
+        userId={user?.id}
+        onMediaUpload={uploadMedia}
+        onMediaDelete={deleteMedia}
+        userHasHeight={hasHeight}
+        activeProgramme={activeProgramme}
+        programmeSessions={programmeSessions}
+        userTimezone={profile?.timezone}
+      />
 
       <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
+
+      <SharePromptModal
+        isOpen={!!sharePromptBlock}
+        onClose={() => setSharePromptBlock(null)}
+        block={sharePromptBlock}
+        userId={user?.id}
+        userProfile={profile}
+        onMediaUpload={uploadMedia}
+        onMediaDelete={deleteMedia}
+        onConfirm={handleSharePromptConfirm}
+      />
+
+      {challenge && user && (
+        <ChallengeLogModal
+          isOpen={challengeModalOpen}
+          onClose={() => setChallengeModalOpen(false)}
+          challenge={challenge}
+          userId={user.id}
+          userProfile={profile}
+          userRank={rank}
+          onSuccess={handleChallengeLogSuccess}
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { cn, blockTypeLabels, mealTypeLabels } from '@/lib/utils'
 import { formatTime, formatDateForApi } from '@/lib/date'
 import { DropdownMenu } from '@/components/ui'
@@ -33,7 +33,9 @@ export function BlockRow({
   onDelete,
 }: BlockRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null)
   const [isToggling, setIsToggling] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const isCompleted = !!block.completed_at
 
   // Check if block is past its end time (overdue)
@@ -75,6 +77,9 @@ export function BlockRow({
 
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!menuOpen && menuButtonRef.current) {
+      setMenuAnchorRect(menuButtonRef.current.getBoundingClientRect())
+    }
     setMenuOpen(!menuOpen)
   }
 
@@ -123,18 +128,33 @@ export function BlockRow({
 
     if (block.block_type === 'workout') {
       const payload = block.payload as unknown as WorkoutPayload
+      // Show exercise count for set-level format
+      if (payload?.exercise_matrix && Array.isArray(payload.exercise_matrix)) {
+        parts.push(`${payload.exercise_matrix.length} exercises`)
+      }
       if (payload?.duration) {
         parts.push(`${payload.duration} min`)
       }
       if (payload?.rpe) {
         parts.push(`RPE ${payload.rpe}`)
       }
+      if (payload?.category) {
+        const categoryLabels: Record<string, string> = {
+          weight_lifting: 'Weights',
+          hyrox: 'Hyrox',
+          hybrid: 'Hybrid',
+          running: 'Running',
+          sport: 'Sport',
+          other: 'Other',
+        }
+        parts.push(categoryLabels[payload.category] || '')
+      }
     }
 
     return parts
   }
 
-  const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-muted-foreground bg-muted/50'
+  const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-[rgba(238,242,255,0.52)] bg-[rgba(255,255,255,0.04)]'
 
   return (
     <div
@@ -203,6 +223,7 @@ export function BlockRow({
       {/* Menu */}
       <div className="relative">
         <button
+          ref={menuButtonRef}
           onClick={handleMenuClick}
           className="p-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.05)] opacity-0 group-hover:opacity-100 transition-all duration-[140ms]"
         >
@@ -212,6 +233,7 @@ export function BlockRow({
         <DropdownMenu
           isOpen={menuOpen}
           onClose={() => setMenuOpen(false)}
+          anchorRect={menuAnchorRect}
           items={[
             {
               label: 'Edit',

@@ -7,12 +7,18 @@ export const repeatRuleSchema = z.object({
   interval: z.number().positive().optional(),
 }).nullable()
 
-// Exercise entry for workout
+// Individual set within an exercise
+export const exerciseSetSchema = z.object({
+  set: z.number(),
+  reps: z.union([z.number(), z.string()]).default(''),
+  weight: z.union([z.number(), z.string()]).default(''),
+  completed: z.boolean().optional(),
+})
+
+// Exercise entry for workout (set-level logging)
 export const exerciseEntrySchema = z.object({
   exercise: z.string().min(1, 'Exercise name is required'),
-  sets: z.number().min(0),
-  reps: z.string(),
-  weight: z.string(),
+  sets: z.array(exerciseSetSchema).min(1, 'At least one set is required'),
   notes: z.string().optional(),
 })
 
@@ -25,15 +31,23 @@ export const baseBlockSchema = z.object({
   repeat_rule: repeatRuleSchema.optional(),
 })
 
-// Workout schema
+// Workout schema (supports programme + custom subtypes with category-conditional fields)
 export const workoutSchema = baseBlockSchema.extend({
   block_type: z.literal('workout'),
   title: z.string().min(1, 'Title is required'),
   payload: z.object({
-    exercise_matrix: z.array(exerciseEntrySchema).min(1, 'At least one exercise is required'),
+    subtype: z.enum(['programme', 'custom']).optional(),
+    category: z.enum(['weight_lifting', 'hyrox', 'hybrid', 'running', 'sport', 'other']).optional(),
+    exercise_matrix: z.array(exerciseEntrySchema).optional(),
+    description: z.string().optional(),
     duration: z.number().positive().optional(),
     rpe: z.number().min(1).max(10).optional(),
+    programme_session_id: z.string().optional(),
+    // Running/Sport/Other specific fields
+    distance_km: z.number().positive().optional(),
+    pace: z.string().optional(), // e.g., "4:45/km"
   }),
+  shared_to_feed: z.boolean().optional(),
 })
 
 // Habit schema
@@ -41,6 +55,7 @@ export const habitSchema = baseBlockSchema.extend({
   block_type: z.literal('habit'),
   title: z.string().min(1, 'Title is required'),
   payload: z.object({}).optional(),
+  shared_to_feed: z.boolean().optional(),
 })
 
 // Nutrition schema
@@ -75,13 +90,14 @@ export const personalSchema = baseBlockSchema.extend({
   payload: z.object({}).optional(),
 })
 
-// Challenge schema
+// Challenge schema (share forced ON)
 export const challengeSchema = baseBlockSchema.extend({
   block_type: z.literal('challenge'),
   title: z.string().min(1, 'Title is required'),
   payload: z.object({
     challenge_id: z.string().optional(),
   }).optional(),
+  shared_to_feed: z.boolean().optional(),
 })
 
 // Combined block schema (discriminated union)

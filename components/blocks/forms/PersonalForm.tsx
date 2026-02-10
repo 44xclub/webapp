@@ -51,7 +51,7 @@ export function PersonalForm({ form }: PersonalFormProps) {
       {/* Weekday selection for weekly */}
       {repeatPattern === 'weekly' && (
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
             Select Days
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -62,8 +62,8 @@ export function PersonalForm({ form }: PersonalFormProps) {
                 onClick={() => toggleWeekday(index)}
                 className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                   selectedWeekdays.includes(index)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                    ? 'bg-[rgba(255,255,255,0.09)] text-[#eef2ff] border border-[rgba(255,255,255,0.14)]'
+                    : 'text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.14)]'
                 }`}
               >
                 {label}

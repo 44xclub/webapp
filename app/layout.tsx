@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { PWARegister } from '@/components/PWARegister'
+import { ToastProvider } from '@/components/shared/Toast'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -32,8 +33,10 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>
-        <PWARegister />
-        {children}
+        <ToastProvider>
+          <PWARegister />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   )

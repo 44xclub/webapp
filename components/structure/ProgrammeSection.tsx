@@ -1,17 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui'
+import { SectionHeader } from '@/components/ui/SectionHeader'
+import { ProgrammeDetailModal } from '@/components/structure/ProgrammeDetailModal'
+import { Calendar, Dumbbell, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
-import { Calendar, Loader2, Check, Dumbbell } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { UserProgramme, ProgrammeSession } from '@/lib/types'
-
-interface ProgrammeSectionProps {
-  activeProgramme: UserProgramme | null
-  sessions: ProgrammeSession[]
-  onDeactivate: () => Promise<void>
-  onScheduleWeek: (selectedDays: number[], defaultTime?: string) => Promise<number>
-}
 
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Mon' },
@@ -23,12 +19,22 @@ const DAYS_OF_WEEK = [
   { value: 0, label: 'Sun' },
 ]
 
+interface ProgrammeSectionProps {
+  activeProgramme: UserProgramme | null
+  sessions: ProgrammeSession[]
+  onDeactivate: () => Promise<void>
+  onScheduleWeek: (selectedDays: number[], defaultTime?: string) => Promise<number>
+  fetchProgrammeSessions: (programmeId: string) => Promise<ProgrammeSession[]>
+}
+
 export function ProgrammeSection({
   activeProgramme,
   sessions,
   onDeactivate,
   onScheduleWeek,
+  fetchProgrammeSessions,
 }: ProgrammeSectionProps) {
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [deactivateConfirmOpen, setDeactivateConfirmOpen] = useState(false)
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5])
@@ -36,7 +42,19 @@ export function ProgrammeSection({
   const [scheduling, setScheduling] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
   const [scheduledCount, setScheduledCount] = useState<number | null>(null)
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null)
+  const [modalSessions, setModalSessions] = useState<ProgrammeSession[]>([])
+  const [loadingModalSessions, setLoadingModalSessions] = useState(false)
+
+  // Load sessions for modal when opened
+  useEffect(() => {
+    if (detailModalOpen && activeProgramme?.programme_template) {
+      setLoadingModalSessions(true)
+      fetchProgrammeSessions(activeProgramme.programme_template_id)
+        .then((data) => setModalSessions(data))
+        .catch(console.error)
+        .finally(() => setLoadingModalSessions(false))
+    }
+  }, [detailModalOpen, activeProgramme, fetchProgrammeSessions])
 
   const handleToggleDay = (day: number) => {
     setSelectedDays((prev) =>
@@ -73,195 +91,136 @@ export function ProgrammeSection({
     }
   }
 
-  const uniqueDays = useMemo(() => {
-    return Array.from(new Set(sessions.map(s => s.day_index))).sort((a, b) => a - b)
-  }, [sessions])
-
-  const selectedSession = useMemo(() => {
-    if (selectedDayIndex === null) return null
-    return sessions.find(s => s.day_index === selectedDayIndex)
-  }, [sessions, selectedDayIndex])
-
-  const renderSessionPayload = (payload: any) => {
-    if (!payload) return null
-
-    if (payload.plan && typeof payload.plan === 'string') {
-      const exercises = payload.plan.split('\\n').filter((line: string) => line.trim())
-      return (
-        <div className="space-y-1">
-          {exercises.map((exercise: string, idx: number) => (
-            <div key={idx} className="flex items-start gap-3 py-2 px-3 rounded-[10px] bg-[#0d1014]">
-              <span className="w-2 h-2 rounded-full bg-[#f97316] mt-1.5 flex-shrink-0" />
-              <p className="text-[14px] text-text-primary flex-1">{exercise.trim()}</p>
-            </div>
-          ))}
-        </div>
-      )
-    }
-
-    const exercises = payload.exercise_matrix || payload.exercises || []
-    if (exercises.length === 0) return null
-
-    return (
-      <div className="space-y-1">
-        {exercises.map((ex: any, idx: number) => (
-          <div key={idx} className="flex items-start gap-3 py-2 px-3 rounded-[10px] bg-[#0d1014]">
-            <span className="w-2 h-2 rounded-full bg-[#f97316] mt-1.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-[14px] font-medium text-text-primary">{ex.exercise || ex.name || `Exercise ${idx + 1}`}</p>
-              <div className="flex flex-wrap gap-2 mt-0.5">
-                {ex.sets && <span className="text-[11px] text-text-muted">{ex.sets} sets</span>}
-                {ex.reps && <span className="text-[11px] text-text-muted">{ex.reps} reps</span>}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
   if (!activeProgramme?.programme_template) {
     return (
-      <div className="bg-surface border border-border rounded-[16px] p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-[10px] bg-canvas-card">
-            <Dumbbell className="h-5 w-5 text-text-muted" />
-          </div>
-          <div>
-            <h3 className="text-body font-semibold text-text-primary">Active Programme</h3>
-            <p className="text-secondary text-text-muted">Your training programme</p>
+      <div>
+        <SectionHeader title="Active Programme" subtitle="Your current training plan" />
+        <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-[10px] bg-[rgba(255,255,255,0.04)]">
+              <Dumbbell className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+            </div>
+            <p className="text-[13px] text-[rgba(238,242,255,0.40)]">No programme activated. Browse the catalogue below.</p>
           </div>
         </div>
-        <p className="text-secondary text-text-muted">No programme activated. Browse the catalogue below.</p>
       </div>
     )
   }
 
   const programme = activeProgramme.programme_template
-  const imageUrl = programme.hero_image_path 
-    ? programme.hero_image_path.startsWith('http') 
-      ? programme.hero_image_path 
+  const imageUrl = programme.hero_image_path
+    ? programme.hero_image_path.startsWith('http')
+      ? programme.hero_image_path
       : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${programme.hero_image_path}`
     : null
 
   return (
     <>
-      <div className="bg-surface border border-border rounded-[16px] overflow-hidden">
-        {/* Image Card Header */}
-        <div className="relative h-[140px]">
-          {imageUrl ? (
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${imageUrl})` }}
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1e293b] to-[#0f172a]" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-          <div className="absolute inset-0 p-4 flex flex-col justify-end">
-            <span className="absolute top-3 left-3 text-[10px] font-semibold text-white bg-[#f97316] px-2 py-0.5 rounded-full">Active</span>
-            <h3 className="text-[18px] font-bold text-white">{programme.title}</h3>
+      <div>
+        <SectionHeader title="Active Programme" subtitle="Your current training plan" />
+
+        {/* Compact Active Programme Card - clickable to open modal */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setDetailModalOpen(true)}
+          onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
+          className="w-full text-left bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden transition-all duration-200 hover:border-[rgba(255,255,255,0.10)] group cursor-pointer"
+        >
+          {/* Image Banner */}
+          <div className="relative h-[110px]">
+            {imageUrl ? (
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]"
+                style={{ backgroundImage: `url(${imageUrl})` }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            <div className="absolute inset-0 p-3 flex flex-col justify-end">
+              <span className="absolute top-2.5 left-2.5 text-[9px] font-bold text-white bg-[#f97316] px-2 py-[2px] rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-white" /> Active
+              </span>
+              <h3 className="text-[16px] font-bold text-white">{programme.title}</h3>
+            </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="p-4 space-y-4">
-          {/* Overview */}
-          {programme.overview && (
-            <p className="text-[14px] text-text-secondary leading-relaxed">{programme.overview}</p>
-          )}
+          {/* Description */}
+          <div className="px-3 pt-2.5 pb-3">
+            {programme.overview && (
+              <p className="text-[12px] text-[rgba(238,242,255,0.45)] leading-relaxed line-clamp-2 mb-3">{programme.overview}</p>
+            )}
 
-          {/* Day Tabs */}
-          {uniqueDays.length > 0 && (
-            <div>
-              <p className="text-[11px] uppercase tracking-wide text-text-muted mb-2">Sessions</p>
-              <div className="flex gap-1 overflow-x-auto pb-1">
-                {uniqueDays.map((dayIndex) => (
-                  <button
-                    key={dayIndex}
-                    onClick={() => setSelectedDayIndex(selectedDayIndex === dayIndex ? null : dayIndex)}
-                    className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium whitespace-nowrap transition-all duration-200 border ${
-                      selectedDayIndex === dayIndex
-                        ? 'bg-[#f97316] text-white border-transparent'
-                        : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
-                    }`}
-                  >
-                    Day {dayIndex}
-                  </button>
-                ))}
-              </div>
+            {/* Action Buttons - stop propagation so card click doesn't fire */}
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <Button variant="outline" size="sm" onClick={() => setScheduleModalOpen(true)} className="flex-1">
+                <Calendar className="h-3.5 w-3.5" /> Schedule Week
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeactivateConfirmOpen(true)}
+                className="flex-1 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+              >
+                Deactivate
+              </Button>
             </div>
-          )}
-
-          {/* Selected Session Exercises */}
-          {selectedSession && (
-            <div className="space-y-2">
-              <div className="p-2.5 bg-[#0d1014] rounded-[10px] border border-[rgba(255,255,255,0.08)]">
-                <p className="text-[14px] font-semibold text-text-primary">{selectedSession.title}</p>
-              </div>
-              {renderSessionPayload(selectedSession.payload)}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" onClick={() => setScheduleModalOpen(true)} className="flex-1">
-              <Calendar className="h-4 w-4" /> Schedule Week
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setDeactivateConfirmOpen(true)} 
-              className="flex-1 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
-            >
-              Deactivate
-            </Button>
           </div>
         </div>
       </div>
+
+      {/* Programme Detail Modal with Sessions */}
+      <ProgrammeDetailModal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        programme={programme}
+        sessions={modalSessions.length > 0 ? modalSessions : sessions}
+        loadingSessions={loadingModalSessions}
+        isActive={true}
+        onScheduleWeek={onScheduleWeek}
+        onDeactivate={onDeactivate}
+      />
 
       {/* Schedule Week Modal */}
       <Modal isOpen={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} title="Schedule Week">
         <div className="p-4 space-y-4">
           {scheduledCount !== null ? (
             <div className="text-center py-8">
-              <div className="p-3 rounded-[10px] bg-success/10 border border-success/20 inline-block mb-3">
-                <Check className="h-6 w-6 text-success" />
+              <div className="p-3 rounded-[10px] bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] inline-block mb-3">
+                <Check className="h-6 w-6 text-[#22c55e]" />
               </div>
-              <p className="text-body font-medium text-text-primary">
+              <p className="text-[14px] font-medium text-[#eef2ff]">
                 {scheduledCount} workout{scheduledCount !== 1 ? 's' : ''} scheduled
               </p>
             </div>
           ) : (
             <>
-              <p className="text-secondary text-text-secondary">Select the days you want to train this week.</p>
-
+              <p className="text-[13px] text-[rgba(238,242,255,0.55)]">Select the days you want to train this week.</p>
               <div className="grid grid-cols-7 gap-1">
                 {DAYS_OF_WEEK.map((day) => (
                   <button
                     key={day.value}
                     onClick={() => handleToggleDay(day.value)}
-                    className={`p-2 text-meta font-medium rounded-[8px] transition-colors duration-150 ${
+                    className={`p-2 text-[11px] font-semibold rounded-[8px] transition-colors duration-150 ${
                       selectedDays.includes(day.value)
-                        ? 'bg-accent text-white'
-                        : 'bg-canvas-card text-text-muted hover:text-text-secondary border border-border'
+                        ? 'bg-[#3b82f6] text-white'
+                        : 'bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)] border border-[rgba(255,255,255,0.06)]'
                     }`}
                   >
                     {day.label}
                   </button>
                 ))}
               </div>
-
               <div>
-                <label className="text-meta font-medium text-text-secondary mb-1 block">Default Time</label>
+                <label className="text-[11px] font-semibold text-[rgba(238,242,255,0.55)] mb-1 block uppercase tracking-wider">Default Time</label>
                 <input
                   type="time"
                   value={defaultTime}
                   onChange={(e) => setDefaultTime(e.target.value)}
-                  className="w-full px-3 py-2 text-secondary bg-canvas-card text-text-primary rounded-[10px] border border-border focus:border-accent focus:outline-none transition-colors"
+                  className="w-full px-3 py-2 text-[13px] bg-[rgba(255,255,255,0.04)] text-[#eef2ff] rounded-[10px] border border-[rgba(255,255,255,0.07)] focus:border-[rgba(255,255,255,0.15)] focus:outline-none transition-colors"
                 />
               </div>
-
               <Button onClick={handleSchedule} disabled={scheduling || selectedDays.length === 0} className="w-full">
                 {scheduling ? <><Loader2 className="h-4 w-4 animate-spin" /> Scheduling...</> : `Schedule ${selectedDays.length} Day${selectedDays.length !== 1 ? 's' : ''}`}
               </Button>
@@ -273,7 +232,7 @@ export function ProgrammeSection({
       {/* Deactivate Confirmation Modal */}
       <Modal isOpen={deactivateConfirmOpen} onClose={() => setDeactivateConfirmOpen(false)} title="Deactivate Programme?">
         <div className="p-4 space-y-4">
-          <p className="text-secondary text-text-secondary">This will deactivate your current programme. Past workouts are preserved.</p>
+          <p className="text-[13px] text-[rgba(238,242,255,0.55)]">This will deactivate your current programme. Past workouts are preserved.</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setDeactivateConfirmOpen(false)} className="flex-1">Cancel</Button>
             <Button variant="destructive" onClick={handleDeactivate} disabled={deactivating} className="flex-1">
