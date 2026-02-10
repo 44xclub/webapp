@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -22,6 +22,18 @@ interface BlockWithMedia extends Block {
 }
 
 export default function CheckInsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
+      </div>
+    }>
+      <CheckInsPageContent />
+    </Suspense>
+  )
+}
+
+function CheckInsPageContent() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [checkins, setCheckins] = useState<BlockWithMedia[]>([])

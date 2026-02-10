@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp } from 'lucide-react'
+import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge } from '@/lib/types'
 
