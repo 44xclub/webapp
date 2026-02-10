@@ -15,8 +15,7 @@ import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { SectionHeader } from '@/components/ui/SectionHeader'
+import { SegmentedControl, SectionCard, ListRow } from '@/components/ui'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 type TabType = 'discipline' | 'training'
@@ -71,19 +70,19 @@ export default function StructurePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
-        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#07090d] pb-16">
+    <div className="min-h-screen pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Page Header - compact */}
+      {/* Page Header */}
       <div className="px-4 pt-2 pb-1">
-        <h1 className="text-[20px] font-semibold text-[#eef2ff] mb-2">Structure</h1>
+        <h1 className="text-title mb-2">Structure</h1>
         <SegmentedControl
           tabs={TABS}
           activeTab={activeTab}
@@ -92,15 +91,14 @@ export default function StructurePage() {
       </div>
 
       {/* Content */}
-      <main className="px-4 pt-4 space-y-5">
+      <main className="px-4 pt-4 space-y-[var(--space-section)]">
         {activeTab === 'discipline' ? (
           <>
             {/* Community Challenge */}
-            <div>
-              <SectionHeader title="Community Challenge" subtitle="Monthly team challenge" />
+            <SectionCard title="Community Challenge">
               {challengeLoading ? (
-                <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
-                  <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
                 </div>
               ) : (
                 <ChallengeCard
@@ -109,53 +107,47 @@ export default function StructurePage() {
                   onLogToday={() => setChallengeModalOpen(true)}
                 />
               )}
-            </div>
+            </SectionCard>
 
             {/* Active Framework */}
             {!frameworksLoading && (
-              <div>
-                <SectionHeader title="Active Framework" subtitle="Your current daily structure" />
+              <SectionCard title="Active Framework">
                 <ActiveFrameworkCard
                   activeFramework={activeFramework}
                   todaySubmission={todaySubmission}
                   completionCount={completionCount}
                   onOpenChecklist={() => setFrameworkModalOpen(true)}
                 />
-              </div>
+              </SectionCard>
             )}
 
             {/* Available Frameworks */}
             {frameworksLoading ? (
-              <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
-              </div>
+              <SectionCard>
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
+                </div>
+              </SectionCard>
             ) : (
               <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
 
-            {/* Personal Discipline Framework Link - Below Available Frameworks */}
-            <Link
+            {/* Personal Discipline Framework Link */}
+            <ListRow
               href="/personal-framework"
-              className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-[#3b82f6]/20 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-[#3b82f6]" />
-                </div>
-                <div>
-                  <p className="text-[14px] font-medium text-[#eef2ff]">Personal Discipline Framework</p>
-                  <p className="text-[12px] text-[rgba(238,242,255,0.52)]">Create your own daily non-negotiables</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
-            </Link>
+              icon={<Target className="h-5 w-5 text-[var(--accent-blue)]" />}
+              label="Personal Discipline Framework"
+              meta="Create your own daily non-negotiables"
+            />
           </>
         ) : (
           <>
             {programmesLoading ? (
-              <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
-              </div>
+              <SectionCard>
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
+                </div>
+              </SectionCard>
             ) : (
               <>
                 <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} fetchProgrammeSessions={fetchProgrammeSessions} />
@@ -163,22 +155,13 @@ export default function StructurePage() {
               </>
             )}
 
-            {/* Personal Programmes Link - Below Available Programmes */}
-            <Link
+            {/* Personal Programmes Link */}
+            <ListRow
               href="/programmes"
-              className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-purple-500/20 flex items-center justify-center">
-                  <Dumbbell className="h-5 w-5 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-[14px] font-medium text-[#eef2ff]">Personal Programmes</p>
-                  <p className="text-[12px] text-[rgba(238,242,255,0.52)]">Build your own workout programmes</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
-            </Link>
+              icon={<Dumbbell className="h-5 w-5 text-purple-400" />}
+              label="Personal Programmes"
+              meta="Build your own workout programmes"
+            />
           </>
         )}
       </main>

@@ -206,8 +206,8 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
-        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     )
   }
@@ -216,20 +216,20 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+    <div className="min-h-screen min-h-[100dvh] pb-20">
       {/* Page Header */}
-      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
+      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)]">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-[20px] font-semibold text-[#eef2ff]">Profile</h1>
-          <button onClick={handleSignOut} className="p-2 rounded-[10px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+          <h1 className="text-title">Profile</h1>
+          <button onClick={handleSignOut} className="p-2 rounded-[var(--radius-button)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
             <LogOut className="h-5 w-5" />
           </button>
         </div>
       </header>
 
-      <main className="px-4 py-4 space-y-4">
+      <main className="px-4 py-4 space-y-[var(--space-card)]">
         {/* Profile Card */}
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <div className="section-card p-0 overflow-hidden">
           <div className="p-5 flex flex-col items-center">
             <div className="mb-3">
               {user && (
@@ -241,13 +241,13 @@ export default function ProfilePage() {
                 />
               )}
             </div>
-            <h2 className="text-[18px] font-semibold text-[#eef2ff] mb-0.5">{displayName}</h2>
-            <p className="text-[13px] text-[rgba(238,242,255,0.45)]">{user?.email}</p>
+            <h2 className="text-title mb-0.5">{displayName}</h2>
+            <p className="text-meta">{user?.email}</p>
           </div>
 
           {/* Discipline Stats - clickable to open explanation modal */}
           {(rank || disciplineLevel) && (
-            <div className="border-t border-[rgba(255,255,255,0.06)] px-5 py-3.5">
+            <div className="border-t border-[var(--border-subtle)] px-5 py-3.5">
               <DisciplineScoreModule
                 rank={rank}
                 score={profile?.discipline_score}
@@ -260,22 +260,22 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
-            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Profile Details</h3>
+        <div className="section-card p-0 overflow-hidden">
+          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+            <h3 className="text-label">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleCancelEdit} className="p-1.5 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"><X className="h-4 w-4" /></button>
-                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-[#3b82f6] hover:text-[#60a5fa]">
+                <button onClick={handleCancelEdit} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="h-4 w-4" /></button>
+                <button onClick={handleSaveProfile} disabled={saving} className="p-1.5 text-[var(--accent-blue)] hover:text-[#60a5fa]">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 </button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="text-[12px] font-medium text-[#3b82f6] hover:underline">Edit</button>
+              <button onClick={() => setEditing(true)} className="text-micro normal-case text-[var(--accent-blue)] hover:underline">Edit</button>
             )}
           </div>
 
-          <div className="p-4 space-y-4">
+          <div className="p-[var(--space-card)] space-y-4">
             {editing ? (
               <>
                 <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
@@ -300,11 +300,11 @@ export default function ProfilePage() {
         </div>
 
         {/* Streak Stats - using shared component */}
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
-          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Streaks</h3>
+        <div className="section-card p-0">
+          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)]">
+            <h3 className="text-label">Streaks</h3>
           </div>
-          <div className="p-4">
+          <div className="p-[var(--space-card)]">
             <StreakCard
               currentStreak={profile?.current_streak || 0}
               bestStreak={profile?.best_streak || 0}
@@ -316,17 +316,17 @@ export default function ProfilePage() {
         {/* Reflection & Planning - Link to dedicated page */}
         <Link
           href="/profile/reflection"
-          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
         >
-          <div className="px-4 py-3 flex items-center justify-between">
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[10px] bg-[rgba(59,130,246,0.1)] flex items-center justify-center">
-                <BookOpen className="h-4 w-4 text-[#3b82f6]" />
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[var(--accent-blue-muted)] flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-[var(--accent-blue)]" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Reflection & Planning</h3>
+                <h3 className="text-label">Reflection & Planning</h3>
                 {currentCycle && (
-                  <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                  <p className="text-micro normal-case mt-0.5">
                     Current: {currentCycle.label.replace('Reflection — ', '')}
                     {' · '}
                     <span className={
@@ -340,38 +340,38 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
           </div>
         </Link>
 
         {/* Check-ins - Link to dedicated page */}
         <Link
           href="/profile/check-ins"
-          className="block bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors overflow-hidden"
         >
-          <div className="px-4 py-3 flex items-center justify-between border-b border-[rgba(255,255,255,0.06)]">
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[10px] bg-[rgba(34,197,94,0.1)] flex items-center justify-center">
-                <Scale className="h-4 w-4 text-[#22c55e]" />
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[var(--accent-green-muted)] flex items-center justify-center">
+                <Scale className="h-4 w-4 text-[var(--accent-green)]" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold text-[#eef2ff]">Check-ins</h3>
-                <p className="text-[11px] text-[rgba(238,242,255,0.45)] mt-0.5">
+                <h3 className="text-label">Check-ins</h3>
+                <p className="text-micro normal-case mt-0.5">
                   Track your weight & progress
                 </p>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
           </div>
 
           {/* Last 2 check-ins preview */}
-          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {checkinsLoading ? (
-              <div className="p-4 flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />
+              <div className="p-[var(--space-card)] flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
               </div>
             ) : checkinBlocks.length === 0 ? (
-              <div className="p-4 text-center text-[12px] text-[rgba(238,242,255,0.40)]">
+              <div className="p-[var(--space-card)] text-center text-meta">
                 No check-ins yet. Tap to add one.
               </div>
             ) : (
@@ -391,22 +391,22 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={block.id}
-                    className="px-4 py-3 flex items-center justify-between"
+                    className="px-[var(--space-card)] py-3 flex items-center justify-between"
                     onClick={(e) => {
                       e.preventDefault()
                       router.push(`/profile/check-ins?open=${block.id}`)
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="text-[12px] text-[rgba(238,242,255,0.45)] w-12">
+                      <div className="text-meta w-12">
                         {new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-semibold text-[#eef2ff]">
+                        <span className="text-label">
                           {payload?.weight ? `${payload.weight} kg` : '—'}
                         </span>
                         {delta !== null && delta !== 0 && (
-                          <span className={`text-[11px] font-medium flex items-center gap-0.5 ${delta < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          <span className={`text-micro normal-case flex items-center gap-0.5 ${delta < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                             {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
                             {Math.abs(delta).toFixed(1)}
                           </span>
@@ -415,7 +415,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {media.length > 0 && (
-                        <span className="text-[10px] text-[rgba(238,242,255,0.40)] flex items-center gap-1">
+                        <span className="text-micro flex items-center gap-1">
                           <ImageIcon className="h-3 w-3" /> {media.length}
                         </span>
                       )}
@@ -428,24 +428,24 @@ export default function ProfilePage() {
         </Link>
 
         {/* Statistics */}
-        <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
-          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-            <h3 className="text-[14px] font-semibold text-[#eef2ff]">Statistics</h3>
+        <div className="section-card p-0">
+          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)]">
+            <h3 className="text-label">Statistics</h3>
           </div>
-          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
-            <div className="px-4 py-3 flex items-center justify-between">
+          <div className="divide-y divide-[var(--border-subtle)]">
+            <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
-                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Member since</span>
+                <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="text-meta text-[var(--text-primary)]">Member since</span>
               </div>
-              <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
+              <span className="text-meta">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
             </div>
-            <div className="px-4 py-3 flex items-center justify-between">
+            <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Dumbbell className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
-                <span className="text-[13px] text-[rgba(238,242,255,0.85)]">Total Points</span>
+                <Dumbbell className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="text-meta text-[var(--text-primary)]">Total Points</span>
               </div>
-              <span className="text-[13px] font-medium text-[#eef2ff]">{profile?.discipline_score || 0}</span>
+              <span className="text-label">{profile?.discipline_score || 0}</span>
             </div>
           </div>
         </div>
@@ -463,10 +463,10 @@ export default function ProfilePage() {
 function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 py-1">
-      <Icon className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
+      <Icon className="h-4 w-4 text-[var(--text-muted)]" />
       <div>
-        <p className="text-[11px] text-[rgba(238,242,255,0.40)]">{label}</p>
-        <p className="text-[13px] text-[rgba(238,242,255,0.85)]">{value}</p>
+        <p className="text-micro">{label}</p>
+        <p className="text-meta text-[var(--text-primary)]">{value}</p>
       </div>
     </div>
   )

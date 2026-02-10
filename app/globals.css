@@ -5,9 +5,73 @@
 @tailwind utilities;
 
 /*
-  44CLUB UI SYSTEM
+  44CLUB UI HIERARCHY & VISUAL SYSTEM
+  ===================================
   Stoic. Modern. Disciplined.
+
+  3-Tier Surface System:
+  - Level 0: Background (deepest)
+  - Level 1: Section containers
+  - Level 2: Interactive cards within sections
 */
+
+/* ============================================
+   CSS DESIGN TOKENS
+   ============================================ */
+
+:root {
+  /* ---- SURFACES (3-tier hierarchy) ---- */
+  --surface-0: #07090d;           /* Background - deepest level */
+  --surface-1: #0c1016;           /* Section cards - middle level */
+  --surface-2: #12171f;           /* Interactive cards - top level */
+
+  /* ---- BORDERS ---- */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-emphasis: rgba(255, 255, 255, 0.16);
+
+  /* ---- RADIUS ---- */
+  --radius-section: 14px;         /* Outer section cards */
+  --radius-card: 12px;            /* Inner interactive cards */
+  --radius-button: 8px;           /* Buttons, inputs */
+  --radius-chip: 6px;             /* Small elements */
+
+  /* ---- SPACING ---- */
+  --space-section: 24px;          /* Gap between sections */
+  --space-card: 16px;             /* Padding inside cards */
+  --space-item: 12px;             /* Gap between list items */
+  --space-inline: 8px;            /* Inline element spacing */
+
+  /* ---- TYPOGRAPHY (4 roles only) ---- */
+  --text-title-size: 18px;
+  --text-title-weight: 600;
+  --text-label-size: 14px;
+  --text-label-weight: 500;
+  --text-meta-size: 13px;
+  --text-meta-weight: 500;
+  --text-micro-size: 11px;
+  --text-micro-weight: 500;
+
+  /* ---- TEXT COLORS ---- */
+  --text-primary: #eef2ff;
+  --text-secondary: rgba(238, 242, 255, 0.72);
+  --text-tertiary: rgba(238, 242, 255, 0.48);
+  --text-muted: rgba(238, 242, 255, 0.30);
+
+  /* ---- ACCENT COLORS ---- */
+  --accent-blue: #3b82f6;
+  --accent-blue-muted: rgba(59, 130, 246, 0.18);
+  --accent-green: #22c55e;
+  --accent-green-muted: rgba(34, 197, 94, 0.18);
+  --accent-amber: #f59e0b;
+  --accent-amber-muted: rgba(245, 158, 11, 0.18);
+  --accent-red: #ef4444;
+  --accent-red-muted: rgba(239, 68, 68, 0.18);
+}
+
+/* ============================================
+   BASE RESET & DEFAULTS
+   ============================================ */
 
 * {
   margin: 0;
@@ -22,10 +86,10 @@ html {
 }
 
 body {
-  background: #07090d;
-  color: #eef2ff;
+  background: var(--surface-0);
+  color: var(--text-primary);
   font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-size: 15px;
+  font-size: var(--text-label-size);
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -46,11 +110,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
+  background: var(--border-default);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.18);
+  background: var(--border-emphasis);
 }
 
 .safe-bottom {
@@ -71,20 +135,123 @@ button, a, [role="button"] {
 
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
 }
 
+/* ============================================
+   COMPONENT LAYER - DESIGN SYSTEM
+   ============================================ */
+
 @layer components {
+  /* ---- SECTION CARD (Level 1 container) ---- */
+  .section-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-section);
+    padding: var(--space-card);
+  }
+
+  /* ---- INTERACTIVE CARD (Level 2, inside sections) ---- */
+  .interactive-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card);
+    padding: var(--space-card);
+    transition: border-color 0.14s ease, background 0.14s ease;
+  }
+  .interactive-card:hover {
+    border-color: var(--border-emphasis);
+  }
+  .interactive-card:active {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* ---- LIST ROW (for tappable list items) ---- */
+  .list-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-inline);
+    padding: var(--space-item) var(--space-card);
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card);
+    transition: border-color 0.14s ease;
+    cursor: pointer;
+  }
+  .list-row:hover {
+    border-color: var(--border-emphasis);
+  }
+  .list-row + .list-row {
+    margin-top: var(--space-item);
+  }
+
+  /* ---- STATUS STRIP (compact horizontal module) ---- */
+  .status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-item) var(--space-card);
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+  }
+
+  /* ---- TYPOGRAPHY UTILITIES ---- */
+  .text-title {
+    font-size: var(--text-title-size);
+    font-weight: var(--text-title-weight);
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .text-label {
+    font-size: var(--text-label-size);
+    font-weight: var(--text-label-weight);
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .text-meta {
+    font-size: var(--text-meta-size);
+    font-weight: var(--text-meta-weight);
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .text-micro {
+    font-size: var(--text-micro-size);
+    font-weight: var(--text-micro-weight);
+    color: var(--text-tertiary);
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---- SECTION HEADER ---- */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-card);
+  }
+
+  .section-title {
+    font-size: var(--text-title-size);
+    font-weight: var(--text-title-weight);
+    color: var(--text-primary);
+  }
+
+  /* ---- LEGACY SUPPORT (gradually deprecate) ---- */
   .glass-card {
-    background: linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.025) 100%);
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.36);
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.36);
   }
 
   .solid-card {
-    background: #0d1014;
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 10px 26px rgba(0,0,0,0.36);
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.36);
   }
 
   .glow-border {
@@ -105,35 +272,34 @@ button, a, [role="button"] {
   }
 
   .score-display {
-    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.03) 100%);
-    border: 1px solid rgba(59,130,246,0.22);
-    box-shadow: 0 10px 28px rgba(59,130,246,0.12);
+    background: var(--surface-1);
+    border: 1px solid rgba(59, 130, 246, 0.22);
+    box-shadow: 0 10px 28px rgba(59, 130, 246, 0.12);
   }
 
   .level-badge {
-    background: linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.08) 100%);
-    border: 1px solid rgba(59,130,246,0.26);
-    box-shadow: 0 10px 28px rgba(59,130,246,0.12);
+    background: var(--accent-blue-muted);
+    border: 1px solid rgba(59, 130, 246, 0.26);
+    box-shadow: 0 10px 28px rgba(59, 130, 246, 0.12);
   }
 
   .stat-card {
-    background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: var(--surface-2);
+    border: 1px solid var(--border-default);
     transition: all 0.14s cubic-bezier(0.2,0.8,0.2,1);
   }
   .stat-card:hover {
-    background: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.16);
+    border-color: var(--border-emphasis);
   }
 
   .header-gradient {
-    background: linear-gradient(180deg, #07090d 0%, transparent 100%);
+    background: linear-gradient(180deg, var(--surface-0) 0%, transparent 100%);
   }
 
   .bottom-nav {
-    background: rgba(7,9,13,0.92);
+    background: rgba(7, 9, 13, 0.92);
     backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(255,255,255,0.07);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .energy-pulse {
@@ -142,17 +308,17 @@ button, a, [role="button"] {
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 10px 28px rgba(59,130,246,0.12);
+      box-shadow: 0 10px 28px rgba(59, 130, 246, 0.12);
     }
     50% {
-      box-shadow: 0 12px 34px rgba(59,130,246,0.20);
+      box-shadow: 0 12px 34px rgba(59, 130, 246, 0.20);
     }
   }
 
   .divider {
     width: 100%;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255,255,255,0.14), transparent);
+    background: linear-gradient(to right, transparent, var(--border-default), transparent);
     opacity: 0.9;
   }
 
@@ -164,6 +330,10 @@ button, a, [role="button"] {
     display: none;
   }
 }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 
 @keyframes fadeIn {
   from { opacity: 0; }
