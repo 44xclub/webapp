@@ -161,14 +161,14 @@ export default function AppPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
-        <Loader2 className="h-6 w-6 animate-spin text-[#3b82f6]" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-blue)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] flex flex-col pb-16">
+    <div className="min-h-screen min-h-[100dvh] flex flex-col pb-16">
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
       {/* Streak Module - using shared component */}
@@ -208,16 +208,16 @@ export default function AppPage() {
         <div className="mx-4 mt-3">
           <button
             onClick={() => setChallengeModalOpen(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-[12px] bg-[rgba(59,130,246,0.08)] border border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.12)] transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-[var(--radius-card)] bg-[var(--accent-blue-muted)] border border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.24)] transition-colors text-left"
           >
-            <div className="p-2 rounded-[10px] bg-[rgba(59,130,246,0.15)]">
-              <Target className="h-4 w-4 text-[#3b82f6]" />
+            <div className="p-2 rounded-[var(--radius-button)] bg-[rgba(59,130,246,0.15)]">
+              <Target className="h-4 w-4 text-[var(--accent-blue)]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#eef2ff] truncate">
+              <p className="text-label truncate">
                 {challenge.title}
               </p>
-              <p className="text-[11px] text-[#3b82f6]">Tap to log today&apos;s challenge</p>
+              <p className="text-micro normal-case text-[var(--accent-blue)]">Tap to log today&apos;s challenge</p>
             </div>
           </button>
         </div>

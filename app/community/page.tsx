@@ -209,8 +209,8 @@ export default function CommunityPage() {
   if (authLoading) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
-          <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-blue)]" />
         </div>
       </div>
     )
@@ -218,13 +218,13 @@ export default function CommunityPage() {
 
   return (
     <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+    <div className="min-h-screen min-h-[100dvh] pb-20">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Page Header */}
       <header className="px-4 pt-4 pb-2">
-        <h1 className="text-[20px] font-semibold text-[#eef2ff] mb-3">Community</h1>
+        <h1 className="text-title mb-3">Community</h1>
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}
@@ -233,7 +233,7 @@ export default function CommunityPage() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-4 space-y-4">
+      <main className="px-4 py-4 space-y-[var(--space-card)]">
         {activeTab === 'team' ? (
           <TeamOverview userId={user?.id} supabase={supabase} />
         ) : (
@@ -350,17 +350,17 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" />
       </div>
     )
   }
 
   if (!teamData?.team) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
-        <Users className="h-12 w-12 text-[rgba(238,242,255,0.35)] mx-auto mb-4" />
-        <h3 className="text-[16px] font-medium text-[#eef2ff] mb-2">No Team Yet</h3>
-        <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+      <div className="section-card text-center">
+        <Users className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
+        <h3 className="text-label mb-2">No Team Yet</h3>
+        <p className="text-meta">
           You&apos;ll be assigned to a team of 8 members to keep each other accountable.
         </p>
       </div>
@@ -375,38 +375,38 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   return (
     <div className="space-y-3">
       {/* Team Summary Card */}
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-4 border border-[rgba(255,255,255,0.06)]">
+      <div className="section-card">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[12px] text-[rgba(238,242,255,0.45)]">Your Team</p>
-            <p className="text-[22px] font-bold text-[#eef2ff]">Team #{teamData.team.team_number}</p>
+            <p className="text-micro">Your Team</p>
+            <p className="text-[22px] font-bold text-[var(--text-primary)]">Team #{teamData.team.team_number}</p>
           </div>
           <div className="text-right">
-            <p className="text-[12px] text-[rgba(238,242,255,0.45)]">Total Score</p>
-            <p className="text-[20px] font-bold text-[#eef2ff]">{teamTotalScore}</p>
+            <p className="text-micro">Total Score</p>
+            <p className="text-[20px] font-bold text-[var(--text-primary)]">{teamTotalScore}</p>
           </div>
         </div>
       </div>
 
       {/* Collapsible Team Members */}
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+      <div className="section-card p-0 overflow-hidden">
         <button
           onClick={() => setMembersExpanded(!membersExpanded)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+          className="w-full px-[var(--space-card)] py-3 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-[14px] font-medium text-[#eef2ff]">Team Members</h3>
-            <span className="text-[12px] text-[rgba(238,242,255,0.45)]">{teamData.members.length}/8</span>
+            <h3 className="text-label">Team Members</h3>
+            <span className="text-meta">{teamData.members.length}/8</span>
           </div>
           {membersExpanded ? (
-            <ChevronDown className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+            <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+            <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
           )}
         </button>
 
         {membersExpanded && (
-          <div className="border-t border-[rgba(255,255,255,0.06)] divide-y divide-[rgba(255,255,255,0.06)]">
+          <div className="border-t border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
             {teamData.members.map((member) => {
               const level = calculateDisciplineLevel(member.profiles?.discipline_score || 0)
               const BadgeIcon = badgeIcons[level.badge]
@@ -416,33 +416,33 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
               const initials = displayName.slice(0, 2).toUpperCase()
 
               return (
-                <div key={member.user_id} className="px-4 py-3 flex items-center justify-between">
+                <div key={member.user_id} className="px-[var(--space-card)] py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
-                      <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
+                    <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center">
+                      <span className="text-meta">
                         {initials}
                       </span>
                     </div>
                     <div>
-                      <p className="text-[13px] font-medium text-[#eef2ff]">
+                      <p className="text-meta text-[var(--text-primary)]">
                         {displayName}
                         {member.role === 'captain' && (
-                          <span className="ml-2 text-[11px] text-[#3b82f6]">(Captain)</span>
+                          <span className="ml-2 text-micro normal-case text-[var(--accent-blue)]">(Captain)</span>
                         )}
                       </p>
                       <div className="flex items-center gap-1">
                         <BadgeIcon className={`h-3 w-3 ${badgeColor}`} />
-                        <span className={`text-[11px] ${badgeColor}`}>
+                        <span className={`text-micro normal-case ${badgeColor}`}>
                           {badgeDisplay}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13px] font-bold text-[#eef2ff]">
+                    <p className="text-meta font-bold text-[var(--text-primary)]">
                       {member.profiles?.discipline_score || 0}
                     </p>
-                    <p className="text-[11px] text-[rgba(238,242,255,0.40)]">pts</p>
+                    <p className="text-micro">pts</p>
                   </div>
                 </div>
               )
@@ -453,12 +453,12 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
 
       {/* Daily Overviews Feed */}
       <div className="space-y-2">
-        <h3 className="text-[14px] font-medium text-[#eef2ff] px-1">Daily Overviews</h3>
+        <h3 className="text-label px-1">Daily Overviews</h3>
 
         {teamData.dailyOverviews.length === 0 ? (
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
-            <Calendar className="h-8 w-8 text-[rgba(238,242,255,0.35)] mx-auto mb-3" />
-            <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+          <div className="section-card text-center">
+            <Calendar className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3" />
+            <p className="text-meta">
               No daily overviews yet. Check back after the first day resolves.
             </p>
           </div>
@@ -504,15 +504,15 @@ function DailyOverviewCard({
   const memberSnapshots = payload?.members || []
 
   return (
-    <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+    <div className="section-card p-0 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+      <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-[#3b82f6]" />
-          <span className="text-[13px] font-medium text-[#eef2ff]">{formattedDate}</span>
+          <Calendar className="h-4 w-4 text-[var(--accent-blue)]" />
+          <span className="text-meta text-[var(--text-primary)]">{formattedDate}</span>
         </div>
         {resolvedTime && (
-          <span className="text-[11px] text-[rgba(238,242,255,0.40)]">
+          <span className="text-micro">
             Resolved at {resolvedTime}
           </span>
         )}
@@ -520,16 +520,16 @@ function DailyOverviewCard({
 
       {/* Summary Stats */}
       {payload && (
-        <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.06)] flex items-center gap-4">
+        <div className="px-[var(--space-card)] py-2 border-b border-[var(--border-subtle)] flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Avg:</span>
-            <span className="text-[13px] font-medium text-[#eef2ff]">
+            <span className="text-micro">Avg:</span>
+            <span className="text-meta text-[var(--text-primary)]">
               {payload.avg_score?.toFixed(0) || 0}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Total:</span>
-            <span className="text-[13px] font-medium text-[#eef2ff]">
+            <span className="text-micro">Total:</span>
+            <span className="text-meta text-[var(--text-primary)]">
               {payload.total_score || 0}
             </span>
           </div>
@@ -537,7 +537,7 @@ function DailyOverviewCard({
       )}
 
       {/* Member Summaries */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="px-[var(--space-card)] py-3 space-y-2">
         {memberSnapshots.length > 0 ? (
           memberSnapshots.map((snapshot: any, idx: number) => {
             const memberProfile = members.find((m) => m.user_id === snapshot.user_id)
@@ -548,8 +548,8 @@ function DailyOverviewCard({
             return (
               <div key={idx} className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <span className="text-[13px] text-[#eef2ff] font-medium">{displayName}</span>
-                  <span className="text-[13px] text-[rgba(238,242,255,0.52)]">
+                  <span className="text-meta text-[var(--text-primary)]">{displayName}</span>
+                  <span className="text-meta">
                     {' — '}
                     {status === 'complete' && 'Completed all blocks'}
                     {status === 'partial' && 'Partial completion'}
@@ -557,8 +557,8 @@ function DailyOverviewCard({
                     {!status && `Score: ${snapshot.discipline_score || 0}`}
                   </span>
                 </div>
-                <span className={`text-[12px] font-medium flex-shrink-0 ${
-                  delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-rose-400' : 'text-[rgba(238,242,255,0.45)]'
+                <span className={`text-meta font-medium flex-shrink-0 ${
+                  delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-rose-400' : 'text-[var(--text-muted)]'
                 }`}>
                   {delta > 0 ? '+' : ''}{delta}
                 </span>
@@ -566,7 +566,7 @@ function DailyOverviewCard({
             )
           })
         ) : (
-          <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+          <p className="text-meta">
             No member data available for this day.
           </p>
         )}
@@ -631,17 +631,17 @@ function FeedView({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" />
       </div>
     )
   }
 
   if (posts.length === 0) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] p-6 border border-[rgba(255,255,255,0.06)] text-center">
-        <Activity className="h-12 w-12 text-[rgba(238,242,255,0.35)] mx-auto mb-4" />
-        <h3 className="text-[16px] font-medium text-[#eef2ff] mb-2">No Posts Yet</h3>
-        <p className="text-[13px] text-[rgba(238,242,255,0.45)]">
+      <div className="section-card text-center">
+        <Activity className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
+        <h3 className="text-label mb-2">No Posts Yet</h3>
+        <p className="text-meta">
           Share your workouts and achievements to inspire others.
         </p>
       </div>
