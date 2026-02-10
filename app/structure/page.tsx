@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
 import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
@@ -123,6 +124,23 @@ export default function StructurePage() {
               </div>
             )}
 
+            {/* Personal Discipline Framework Link */}
+            <Link
+              href="/personal-framework"
+              className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[10px] bg-[#3b82f6]/20 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-[#3b82f6]" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-medium text-[#eef2ff]">Personal Discipline Framework</p>
+                  <p className="text-[12px] text-[rgba(238,242,255,0.52)]">Create your own daily non-negotiables</p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+            </Link>
+
             {/* Available Frameworks */}
             {frameworksLoading ? (
               <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
@@ -134,6 +152,23 @@ export default function StructurePage() {
           </>
         ) : (
           <>
+            {/* Personal Programmes Link */}
+            <Link
+              href="/programmes"
+              className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-[10px] bg-purple-500/20 flex items-center justify-center">
+                  <Dumbbell className="h-5 w-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-medium text-[#eef2ff]">Personal Programmes</p>
+                  <p className="text-[12px] text-[rgba(238,242,255,0.52)]">Build your own workout programmes</p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-[rgba(238,242,255,0.35)]" />
+            </Link>
+
             {programmesLoading ? (
               <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-6 flex justify-center">
                 <Loader2 className="h-4 w-4 animate-spin text-[rgba(238,242,255,0.30)]" />

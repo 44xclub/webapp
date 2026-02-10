@@ -940,6 +940,94 @@ export interface FeedRespect {
 }
 
 // ============================================
+// Personal Programmes
+// ============================================
+
+export type ProgrammeFocus = 'strength' | 'hypertrophy' | 'conditioning' | 'hybrid'
+export type ProgrammeStatus = 'draft' | 'active' | 'archived'
+
+export interface PersonalProgramme {
+  id: string
+  user_id: string
+  title: string
+  days_per_week: number
+  focus: ProgrammeFocus
+  status: ProgrammeStatus
+  created_at: string
+  updated_at: string
+  // Joined data
+  days?: PersonalProgrammeDay[]
+}
+
+export interface PersonalProgrammeDay {
+  id: string
+  programme_id: string
+  day_index: number
+  title: string
+  created_at: string
+  updated_at: string
+  // Joined data
+  exercises?: PersonalProgrammeExercise[]
+}
+
+export interface PersonalProgrammeExercise {
+  id: string
+  day_id: string
+  sort_order: number
+  name: string
+  sets: number | null
+  reps: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Snapshot stored in block payload when scheduling
+export interface ProgrammeBlockPayload {
+  source: 'personal_programme'
+  programme_id: string
+  programme_day_id: string
+  programme_title: string
+  day_title: string
+  exercises: {
+    name: string
+    sets: number | null
+    reps: string | null
+    notes: string | null
+  }[]
+}
+
+// ============================================
+// Personal Discipline Framework
+// ============================================
+
+export type FrameworkVisibility = 'global' | 'personal'
+
+// Extended FrameworkTemplate with personal fields
+export interface PersonalFrameworkTemplate extends FrameworkTemplate {
+  visibility: FrameworkVisibility
+  owner_user_id: string | null
+}
+
+// ============================================
+// Admin Review Queue
+// ============================================
+
+export type ReviewEntityType = 'programme' | 'framework'
+export type ReviewStatus = 'pending' | 'reviewed' | 'approved' | 'rejected'
+
+export interface AdminReviewEntry {
+  id: string
+  entity_type: ReviewEntityType
+  entity_id: string
+  user_id: string
+  status: ReviewStatus
+  admin_notes: string | null
+  created_at: string
+  reviewed_at: string | null
+}
+
+// ============================================
 // Discipline Score & Badge System
 // Based on 44CLUB Discipline Score Spec
 // ============================================
