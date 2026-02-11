@@ -222,15 +222,14 @@ export default function CommunityPage() {
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Page Header */}
-      <header className="px-4 pt-4 pb-2">
-        <h1 className="text-title mb-3">Community</h1>
+      {/* Tab Navigation */}
+      <div className="px-4 pt-2 pb-1">
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}
           onChange={(v) => setActiveTab(v as TabType)}
         />
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-[var(--space-card)]">
