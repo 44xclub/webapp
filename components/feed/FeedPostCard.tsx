@@ -14,6 +14,7 @@ function getStorageUrl(path: string | null | undefined): string | null {
   // Generate Supabase storage URL
   const supabase = createClient()
   const { data } = supabase.storage.from('block-media').getPublicUrl(path)
+  console.log('[getStorageUrl] input:', path, '-> output:', data.publicUrl)
   return data.publicUrl
 }
 
