@@ -1,21 +1,23 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
-import { createClient } from '@/lib/supabase/client'
 import type { DisciplineBadge } from '@/lib/types'
 
-// Helper to get storage URL from path
+// Helper to get storage URL from path - constructs URL directly to avoid Supabase client issues
 function getStorageUrl(path: string | null | undefined): string | null {
   if (!path) return null
   // If already a full URL, return as-is
   if (path.startsWith('http://') || path.startsWith('https://')) return path
-  // Generate Supabase storage URL
-  const supabase = createClient()
-  const { data } = supabase.storage.from('block-media').getPublicUrl(path)
-  console.log('[getStorageUrl] input:', path, '-> output:', data.publicUrl)
-  return data.publicUrl
+
+  // Construct URL directly from environment variable
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) {
+    console.error('[getStorageUrl] NEXT_PUBLIC_SUPABASE_URL not set')
+    return null
+  }
+  return `${supabaseUrl}/storage/v1/object/public/block-media/${path}`
 }
 
 // Structured feed post payload contract
@@ -144,16 +146,6 @@ function formatRelativeTime(dateString: string): string {
 export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: FeedPostCardProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [expanded, setExpanded] = useState(false)
-
-  // DEBUG: Test Supabase URL generation
-  const supabase = useMemo(() => createClient(), [])
-  const testUrl = useMemo(() => {
-    const { data } = supabase.storage.from('block-media').getPublicUrl('test/path.jpg')
-    console.log('[FeedPostCard] Supabase test URL:', data.publicUrl)
-    console.log('[FeedPostCard] post.media_path:', post.media_path)
-    console.log('[FeedPostCard] post.payload:', post.payload)
-    return data.publicUrl
-  }, [supabase, post.media_path, post.payload])
 
   const displayName = post.user_profile?.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
@@ -533,8 +525,6 @@ function normalizeMediaItem(item: any): { path: string; type: 'image' | 'video' 
 
 // Media Display Component
 function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaPath: string | null }) {
-  console.log('[MediaDisplay] called with:', { mediaPath, payloadMedia: payload?.media })
-
   const rawMedia = payload?.media || []
 
   // Normalize all media items and filter out invalid ones
@@ -544,8 +534,6 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   const allMedia = mediaPath
     ? [{ type: 'image' as const, path: mediaPath }, ...normalizedMedia]
     : normalizedMedia
-
-  console.log('[MediaDisplay] allMedia:', allMedia)
 
   if (allMedia.length === 0) return null
 

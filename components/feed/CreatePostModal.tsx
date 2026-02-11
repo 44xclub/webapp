@@ -19,13 +19,13 @@ interface CreatePostModalProps {
 // Block types that can be shared to feed
 const SHAREABLE_TYPES = ['workout', 'nutrition', 'habit', 'checkin', 'challenge']
 
-// Helper to get storage URL from path
+// Helper to get storage URL from path - constructs URL directly
 function getStorageUrl(path: string | null | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http://') || path.startsWith('https://')) return path
-  const supabase = createClient()
-  const { data } = supabase.storage.from('block-media').getPublicUrl(path)
-  return data.publicUrl
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) return null
+  return `${supabaseUrl}/storage/v1/object/public/block-media/${path}`
 }
 
 export function CreatePostModal({

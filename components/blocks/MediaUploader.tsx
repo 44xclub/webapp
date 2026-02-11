@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui'
-import { createClient } from '@/lib/supabase/client'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import type { BlockMedia } from '@/lib/types'
 
@@ -26,7 +25,6 @@ export function MediaUploader({
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({})
   const [urlsLoading, setUrlsLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const supabase = useMemo(() => createClient(), [])
 
   // Pre-fetch signed URLs for all media items
   useEffect(() => {
@@ -40,19 +38,10 @@ export function MediaUploader({
       const urls: Record<string, string> = {}
 
       for (const item of media) {
-        // Try signed URL first (for private buckets)
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from('block-media')
-          .createSignedUrl(item.storage_path, 3600) // 1 hour expiry
-
-        if (!signedError && signedData?.signedUrl) {
-          urls[item.storage_path] = signedData.signedUrl
-        } else {
-          // Fallback to public URL
-          const { data } = supabase.storage
-            .from('block-media')
-            .getPublicUrl(item.storage_path)
-          urls[item.storage_path] = data.publicUrl
+        // Construct URL directly from environment variable (bucket is public)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        if (supabaseUrl) {
+          urls[item.storage_path] = `${supabaseUrl}/storage/v1/object/public/block-media/${item.storage_path}`
         }
       }
 
@@ -61,7 +50,7 @@ export function MediaUploader({
     }
 
     fetchUrls()
-  }, [media, supabase])
+  }, [media])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -85,12 +74,10 @@ export function MediaUploader({
 
       // Generate URL for newly uploaded media
       if (newMedia?.storage_path) {
-        const { data: signedData } = await supabase.storage
-          .from('block-media')
-          .createSignedUrl(newMedia.storage_path, 3600)
-
-        if (signedData?.signedUrl) {
-          setMediaUrls(prev => ({ ...prev, [newMedia.storage_path]: signedData.signedUrl }))
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        if (supabaseUrl) {
+          const url = `${supabaseUrl}/storage/v1/object/public/block-media/${newMedia.storage_path}`
+          setMediaUrls(prev => ({ ...prev, [newMedia.storage_path]: url }))
         }
       }
     } catch (error) {
