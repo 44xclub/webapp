@@ -183,7 +183,7 @@ export function ProgrammeSection({
               {/* Secondary/Destructive: Deactivate - unified btn system */}
               <button
                 onClick={() => setDeactivateConfirmOpen(true)}
-                className="btn btn--sm btn--outline-danger flex-1 h-10"
+                className="btn btn--sm btn--danger flex-1 h-10"
               >
                 Deactivate
               </button>

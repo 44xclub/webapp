@@ -629,14 +629,14 @@ export function BlockModal({
                   <Clock className="h-4 w-4 text-[#60a5fa]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium mb-1">{blockType === 'checkin' ? 'Time' : 'Start Time'}</p>
+                  <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium mb-1">{(blockType === 'checkin' || blockType === 'nutrition') ? 'Time' : 'Start Time'}</p>
                   <Input
                     type="time"
                     {...form.register('start_time')}
                     className="w-full"
                   />
                 </div>
-                {blockType !== 'checkin' && (
+                {blockType !== 'checkin' && blockType !== 'nutrition' && (
                   <div className="text-center">
                     <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium mb-1">End</p>
                     <p className="text-[14px] text-[#eef2ff] font-semibold">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
@@ -646,8 +646,8 @@ export function BlockModal({
             </div>
           </div>
 
-          {/* Duration Quick Select */}
-          {blockType !== 'checkin' && (
+          {/* Duration Quick Select - not for checkin or nutrition */}
+          {blockType !== 'checkin' && blockType !== 'nutrition' && (
             <div>
               <label className="block text-[11px] font-semibold text-[rgba(238,242,255,0.45)] uppercase tracking-wider mb-3">
                 Duration
@@ -717,7 +717,7 @@ export function BlockModal({
                 </div>
                 <div className="flex-1">
                   <p className="text-[12px] text-[rgba(238,242,255,0.5)] font-medium">
-                    {blockType === 'checkin'
+                    {(blockType === 'checkin' || blockType === 'nutrition')
                       ? formatDisplayTime(startTime)
                       : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${actualDuration} min`
                     }

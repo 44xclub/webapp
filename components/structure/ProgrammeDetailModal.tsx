@@ -272,7 +272,7 @@ export function ProgrammeDetailModal({
                   </Button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeactivateConfirmOpen(true) }}
-                    className="btn btn--sm btn--outline-danger flex-1"
+                    className="btn btn--sm btn--danger flex-1"
                   >
                     Deactivate
                   </button>

@@ -89,7 +89,20 @@ export function FrameworkChecklistModal({
   const isComplete = completionCount.completed === completionCount.total && completionCount.total > 0
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={framework.title}
+      footer={onDeactivate && (
+        <button
+          onClick={handleDeactivate}
+          disabled={deactivating}
+          className="btn btn--danger w-full"
+        >
+          {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
+        </button>
+      )}
+    >
       <div className="space-y-4 px-2">
         <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] mx-1">
           <div>
@@ -162,17 +175,6 @@ export function FrameworkChecklistModal({
           })}
         </div>
 
-        {onDeactivate && (
-          <div className="pt-4 pb-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">
-            <button
-              onClick={handleDeactivate}
-              disabled={deactivating}
-              className="btn btn--danger w-full"
-            >
-              {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
-            </button>
-          </div>
-        )}
       </div>
     </Modal>
   )

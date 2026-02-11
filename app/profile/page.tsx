@@ -326,7 +326,7 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-label">Reflection & Planning</h3>
                 {currentCycle && (
-                  <p className="text-micro normal-case mt-0.5">
+                  <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
                     Current: {currentCycle.label.replace('Reflection — ', '')}
                     {' · '}
                     <span className={
@@ -356,7 +356,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h3 className="text-label">Check-ins</h3>
-                <p className="text-micro normal-case mt-0.5">
+                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
                   Track your weight & progress
                 </p>
               </div>
