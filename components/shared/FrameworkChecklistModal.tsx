@@ -89,7 +89,20 @@ export function FrameworkChecklistModal({
   const isComplete = completionCount.completed === completionCount.total && completionCount.total > 0
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={framework.title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={framework.title}
+      footer={onDeactivate && (
+        <button
+          onClick={handleDeactivate}
+          disabled={deactivating}
+          className="btn btn--danger w-full"
+        >
+          {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
+        </button>
+      )}
+    >
       <div className="space-y-4 px-2">
         <div className="flex items-center justify-between p-4 rounded-[12px] bg-[#0d1014] mx-1">
           <div>
@@ -99,21 +112,21 @@ export function FrameworkChecklistModal({
               <span className="text-[16px] text-[rgba(238,242,255,0.45)]">/ {completionCount.total}</span>
             </div>
           </div>
-          <div className={`px-4 py-2 rounded-full text-[12px] font-semibold ${
+          <span className={`pill pill--lg ${
             isComplete
-              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+              ? 'pill--success'
               : completionCount.completed > 0
-              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-              : 'bg-[#1a1d21] text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.08)]'
+              ? 'pill--primary'
+              : 'pill--neutral'
           }`}>
             {isComplete ? 'Complete' : completionCount.completed > 0 ? 'In Progress' : 'Not Started'}
-          </div>
+          </span>
         </div>
 
         <div className="h-2 bg-[#1a1d21] rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-500 ease-out ${
-              isComplete ? 'bg-emerald-500' : completionCount.completed > 0 ? 'bg-amber-500' : ''
+              isComplete ? 'bg-[var(--accent-success)]' : completionCount.completed > 0 ? 'bg-[var(--accent-primary)]' : ''
             }`}
             style={{ width: `${progressPercent}%` }}
           />
@@ -130,14 +143,14 @@ export function FrameworkChecklistModal({
                 disabled={isToggling}
                 className={`w-full flex items-center gap-4 p-4 rounded-[12px] border transition-all duration-200 text-left ${
                   isCompleted
-                    ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/15'
-                    : 'bg-[#0d1014] border-[rgba(255,255,255,0.08)] hover:border-[#3b82f6]/50 hover:bg-[#0f1216]'
+                    ? 'bg-[var(--accent-success-bg-to)] border-[var(--accent-success-border)] hover:bg-[var(--accent-success-bg-from)]'
+                    : 'bg-[#0d1014] border-[rgba(255,255,255,0.08)] hover:border-[var(--accent-primary-border)] hover:bg-[#0f1216]'
                 }`}
               >
                 <div
                   className={`flex-shrink-0 w-6 h-6 rounded-[6px] flex items-center justify-center transition-all duration-200 ${
                     isCompleted
-                      ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                      ? 'bg-[var(--accent-success)] shadow-[var(--accent-success-glow)]'
                       : 'border-2 border-[rgba(255,255,255,0.25)] bg-transparent'
                   }`}
                 >
@@ -149,7 +162,7 @@ export function FrameworkChecklistModal({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-[15px] font-medium leading-tight ${
-                    isCompleted ? 'text-emerald-400' : 'text-[#eef2ff]'
+                    isCompleted ? 'text-[var(--accent-success-light)]' : 'text-[#eef2ff]'
                   }`}>
                     {item.label}
                   </p>
@@ -162,17 +175,6 @@ export function FrameworkChecklistModal({
           })}
         </div>
 
-        {onDeactivate && (
-          <div className="pt-4 pb-2 mt-2 border-t border-[rgba(255,255,255,0.06)]">
-            <button
-              onClick={handleDeactivate}
-              disabled={deactivating}
-              className="w-full py-3 px-4 rounded-[12px] bg-rose-500/20 text-rose-400 font-semibold text-[14px] hover:bg-rose-500/30 transition-colors disabled:opacity-50"
-            >
-              {deactivating ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Deactivate Framework'}
-            </button>
-          </div>
-        )}
       </div>
     </Modal>
   )

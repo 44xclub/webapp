@@ -12,7 +12,7 @@ export function HorizontalCardRow({ children, className }: HorizontalCardRowProp
   return (
     <div
       className={cn(
-        'flex gap-2.5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide',
+        'flex gap-2.5 overflow-x-auto pt-1 pb-2 -mx-4 px-4 scrollbar-hide',
         className
       )}
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}

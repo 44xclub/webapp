@@ -19,6 +19,15 @@ interface CreatePostModalProps {
 // Block types that can be shared to feed
 const SHAREABLE_TYPES = ['workout', 'nutrition', 'habit', 'checkin', 'challenge']
 
+// Helper to get storage URL from path - constructs URL directly
+function getStorageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) return null
+  return `${supabaseUrl}/storage/v1/object/public/block-media/${path}`
+}
+
 export function CreatePostModal({
   isOpen,
   onClose,
@@ -315,18 +324,22 @@ export function CreatePostModal({
 
             <div className="flex flex-wrap gap-2">
               {/* Existing media thumbnails */}
-              {existingMedia.map((media, idx) => (
-                <div
-                  key={media.id}
-                  className="relative w-20 h-20 rounded-lg overflow-hidden bg-[rgba(255,255,255,0.05)]"
-                >
-                  <img
-                    src={media.storage_path}
-                    alt={`Media ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
+              {existingMedia.map((media, idx) => {
+                const imageUrl = getStorageUrl(media.storage_path)
+                if (!imageUrl) return null
+                return (
+                  <div
+                    key={media.id}
+                    className="relative w-20 h-20 rounded-lg overflow-hidden bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Media ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )
+              })}
 
               {/* New media previews */}
               {mediaPreviewUrls.map((url, idx) => (

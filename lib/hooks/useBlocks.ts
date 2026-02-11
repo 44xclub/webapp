@@ -66,6 +66,11 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       const now = new Date().toISOString()
 
+      // Extract programme references from workout payload for top-level columns
+      const payload = data.payload || {}
+      const programmeTemplateId = (payload as any).programme_template_id || null
+      const programmeSessionId = (payload as any).programme_session_id || null
+
       const insertData: Record<string, unknown> = {
         user_id: userId,
         date: data.date,
@@ -78,6 +83,9 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         repeat_rule: data.repeat_rule || null,
         shared_to_feed: sharedToFeed,
         is_planned: isPlanned,
+        // Set programme references as top-level columns for workout blocks
+        programme_template_id: programmeTemplateId,
+        programme_session_id: programmeSessionId,
       }
 
       // Auto-set completed_at and performed_at for Log mode (logging something already done)
@@ -262,12 +270,12 @@ export function useBlockMedia(userId: string | undefined) {
   const supabase = useMemo(() => createClient(), [])
 
   const uploadMedia = useCallback(
-    async (blockId: string, file: File, position: number = 0) => {
+    async (blockId: string, file: File, meta?: Record<string, unknown>) => {
       if (!userId) throw new Error('Not authenticated')
 
       // Storage path: block-media/<user_id>/<block_id>/<filename>
       const ext = file.name.split('.').pop() || 'webp'
-      const filename = `${Date.now()}-${position}.${ext}`
+      const filename = `${Date.now()}.${ext}`
       const storagePath = `${userId}/${blockId}/${filename}`
 
       // Upload to storage
@@ -277,7 +285,7 @@ export function useBlockMedia(userId: string | undefined) {
 
       if (uploadError) throw uploadError
 
-      // Create media record
+      // Create media record with optional metadata
       const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
       const { data, error: insertError } = await supabase
         .from('block_media')
@@ -286,7 +294,8 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
-          sort_order: position,
+          sort_order: 0,
+          meta: meta || null,
         })
         .select()
         .single()

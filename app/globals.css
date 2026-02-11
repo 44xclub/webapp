@@ -33,7 +33,8 @@
   /* ---- RADIUS ---- */
   --radius-section: 14px;         /* Outer section cards */
   --radius-card: 12px;            /* Inner interactive cards */
-  --radius-button: 8px;           /* Buttons, inputs */
+  --radius-button: 10px;          /* Buttons */
+  --radius-pill: 20px;            /* Pills, chips, badges */
   --radius-chip: 6px;             /* Small elements */
 
   /* ---- SPACING ---- */
@@ -58,15 +59,62 @@
   --text-tertiary: rgba(238, 242, 255, 0.48);
   --text-muted: rgba(238, 242, 255, 0.30);
 
-  /* ---- ACCENT COLORS ---- */
-  --accent-blue: #3b82f6;
-  --accent-blue-muted: rgba(59, 130, 246, 0.18);
-  --accent-green: #22c55e;
-  --accent-green-muted: rgba(34, 197, 94, 0.18);
+  /* ============================================
+     UNIFIED ACCENT SYSTEM
+     ============================================
+     Primary (Blue)  - Default CTAs, standard actions
+     Success (Green) - Active states, improvements, completions
+     Danger (Red)    - Destructive actions, removals, deactivations
+     ============================================ */
+
+  /* ---- PRIMARY (Blue) - Default CTAs ---- */
+  --accent-primary: #3b82f6;
+  --accent-primary-light: #60a5fa;
+  --accent-primary-dark: #2563eb;
+  --accent-primary-bg-from: rgba(59, 130, 246, 0.18);
+  --accent-primary-bg-to: rgba(59, 130, 246, 0.08);
+  --accent-primary-border: rgba(59, 130, 246, 0.26);
+  --accent-primary-border-hover: rgba(96, 165, 250, 0.34);
+  --accent-primary-glow: 0 10px 28px rgba(59, 130, 246, 0.12);
+  --accent-primary-glow-lg: 0 12px 34px rgba(59, 130, 246, 0.18);
+
+  /* ---- SUCCESS (Green) - Active, improvements ---- */
+  --accent-success: #22c55e;
+  --accent-success-light: #4ade80;
+  --accent-success-dark: #16a34a;
+  --accent-success-bg-from: rgba(34, 197, 94, 0.18);
+  --accent-success-bg-to: rgba(34, 197, 94, 0.08);
+  --accent-success-border: rgba(34, 197, 94, 0.26);
+  --accent-success-border-hover: rgba(74, 222, 128, 0.34);
+  --accent-success-glow: 0 10px 28px rgba(34, 197, 94, 0.12);
+  --accent-success-glow-lg: 0 12px 34px rgba(34, 197, 94, 0.18);
+
+  /* ---- DANGER (Red) - Destructive actions ---- */
+  --accent-danger: #ef4444;
+  --accent-danger-light: #f87171;
+  --accent-danger-dark: #dc2626;
+  --accent-danger-bg-from: rgba(239, 68, 68, 0.18);
+  --accent-danger-bg-to: rgba(239, 68, 68, 0.08);
+  --accent-danger-border: rgba(239, 68, 68, 0.26);
+  --accent-danger-border-hover: rgba(248, 113, 113, 0.34);
+  --accent-danger-glow: 0 10px 28px rgba(239, 68, 68, 0.12);
+  --accent-danger-glow-lg: 0 12px 34px rgba(239, 68, 68, 0.18);
+
+  /* ---- NEUTRAL (Ghost/Secondary) ---- */
+  --accent-neutral-bg: rgba(255, 255, 255, 0.05);
+  --accent-neutral-bg-hover: rgba(255, 255, 255, 0.08);
+  --accent-neutral-border: rgba(255, 255, 255, 0.12);
+  --accent-neutral-border-hover: rgba(255, 255, 255, 0.16);
+
+  /* ---- Legacy accent aliases (for compatibility) ---- */
+  --accent-blue: var(--accent-primary);
+  --accent-blue-muted: var(--accent-primary-bg-from);
+  --accent-green: var(--accent-success);
+  --accent-green-muted: var(--accent-success-bg-from);
   --accent-amber: #f59e0b;
   --accent-amber-muted: rgba(245, 158, 11, 0.18);
-  --accent-red: #ef4444;
-  --accent-red-muted: rgba(239, 68, 68, 0.18);
+  --accent-red: var(--accent-danger);
+  --accent-red-muted: var(--accent-danger-bg-from);
 }
 
 /* ============================================
@@ -143,6 +191,247 @@ button, a, [role="button"] {
    ============================================ */
 
 @layer components {
+  /* ============================================
+     BUTTON SYSTEM
+     ============================================
+     Base button with accent variants matching
+     the "Log Today" gradient treatment.
+     ============================================ */
+
+  /* ---- Base Button ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 42px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    border-radius: var(--radius-button);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* ---- Size Variants ---- */
+  .btn--sm {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+  .btn--lg {
+    height: 48px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  /* ---- Primary (Blue) - Default CTA ---- */
+  .btn--primary {
+    background: linear-gradient(to bottom, var(--accent-primary-bg-from), var(--accent-primary-bg-to));
+    color: rgba(238, 242, 255, 0.92);
+    border-color: var(--accent-primary-border);
+    box-shadow: var(--accent-primary-glow);
+  }
+  .btn--primary:hover:not(:disabled) {
+    background: linear-gradient(to bottom, rgba(96, 165, 250, 0.16), rgba(59, 130, 246, 0.10));
+    border-color: var(--accent-primary-border-hover);
+    box-shadow: var(--accent-primary-glow-lg);
+  }
+
+  /* ---- Success (Green) - Active, completion ---- */
+  .btn--success {
+    background: linear-gradient(to bottom, var(--accent-success-bg-from), var(--accent-success-bg-to));
+    color: rgba(238, 242, 255, 0.92);
+    border-color: var(--accent-success-border);
+    box-shadow: var(--accent-success-glow);
+  }
+  .btn--success:hover:not(:disabled) {
+    background: linear-gradient(to bottom, rgba(74, 222, 128, 0.16), rgba(34, 197, 94, 0.10));
+    border-color: var(--accent-success-border-hover);
+    box-shadow: var(--accent-success-glow-lg);
+  }
+
+  /* ---- Danger (Red) - Destructive ---- */
+  .btn--danger {
+    background: linear-gradient(to bottom, var(--accent-danger-bg-from), var(--accent-danger-bg-to));
+    color: rgba(238, 242, 255, 0.92);
+    border-color: var(--accent-danger-border);
+    box-shadow: var(--accent-danger-glow);
+  }
+  .btn--danger:hover:not(:disabled) {
+    background: linear-gradient(to bottom, rgba(248, 113, 113, 0.16), rgba(239, 68, 68, 0.10));
+    border-color: var(--accent-danger-border-hover);
+    box-shadow: var(--accent-danger-glow-lg);
+  }
+
+  /* ---- Ghost (Neutral) - Secondary ---- */
+  .btn--ghost {
+    background: var(--accent-neutral-bg);
+    color: rgba(238, 242, 255, 0.92);
+    border-color: var(--accent-neutral-border);
+    box-shadow: none;
+  }
+  .btn--ghost:hover:not(:disabled) {
+    background: var(--accent-neutral-bg-hover);
+    border-color: var(--accent-neutral-border-hover);
+  }
+
+  /* ---- Outline variants (subtle border only) ---- */
+  .btn--outline {
+    background: transparent;
+    color: rgba(238, 242, 255, 0.92);
+    border-color: var(--border-default);
+  }
+  .btn--outline:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border-emphasis);
+  }
+
+  .btn--outline-danger {
+    background: transparent;
+    color: var(--accent-danger-light);
+    border-color: var(--accent-danger-border);
+  }
+  .btn--outline-danger:hover:not(:disabled) {
+    background: var(--accent-danger-bg-to);
+    border-color: var(--accent-danger-border-hover);
+  }
+
+  /* ============================================
+     PILL/CHIP SYSTEM
+     ============================================
+     Consistent status indicators, badges, tags.
+     ============================================ */
+
+  /* ---- Base Pill ---- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  /* ---- Size Variants ---- */
+  .pill--sm {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+  .pill--lg {
+    padding: 6px 14px;
+    font-size: 11px;
+  }
+
+  /* ---- Primary (Blue) - Active informational ---- */
+  .pill--primary {
+    background: var(--accent-primary-bg-to);
+    color: var(--accent-primary-light);
+    border-color: var(--accent-primary-border);
+  }
+
+  /* ---- Success (Green) - Active, completed ---- */
+  .pill--success {
+    background: var(--accent-success-bg-to);
+    color: var(--accent-success-light);
+    border-color: var(--accent-success-border);
+  }
+
+  /* ---- Danger (Red) - Warning, error ---- */
+  .pill--danger {
+    background: var(--accent-danger-bg-to);
+    color: var(--accent-danger-light);
+    border-color: var(--accent-danger-border);
+  }
+
+  /* ---- Neutral - Inactive, secondary ---- */
+  .pill--neutral {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    border-color: var(--border-default);
+  }
+
+  /* ---- Solid variants (more prominent) ---- */
+  .pill--primary-solid {
+    background: var(--accent-primary);
+    color: white;
+    border-color: transparent;
+  }
+  .pill--success-solid {
+    background: var(--accent-success);
+    color: white;
+    border-color: transparent;
+  }
+  .pill--danger-solid {
+    background: var(--accent-danger);
+    color: white;
+    border-color: transparent;
+  }
+
+  /* ---- Pulse animation for active indicators ---- */
+  .pill--pulse::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pill-pulse 2s ease-in-out infinite;
+  }
+  @keyframes pill-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ============================================
+     TAB/TOGGLE BUTTON SYSTEM
+     ============================================ */
+
+  .tab-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+    transition: all 150ms ease;
+    cursor: pointer;
+  }
+  .tab-btn:hover:not(.tab-btn--active) {
+    border-color: var(--border-emphasis);
+    color: var(--text-primary);
+  }
+  .tab-btn--active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: transparent;
+  }
+
+  /* ============================================
+     LEGACY COMPONENTS (kept for compatibility)
+     ============================================ */
+
   /* ---- SECTION CARD (Level 1 container) ---- */
   .section-card {
     background: var(--surface-1);

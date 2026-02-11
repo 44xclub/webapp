@@ -222,15 +222,14 @@ export default function CommunityPage() {
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Page Header */}
-      <header className="px-4 pt-4 pb-2">
-        <h1 className="text-title mb-3">Community</h1>
+      {/* Tab Navigation */}
+      <div className="px-4 pt-2 pb-1">
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}
           onChange={(v) => setActiveTab(v as TabType)}
         />
-      </header>
+      </div>
 
       {/* Main Content */}
       <main className="px-4 py-4 space-y-[var(--space-card)]">
@@ -360,7 +359,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
       <div className="section-card text-center">
         <Users className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
         <h3 className="text-label mb-2">No Team Yet</h3>
-        <p className="text-meta">
+        <p className="text-meta font-normal">
           You&apos;ll be assigned to a team of 8 members to keep each other accountable.
         </p>
       </div>

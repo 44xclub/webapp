@@ -5,6 +5,21 @@ import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, 
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge } from '@/lib/types'
 
+// Helper to get storage URL from path - constructs URL directly to avoid Supabase client issues
+function getStorageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  // If already a full URL, return as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+
+  // Construct URL directly from environment variable
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) {
+    console.error('[getStorageUrl] NEXT_PUBLIC_SUPABASE_URL not set')
+    return null
+  }
+  return `${supabaseUrl}/storage/v1/object/public/block-media/${path}`
+}
+
 // Structured feed post payload contract
 export interface FeedPostPayload {
   type: 'workout' | 'nutrition' | 'checkin' | 'habit' | 'challenge'
@@ -499,44 +514,130 @@ function ChallengeDataPanel({ payload }: { payload: FeedPostPayload }) {
   )
 }
 
-// Media Display Component
+// Normalize media item to handle both field naming conventions
+// DB may have: { path, type } OR { storage_path, media_type }
+function normalizeMediaItem(item: any): { path: string; type: 'image' | 'video' } | null {
+  const path = item?.path || item?.storage_path
+  const type = item?.type || item?.media_type || 'image'
+  if (!path) return null
+  return { path, type }
+}
+
+// Media Display Component - Responsive layouts for 1/2/3 images
 function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaPath: string | null }) {
-  const media = payload?.media || []
-  const allMedia = mediaPath ? [{ type: 'image' as const, path: mediaPath }, ...media] : media
+  const rawMedia = payload?.media || []
+
+  // Normalize all media items and filter out invalid ones
+  const normalizedMedia = rawMedia.map(normalizeMediaItem).filter(Boolean) as { path: string; type: 'image' | 'video' }[]
+
+  // Add mediaPath as first item if present
+  const allMedia = mediaPath
+    ? [{ type: 'image' as const, path: mediaPath }, ...normalizedMedia]
+    : normalizedMedia
 
   if (allMedia.length === 0) return null
 
-  // Single image
+  // Single image - 4:5 aspect ratio (mobile-first portrait)
   if (allMedia.length === 1) {
+    const imageUrl = getStorageUrl(allMedia[0].path)
+    if (!imageUrl) return null
     return (
       <div className="rounded-[10px] overflow-hidden mb-3">
-        <img
-          src={allMedia[0].path}
-          alt="Post media"
-          className="w-full h-auto max-h-[300px] object-cover"
-        />
+        <div className="relative w-full" style={{ paddingBottom: '125%' }}> {/* 4:5 = 80% width, 100% height => 125% padding */}
+          <img
+            src={imageUrl}
+            alt="Post media"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
       </div>
     )
   }
 
-  // Grid for multiple images (2x2 max)
+  // Two images - side by side, equal height
+  if (allMedia.length === 2) {
+    return (
+      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+        {allMedia.map((item, idx) => {
+          const imageUrl = getStorageUrl(item.path)
+          if (!imageUrl) return null
+          return (
+            <div key={idx} className="relative" style={{ paddingBottom: '100%' }}> {/* 1:1 aspect */}
+              <img
+                src={imageUrl}
+                alt={`Post media ${idx + 1}`}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Three images - Primary (2/3 width) + two stacked (1/3 width)
+  if (allMedia.length === 3) {
+    const [primary, secondary, tertiary] = allMedia
+    const primaryUrl = getStorageUrl(primary.path)
+    const secondaryUrl = getStorageUrl(secondary.path)
+    const tertiaryUrl = getStorageUrl(tertiary.path)
+
+    if (!primaryUrl || !secondaryUrl || !tertiaryUrl) return null
+
+    return (
+      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3" style={{ height: '200px' }}>
+        {/* Primary image - spans 2 columns */}
+        <div className="col-span-2 relative h-full">
+          <img
+            src={primaryUrl}
+            alt="Post media 1"
+            className="w-full h-full object-cover rounded-l-[10px]"
+          />
+        </div>
+
+        {/* Secondary images - stacked in 1 column */}
+        <div className="flex flex-col gap-[6px] h-full">
+          <div className="relative flex-1">
+            <img
+              src={secondaryUrl}
+              alt="Post media 2"
+              className="w-full h-full object-cover rounded-tr-[10px]"
+            />
+          </div>
+          <div className="relative flex-1">
+            <img
+              src={tertiaryUrl}
+              alt="Post media 3"
+              className="w-full h-full object-cover rounded-br-[10px]"
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 4+ images - 2x2 grid with +N overlay
   const displayMedia = allMedia.slice(0, 4)
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3">
-      {displayMedia.map((item, idx) => (
-        <div key={idx} className="relative aspect-square">
-          <img
-            src={item.path}
-            alt={`Post media ${idx + 1}`}
-            className="w-full h-full object-cover"
-          />
-          {idx === 3 && allMedia.length > 4 && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-[16px] font-medium">+{allMedia.length - 4}</span>
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+      {displayMedia.map((item, idx) => {
+        const imageUrl = getStorageUrl(item.path)
+        if (!imageUrl) return null
+        return (
+          <div key={idx} className="relative" style={{ paddingBottom: '100%' }}>
+            <img
+              src={imageUrl}
+              alt={`Post media ${idx + 1}`}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {idx === 3 && allMedia.length > 4 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white text-[18px] font-semibold">+{allMedia.length - 4}</span>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

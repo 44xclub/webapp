@@ -80,9 +80,8 @@ export default function StructurePage() {
     <div className="min-h-screen pb-16">
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Page Header */}
+      {/* Tab Navigation */}
       <div className="px-4 pt-2 pb-1">
-        <h1 className="text-title mb-2">Structure</h1>
         <SegmentedControl
           tabs={TABS}
           activeTab={activeTab}
