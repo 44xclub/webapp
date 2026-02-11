@@ -18,6 +18,7 @@ import { useProfile } from '@/lib/hooks'
 import { usePersonalFramework } from '@/lib/hooks/usePersonalFramework'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
+import { useToast } from '@/components/shared/Toast'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { FrameworkCriteriaItem } from '@/lib/types'
 
@@ -69,6 +70,7 @@ export default function PersonalFrameworkPage() {
   }, [router, supabase])
 
   const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { showToast } = useToast()
   const {
     personalFramework,
     activeFramework,
@@ -90,6 +92,22 @@ export default function PersonalFrameworkPage() {
     if (!personalFramework) return
     await updatePersonalFramework(personalFramework.id, data)
     setShowEditor(false)
+  }
+
+  const handleActivate = async () => {
+    if (!personalFramework) return
+    const success = await activateFramework(personalFramework.id)
+    if (success) {
+      showToast('success', 'Framework activated! Track your daily non-negotiables.')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!personalFramework) return
+    const success = await deletePersonalFramework(personalFramework.id)
+    if (success) {
+      showToast('status', 'Framework deleted.')
+    }
   }
 
   const isPersonalFrameworkActive = activeFramework?.framework_template_id === personalFramework?.id
@@ -146,7 +164,7 @@ export default function PersonalFrameworkPage() {
                       </span>
                     ) : (
                       <button
-                        onClick={() => activateFramework(personalFramework.id)}
+                        onClick={handleActivate}
                         className="flex items-center gap-1 px-2.5 py-1 rounded-[8px] bg-[#3b82f6] text-white text-[12px] font-medium"
                       >
                         <Play className="h-3 w-3" />
@@ -188,7 +206,7 @@ export default function PersonalFrameworkPage() {
                     Edit
                   </button>
                   <button
-                    onClick={() => deletePersonalFramework(personalFramework.id)}
+                    onClick={handleDelete}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] text-rose-400 hover:bg-rose-500/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

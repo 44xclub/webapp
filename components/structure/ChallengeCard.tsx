@@ -24,14 +24,14 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost }:
 
   if (!challenge) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-[10px] bg-[rgba(255,255,255,0.04)]">
-            <Target className="h-5 w-5 text-[rgba(238,242,255,0.30)]" />
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)]">
+            <Target className="h-4 w-4 text-[rgba(238,242,255,0.30)]" />
           </div>
           <div>
-            <p className="text-[13px] font-medium text-[rgba(238,242,255,0.50)]">No Active Challenge</p>
-            <p className="text-[11px] text-[rgba(238,242,255,0.35)]">Check back next month</p>
+            <p className="text-[12px] font-medium text-[rgba(238,242,255,0.50)]">No Active Challenge</p>
+            <p className="text-[10px] text-[rgba(238,242,255,0.35)]">Check back next month</p>
           </div>
         </div>
       </div>
@@ -53,55 +53,53 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost }:
       )}
 
       {/* Overlay gradient for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
 
-      {/* Content */}
-      <div className="relative z-10 p-4">
-        {/* Status badge */}
-        <div className="flex justify-end mb-8">
-          {isCompleted ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-              <Check className="h-3 w-3 text-emerald-400" />
-              <span className="text-[11px] font-semibold text-emerald-400">Completed</span>
-            </div>
-          ) : (
-            <div className="px-2.5 py-1 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30">
-              <span className="text-[11px] font-semibold text-[#3b82f6]">Active</span>
-            </div>
-          )}
-        </div>
-
-        {/* Title & Description */}
-        <div className="mb-4">
-          <h3 className="text-[16px] font-bold text-white mb-1.5 leading-tight">
+      {/* Content - Compact layout */}
+      <div className="relative z-10 p-3.5">
+        {/* Header row: Title + Status badge inline */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="text-[15px] font-bold text-white leading-tight flex-1">
             {challenge.title}
           </h3>
-          {challenge.description && (
-            <p className="text-[12px] text-[rgba(255,255,255,0.65)] leading-relaxed line-clamp-2">
-              {challenge.description}
-            </p>
+          {isCompleted ? (
+            <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+              <Check className="h-3 w-3 text-emerald-400" />
+              <span className="text-[10px] font-semibold text-emerald-400">Done</span>
+            </div>
+          ) : (
+            <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30">
+              <span className="text-[10px] font-semibold text-[#3b82f6]">Active</span>
+            </div>
           )}
         </div>
 
-        {/* Action button */}
+        {/* Description - single line if short */}
+        {challenge.description && (
+          <p className="text-[11px] text-[rgba(255,255,255,0.60)] leading-snug line-clamp-1 mb-2.5">
+            {challenge.description}
+          </p>
+        )}
+
+        {/* Action button - compact */}
         {isCompleted ? (
           onViewPost ? (
             <Button
               onClick={onViewPost}
               variant="outline"
               size="sm"
-              className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="w-full h-8 text-[12px] bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
               View Post
             </Button>
           ) : (
-            <div className="flex items-center justify-center gap-2 py-2 text-[13px] font-medium text-emerald-400">
-              <Check className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-medium text-emerald-400">
+              <Check className="h-3.5 w-3.5" />
               Completed Today
             </div>
           )
         ) : (
-          <Button onClick={onLogToday} size="sm" className="w-full">
+          <Button onClick={onLogToday} size="sm" className="w-full h-8 text-[12px]">
             Log Today
           </Button>
         )}
