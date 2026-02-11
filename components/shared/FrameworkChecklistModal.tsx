@@ -103,7 +103,7 @@ export function FrameworkChecklistModal({
             isComplete
               ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               : completionCount.completed > 0
-              ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+              ? 'bg-[rgba(59,130,246,0.15)] text-[#60a5fa] border border-[rgba(59,130,246,0.3)]'
               : 'bg-[#1a1d21] text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.08)]'
           }`}>
             {isComplete ? 'Complete' : completionCount.completed > 0 ? 'In Progress' : 'Not Started'}
@@ -113,7 +113,7 @@ export function FrameworkChecklistModal({
         <div className="h-2 bg-[#1a1d21] rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-500 ease-out ${
-              isComplete ? 'bg-emerald-500' : completionCount.completed > 0 ? 'bg-amber-500' : ''
+              isComplete ? 'bg-emerald-500' : completionCount.completed > 0 ? 'bg-[#3b82f6]' : ''
             }`}
             style={{ width: `${progressPercent}%` }}
           />

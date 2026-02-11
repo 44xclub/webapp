@@ -118,7 +118,7 @@ export function ProgrammeCatalogue({
               title={programme.title}
               imageUrl={getImageUrl(programme.hero_image_path)}
               isActive={activeProgrammeId === programme.id}
-              activeColor="#f97316"
+              activeColor="#22c55e"
               onClick={() => openDetail(programme)}
             />
           ))
