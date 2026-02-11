@@ -275,7 +275,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="p-[var(--space-card)] space-y-4">
+          <div className={editing ? "p-[var(--space-card)] space-y-4" : "px-[var(--space-card)]"}>
             {editing ? (
               <>
                 <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
@@ -287,7 +287,7 @@ export default function ProfilePage() {
                 <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
               </>
             ) : (
-              <div className="space-y-2.5">
+              <div>
                 <ProfileRow icon={UserIcon} label="Display Name" value={profile?.display_name || 'Not set'} />
                 <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
                 <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
@@ -432,20 +432,20 @@ export default function ProfilePage() {
           <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)]">
             <h3 className="text-label">Statistics</h3>
           </div>
-          <div className="divide-y divide-[var(--border-subtle)]">
-            <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="px-[var(--space-card)]">
+            <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2.5">
                 <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
-                <span className="text-meta text-[var(--text-primary)]">Member since</span>
+                <span className="text-[13px] text-[var(--text-secondary)]">Member since</span>
               </div>
-              <span className="text-meta">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
+              <span className="text-[14px] font-medium text-[var(--text-primary)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
             </div>
-            <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between py-2.5">
+              <div className="flex items-center gap-2.5">
                 <Dumbbell className="h-4 w-4 text-[var(--text-muted)]" />
-                <span className="text-meta text-[var(--text-primary)]">Total Points</span>
+                <span className="text-[13px] text-[var(--text-secondary)]">Total Points</span>
               </div>
-              <span className="text-label">{profile?.discipline_score || 0}</span>
+              <span className="text-[15px] font-semibold text-[var(--text-primary)]">{profile?.discipline_score || 0}</span>
             </div>
           </div>
         </div>
@@ -462,12 +462,12 @@ export default function ProfilePage() {
 
 function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <Icon className="h-4 w-4 text-[var(--text-muted)]" />
-      <div>
-        <p className="text-micro">{label}</p>
-        <p className="text-meta text-[var(--text-primary)]">{value}</p>
+    <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+      <div className="flex items-center gap-2.5">
+        <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+        <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
       </div>
+      <span className="text-[14px] font-medium text-[var(--text-primary)]">{value}</span>
     </div>
   )
 }

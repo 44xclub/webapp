@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui'
 import { Target, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { CommunityChallenge, Block } from '@/lib/types'
 
 interface ChallengeCardProps {
@@ -10,6 +11,8 @@ interface ChallengeCardProps {
   todayBlock: Block | null
   onLogToday: () => void
   onViewPost?: () => void
+  /** 'full' for Structure page, 'compact' for Home page */
+  variant?: 'full' | 'compact'
 }
 
 function getImageUrl(path: string | null): string | null {
@@ -19,12 +22,13 @@ function getImageUrl(path: string | null): string | null {
     : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path}`
 }
 
-export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost }: ChallengeCardProps) {
+export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, variant = 'full' }: ChallengeCardProps) {
   const imageUrl = useMemo(() => getImageUrl(challenge?.card_image_path ?? null), [challenge?.card_image_path])
+  const isCompact = variant === 'compact'
 
   if (!challenge) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-3">
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)]">
             <Target className="h-4 w-4 text-[rgba(238,242,255,0.30)]" />
@@ -40,6 +44,48 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost }:
 
   const isCompleted = todayBlock?.completed_at != null
 
+  // Compact variant - horizontal layout for Home page
+  if (isCompact) {
+    return (
+      <button
+        onClick={isCompleted ? onViewPost : onLogToday}
+        className="w-full relative overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
+      >
+        {/* Background */}
+        {imageUrl ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${imageUrl})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+
+        {/* Content */}
+        <div className="relative z-10 p-3 flex items-center gap-3">
+          <div className="p-2 rounded-[10px] bg-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.20)]">
+            <Target className="h-4 w-4 text-[#3b82f6]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold text-white truncate">
+              {challenge.title}
+            </p>
+            <p className="text-[11px] text-[#3b82f6] font-medium">
+              {isCompleted ? 'View your post' : 'Tap to log today\'s challenge'}
+            </p>
+          </div>
+          {isCompleted && (
+            <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+              <Check className="h-3 w-3 text-emerald-400" />
+            </div>
+          )}
+        </div>
+      </button>
+    )
+  }
+
+  // Full variant - vertical layout for Structure page
   return (
     <div className="relative overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.08)]">
       {/* Background image or gradient */}
@@ -55,51 +101,51 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost }:
       {/* Overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
 
-      {/* Content - Compact layout */}
-      <div className="relative z-10 p-3.5">
+      {/* Content */}
+      <div className="relative z-10 p-4">
         {/* Header row: Title + Status badge inline */}
         <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className="text-[15px] font-bold text-white leading-tight flex-1">
+          <h3 className="text-[15px] font-semibold text-white leading-tight flex-1">
             {challenge.title}
           </h3>
           {isCompleted ? (
             <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
               <Check className="h-3 w-3 text-emerald-400" />
-              <span className="text-[10px] font-semibold text-emerald-400">Done</span>
+              <span className="text-[10px] font-medium text-emerald-400">Done</span>
             </div>
           ) : (
             <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30">
-              <span className="text-[10px] font-semibold text-[#3b82f6]">Active</span>
+              <span className="text-[10px] font-medium text-[#3b82f6]">Active</span>
             </div>
           )}
         </div>
 
-        {/* Description - single line if short */}
+        {/* Description */}
         {challenge.description && (
-          <p className="text-[11px] text-[rgba(255,255,255,0.60)] leading-snug line-clamp-1 mb-2.5">
+          <p className="text-[12px] text-[rgba(255,255,255,0.60)] leading-snug line-clamp-2 mb-3">
             {challenge.description}
           </p>
         )}
 
-        {/* Action button - compact */}
+        {/* Action button */}
         {isCompleted ? (
           onViewPost ? (
             <Button
               onClick={onViewPost}
               variant="outline"
               size="sm"
-              className="w-full h-8 text-[12px] bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="w-full h-9 text-[12px] bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
               View Post
             </Button>
           ) : (
-            <div className="flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-medium text-emerald-400">
+            <div className="flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-emerald-400">
               <Check className="h-3.5 w-3.5" />
               Completed Today
             </div>
           )
         ) : (
-          <Button onClick={onLogToday} size="sm" className="w-full h-8 text-[12px]">
+          <Button onClick={onLogToday} size="sm" className="w-full h-9 text-[12px]">
             Log Today
           </Button>
         )}
