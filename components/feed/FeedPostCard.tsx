@@ -1,9 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
 import type { DisciplineBadge } from '@/lib/types'
+
+// Helper to get storage URL from path
+function getStorageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  // If already a full URL, return as-is
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  // Generate Supabase storage URL
+  const supabase = createClient()
+  const { data } = supabase.storage.from('block-media').getPublicUrl(path)
+  return data.publicUrl
+}
 
 // Structured feed post payload contract
 export interface FeedPostPayload {
@@ -508,10 +520,12 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
 
   // Single image
   if (allMedia.length === 1) {
+    const imageUrl = getStorageUrl(allMedia[0].path)
+    if (!imageUrl) return null
     return (
       <div className="rounded-[10px] overflow-hidden mb-3">
         <img
-          src={allMedia[0].path}
+          src={imageUrl}
           alt="Post media"
           className="w-full h-auto max-h-[300px] object-cover"
         />
@@ -523,20 +537,24 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   const displayMedia = allMedia.slice(0, 4)
   return (
     <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3">
-      {displayMedia.map((item, idx) => (
-        <div key={idx} className="relative aspect-square">
-          <img
-            src={item.path}
-            alt={`Post media ${idx + 1}`}
-            className="w-full h-full object-cover"
-          />
-          {idx === 3 && allMedia.length > 4 && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <span className="text-white text-[16px] font-medium">+{allMedia.length - 4}</span>
-            </div>
-          )}
-        </div>
-      ))}
+      {displayMedia.map((item, idx) => {
+        const imageUrl = getStorageUrl(item.path)
+        if (!imageUrl) return null
+        return (
+          <div key={idx} className="relative aspect-square">
+            <img
+              src={imageUrl}
+              alt={`Post media ${idx + 1}`}
+              className="w-full h-full object-cover"
+            />
+            {idx === 3 && allMedia.length > 4 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <span className="text-white text-[16px] font-medium">+{allMedia.length - 4}</span>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
