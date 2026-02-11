@@ -92,8 +92,12 @@ export function Modal({
 
         {/* Sticky Footer - Action Bar with centered content */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-5 pt-4 pb-4 safe-bottom">
-            {footer}
+          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)]">
+            <div className="px-5 py-4">
+              {footer}
+            </div>
+            {/* Safe area spacer - separate from visual padding for true centering */}
+            <div className="safe-bottom" />
           </div>
         )}
       </div>
