@@ -23,7 +23,7 @@ export function ActiveFrameworkCard({
       <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-4">
         <div className="flex items-center justify-between">
           <p className="text-[13px] text-[rgba(238,242,255,0.55)]">No framework activated</p>
-          <a href="#available-frameworks" className="text-[12px] text-[#3b82f6] font-medium hover:underline">
+          <a href="#available-frameworks" className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline">
             Choose one
           </a>
         </div>
@@ -61,11 +61,11 @@ export function ActiveFrameworkCard({
             <div className="flex items-center gap-2 mt-1">
               <div className="flex-1 max-w-[90px] h-1 bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-500 ${isComplete ? 'bg-emerald-400' : 'bg-[#3b82f6]'}`}
+                  className={`h-full transition-all duration-500 ${isComplete ? 'bg-[var(--accent-success)]' : 'bg-[var(--accent-primary)]'}`}
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className={`text-[10px] font-medium ${isComplete ? 'text-emerald-400' : 'text-white/70'}`}>
+              <span className={`text-[10px] font-medium ${isComplete ? 'text-[var(--accent-success-light)]' : 'text-white/70'}`}>
                 {completed}/{total}
               </span>
             </div>
@@ -97,9 +97,7 @@ export function ActiveFrameworkCard({
               </span>
             )}
             {isComplete && (
-              <span className="text-[9px] font-semibold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">
-                Complete
-              </span>
+              <span className="pill pill--sm pill--success">Complete</span>
             )}
           </div>
         </div>
@@ -107,13 +105,13 @@ export function ActiveFrameworkCard({
         <div className="flex items-center gap-2.5">
           <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
             <div
-              className={`h-full transition-all duration-500 ${isComplete ? 'bg-emerald-400' : completed > 0 ? 'bg-[#3b82f6]' : 'bg-white/25'}`}
+              className={`h-full transition-all duration-500 ${isComplete ? 'bg-[var(--accent-success)]' : completed > 0 ? 'bg-[var(--accent-primary)]' : 'bg-white/25'}`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
           <div className="flex items-center gap-1">
-            <CheckSquare className={`h-3.5 w-3.5 ${isComplete ? 'text-emerald-400' : completed > 0 ? 'text-[#3b82f6]' : 'text-white/40'}`} />
-            <span className={`text-[12px] font-medium ${isComplete ? 'text-emerald-400' : 'text-white/80'}`}>
+            <CheckSquare className={`h-3.5 w-3.5 ${isComplete ? 'text-[var(--accent-success-light)]' : completed > 0 ? 'text-[var(--accent-primary)]' : 'text-white/40'}`} />
+            <span className={`text-[12px] font-medium ${isComplete ? 'text-[var(--accent-success-light)]' : 'text-white/80'}`}>
               {completed}/{total}
             </span>
           </div>

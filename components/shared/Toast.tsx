@@ -27,9 +27,9 @@ export function useToast() {
 }
 
 const toastStyles: Record<ToastType, { bg: string; icon: typeof CheckCircle; iconColor: string }> = {
-  success: { bg: 'bg-emerald-500/15 border-emerald-500/30', icon: CheckCircle, iconColor: 'text-emerald-400' },
-  error: { bg: 'bg-rose-500/15 border-rose-500/30', icon: AlertCircle, iconColor: 'text-rose-400' },
-  info: { bg: 'bg-blue-500/15 border-blue-500/30', icon: Info, iconColor: 'text-blue-400' },
+  success: { bg: 'bg-[var(--accent-success-bg-to)] border-[var(--accent-success-border)]', icon: CheckCircle, iconColor: 'text-[var(--accent-success-light)]' },
+  error: { bg: 'bg-[var(--accent-danger-bg-to)] border-[var(--accent-danger-border)]', icon: AlertCircle, iconColor: 'text-[var(--accent-danger-light)]' },
+  info: { bg: 'bg-[var(--accent-primary-bg-to)] border-[var(--accent-primary-border)]', icon: Info, iconColor: 'text-[var(--accent-primary-light)]' },
   status: { bg: 'bg-[rgba(255,255,255,0.08)] border-[rgba(255,255,255,0.12)]', icon: Info, iconColor: 'text-[rgba(238,242,255,0.72)]' },
 }
 

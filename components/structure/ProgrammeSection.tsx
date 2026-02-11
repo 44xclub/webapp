@@ -140,9 +140,8 @@ export function ProgrammeSection({
             {/* Strong dark scrim overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.85)] via-[rgba(0,0,0,0.5)] to-[rgba(0,0,0,0.3)]" />
 
-            {/* Status Chip */}
-            <span className="absolute top-3 left-3 text-[10px] font-semibold text-white bg-[#22c55e] px-2.5 py-1 rounded-[6px] flex items-center gap-1.5 shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            {/* Status Chip - uses unified pill system */}
+            <span className="pill pill--success-solid pill--pulse absolute top-3 left-3 shadow-sm">
               Active
             </span>
           </div>
@@ -171,25 +170,23 @@ export function ProgrammeSection({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex gap-3">
-              {/* Primary CTA: Schedule Week */}
+              {/* Primary CTA: Schedule Week - unified btn system */}
               <Button
                 size="sm"
                 onClick={() => setScheduleModalOpen(true)}
-                className="flex-1 h-10 bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_2px_8px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] border-0 text-[13px] font-semibold"
+                className="flex-1 h-10"
               >
-                <Calendar className="h-4 w-4 mr-1.5" />
+                <Calendar className="h-4 w-4" />
                 Schedule Week
               </Button>
 
-              {/* Secondary/Destructive: Deactivate */}
-              <Button
-                variant="outline"
-                size="sm"
+              {/* Secondary/Destructive: Deactivate - unified btn system */}
+              <button
                 onClick={() => setDeactivateConfirmOpen(true)}
-                className="flex-1 h-10 text-[13px] font-medium text-[rgba(248,113,113,0.9)] border-[rgba(248,113,113,0.2)] bg-transparent hover:bg-[rgba(248,113,113,0.08)] hover:border-[rgba(248,113,113,0.3)] hover:text-[#f87171]"
+                className="btn btn--sm btn--outline-danger flex-1 h-10"
               >
                 Deactivate
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -212,8 +209,8 @@ export function ProgrammeSection({
         <div className="p-4 space-y-4">
           {scheduledCount !== null ? (
             <div className="text-center py-8">
-              <div className="p-3 rounded-[10px] bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] inline-block mb-3">
-                <Check className="h-6 w-6 text-[#22c55e]" />
+              <div className="p-3 rounded-[10px] bg-[var(--accent-success-bg-to)] border border-[var(--accent-success-border)] inline-block mb-3">
+                <Check className="h-6 w-6 text-[var(--accent-success)]" />
               </div>
               <p className="text-[14px] font-medium text-[#eef2ff]">
                 {scheduledCount} workout{scheduledCount !== 1 ? 's' : ''} scheduled
@@ -227,11 +224,7 @@ export function ProgrammeSection({
                   <button
                     key={day.value}
                     onClick={() => handleToggleDay(day.value)}
-                    className={`p-2 text-[11px] font-semibold rounded-[8px] transition-colors duration-150 ${
-                      selectedDays.includes(day.value)
-                        ? 'bg-[#3b82f6] text-white'
-                        : 'bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)] border border-[rgba(255,255,255,0.06)]'
-                    }`}
+                    className={`tab-btn p-2 text-[11px] ${selectedDays.includes(day.value) ? 'tab-btn--active' : ''}`}
                   >
                     {day.label}
                   </button>

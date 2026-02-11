@@ -111,7 +111,7 @@ export function ProgrammeDetailModal({
         <div className="space-y-1">
           {exercises.map((exercise: string, idx: number) => (
             <div key={idx} className="flex items-start gap-2.5 py-2 px-2.5 rounded-[10px] bg-[rgba(255,255,255,0.03)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-[7px] flex-shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] mt-[7px] flex-shrink-0" />
               <p className="text-[13px] text-[rgba(238,242,255,0.85)] flex-1">{exercise.trim()}</p>
             </div>
           ))}
@@ -126,7 +126,7 @@ export function ProgrammeDetailModal({
       <div className="space-y-1">
         {exercises.map((ex: any, idx: number) => (
           <div key={idx} className="flex items-start gap-2.5 py-2 px-2.5 rounded-[10px] bg-[rgba(255,255,255,0.03)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-[7px] flex-shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] mt-[7px] flex-shrink-0" />
             <div className="flex-1">
               <p className="text-[13px] font-medium text-[rgba(238,242,255,0.90)]">{ex.exercise || ex.name || `Exercise ${idx + 1}`}</p>
               <div className="flex flex-wrap gap-2 mt-0.5">
@@ -175,10 +175,10 @@ export function ProgrammeDetailModal({
               <span className="text-[16px]">&#x2715;</span>
             </button>
 
-            {/* Active badge */}
+            {/* Active badge - unified pill system */}
             {isActive && (
-              <span className="absolute bottom-4 left-4 text-[10px] font-bold text-white bg-[#22c55e] px-2.5 py-1 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Active
+              <span className="pill pill--success-solid pill--pulse absolute bottom-4 left-4">
+                Active
               </span>
             )}
           </div>
@@ -230,17 +230,13 @@ export function ProgrammeDetailModal({
               <div className="border-t border-[rgba(255,255,255,0.06)] pt-3">
                 <p className="text-[11px] uppercase tracking-wider text-[rgba(238,242,255,0.35)] font-semibold mb-2">Sessions</p>
 
-                {/* Day Tabs */}
+                {/* Day Tabs - unified tab system */}
                 <div className="flex gap-1 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
                   {uniqueDays.map((dayIndex) => (
                     <button
                       key={dayIndex}
                       onClick={() => setSelectedDayIndex(dayIndex)}
-                      className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium whitespace-nowrap transition-all duration-150 border ${
-                        selectedDayIndex === dayIndex
-                          ? 'bg-[#3b82f6] text-white border-transparent'
-                          : 'bg-[rgba(255,255,255,0.03)] text-[rgba(238,242,255,0.55)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)]'
-                      }`}
+                      className={`tab-btn px-3 py-1.5 text-[12px] whitespace-nowrap ${selectedDayIndex === dayIndex ? 'tab-btn--active' : ''}`}
                     >
                       Day {dayIndex}
                     </button>
@@ -263,26 +259,23 @@ export function ProgrammeDetailModal({
               </p>
             )}
 
-            {/* Action buttons */}
+            {/* Action buttons - unified btn system */}
             <div className="flex gap-2 pt-4 mt-2">
               {isActive ? (
                 <>
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); setScheduleModalOpen(true) }}
                     className="flex-1"
                   >
                     <Calendar className="h-3.5 w-3.5" /> Schedule Week
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     onClick={(e) => { e.stopPropagation(); setDeactivateConfirmOpen(true) }}
-                    className="flex-1 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+                    className="btn btn--sm btn--outline-danger flex-1"
                   >
                     Deactivate
-                  </Button>
+                  </button>
                 </>
               ) : onActivate ? (
                 <Button
@@ -303,8 +296,8 @@ export function ProgrammeDetailModal({
         <div className="p-4 space-y-4">
           {scheduledCount !== null ? (
             <div className="text-center py-8">
-              <div className="p-3 rounded-[10px] bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] inline-block mb-3">
-                <Check className="h-6 w-6 text-[#22c55e]" />
+              <div className="p-3 rounded-[10px] bg-[var(--accent-success-bg-to)] border border-[var(--accent-success-border)] inline-block mb-3">
+                <Check className="h-6 w-6 text-[var(--accent-success)]" />
               </div>
               <p className="text-[14px] font-medium text-[#eef2ff]">
                 {scheduledCount} workout{scheduledCount !== 1 ? 's' : ''} scheduled
@@ -318,11 +311,7 @@ export function ProgrammeDetailModal({
                   <button
                     key={day.value}
                     onClick={() => handleToggleDay(day.value)}
-                    className={`p-2 text-[11px] font-semibold rounded-[8px] transition-colors duration-150 ${
-                      selectedDays.includes(day.value)
-                        ? 'bg-[#3b82f6] text-white'
-                        : 'bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)] border border-[rgba(255,255,255,0.06)]'
-                    }`}
+                    className={`tab-btn p-2 text-[11px] ${selectedDays.includes(day.value) ? 'tab-btn--active' : ''}`}
                   >
                     {day.label}
                   </button>

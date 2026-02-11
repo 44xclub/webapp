@@ -5,23 +5,32 @@ import { cn } from '@/lib/utils'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Loader2 } from 'lucide-react'
 
+/**
+ * Button variants using the unified accent system from globals.css
+ * - default/primary: Blue gradient (CTAs: Continue, Save, Log Today, Create)
+ * - success: Green gradient (positive actions, completions)
+ * - destructive: Red gradient (Deactivate, Delete, Remove)
+ * - secondary/ghost/outline: Neutral variants
+ */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2.5 font-extrabold text-[13px] transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] focus:outline-none focus-visible:shadow-focus disabled:opacity-50 disabled:pointer-events-none active:translate-y-[1px]',
+  'btn',
   {
     variants: {
       variant: {
-        default: 'bg-gradient-to-b from-[rgba(59,130,246,0.18)] to-[rgba(59,130,246,0.08)] text-[rgba(238,242,255,0.92)] border border-[rgba(59,130,246,0.26)] shadow-glow hover:from-[rgba(96,165,250,0.16)] hover:to-[rgba(59,130,246,0.10)] hover:border-[rgba(96,165,250,0.34)] hover:shadow-glow-lg',
-        secondary: 'bg-[rgba(255,255,255,0.05)] text-[rgba(238,242,255,0.92)] border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] shadow-sm',
-        outline: 'bg-transparent text-[rgba(238,242,255,0.92)] border border-[rgba(255,255,255,0.10)] hover:bg-[rgba(255,255,255,0.04)]',
-        destructive: 'bg-danger text-white hover:bg-danger/90 shadow-[0_10px_26px_rgba(239,68,68,0.2)]',
-        ghost: 'bg-transparent text-[rgba(238,242,255,0.70)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.04)]',
-        glow: 'bg-gradient-to-b from-[rgba(59,130,246,0.18)] to-[rgba(59,130,246,0.08)] text-white border border-[rgba(59,130,246,0.26)] shadow-glow energy-pulse hover:shadow-glow-lg',
+        default: 'btn--primary',
+        primary: 'btn--primary',
+        success: 'btn--success',
+        destructive: 'btn--danger',
+        secondary: 'btn--ghost',
+        outline: 'btn--outline',
+        ghost: 'bg-transparent text-[rgba(238,242,255,0.70)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.04)] border-transparent',
+        glow: 'btn--primary energy-pulse',
       },
       size: {
-        default: 'h-[42px] px-4 rounded-[12px]',
-        sm: 'h-[34px] px-3 text-[12px] rounded-[10px]',
-        lg: 'h-[48px] px-6 text-[14px] rounded-[14px]',
-        icon: 'h-[42px] w-[42px] rounded-[12px]',
+        default: '',
+        sm: 'btn--sm',
+        lg: 'btn--lg',
+        icon: 'h-[42px] w-[42px] px-0 rounded-[12px]',
       },
     },
     defaultVariants: {

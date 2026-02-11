@@ -118,7 +118,7 @@ export function ProgrammeCatalogue({
               title={programme.title}
               imageUrl={getImageUrl(programme.hero_image_path)}
               isActive={activeProgrammeId === programme.id}
-              activeColor="#22c55e"
+              activeColor="var(--accent-success)"
               onClick={() => openDetail(programme)}
             />
           ))
@@ -147,7 +147,7 @@ export function ProgrammeCatalogue({
                   key={programme.id}
                   onClick={() => { openDetail(programme); setSeeAllOpen(false); setSearchQuery('') }}
                   className={`relative overflow-hidden rounded-[14px] aspect-square text-left transition-all duration-200 group ${
-                    isActive ? 'ring-2 ring-[#22c55e] ring-offset-1 ring-offset-[#07090d]' : ''
+                    isActive ? 'ring-2 ring-[var(--accent-success)] ring-offset-1 ring-offset-[var(--surface-0)]' : ''
                   }`}
                 >
                   {imageUrl ? (
@@ -161,7 +161,7 @@ export function ProgrammeCatalogue({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
                     {isActive && (
-                      <span className="absolute top-2 left-2 text-[10px] font-semibold text-white bg-[#22c55e] px-2 py-0.5 rounded-[5px] shadow-sm">Active</span>
+                      <span className="pill pill--sm pill--success-solid absolute top-2 left-2 shadow-sm">Active</span>
                     )}
                     <p className="text-[12px] font-semibold text-white leading-tight line-clamp-2">{programme.title}</p>
                   </div>

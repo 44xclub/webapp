@@ -64,21 +64,21 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
 
         {/* Content */}
         <div className="relative z-10 p-3 flex items-center gap-3">
-          <div className="p-2 rounded-[10px] bg-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.20)]">
-            <Target className="h-4 w-4 text-[#3b82f6]" />
+          <div className="p-2 rounded-[10px] bg-[var(--accent-primary-bg-to)] border border-[var(--accent-primary-border)]">
+            <Target className="h-4 w-4 text-[var(--accent-primary)]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-semibold text-white truncate">
               {challenge.title}
             </p>
-            <p className="text-[11px] text-[#3b82f6] font-medium">
+            <p className="text-[11px] text-[var(--accent-primary)] font-medium">
               {isCompleted ? 'View your post' : 'Tap to log today\'s challenge'}
             </p>
           </div>
           {isCompleted && (
-            <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-              <Check className="h-3 w-3 text-emerald-400" />
-            </div>
+            <span className="pill pill--success flex-shrink-0">
+              <Check className="h-3 w-3" />
+            </span>
           )}
         </div>
       </button>
@@ -109,14 +109,12 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
             {challenge.title}
           </h3>
           {isCompleted ? (
-            <div className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-              <Check className="h-3 w-3 text-emerald-400" />
-              <span className="text-[10px] font-medium text-emerald-400">Done</span>
-            </div>
+            <span className="pill pill--success flex-shrink-0">
+              <Check className="h-3 w-3" />
+              Done
+            </span>
           ) : (
-            <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30">
-              <span className="text-[10px] font-medium text-[#3b82f6]">Active</span>
-            </div>
+            <span className="pill pill--primary flex-shrink-0">Active</span>
           )}
         </div>
 
@@ -139,7 +137,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
               View Post
             </Button>
           ) : (
-            <div className="flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-emerald-400">
+            <div className="flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-[var(--accent-success-light)]">
               <Check className="h-3.5 w-3.5" />
               Completed Today
             </div>
