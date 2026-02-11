@@ -519,7 +519,7 @@ export function BlockModal({
     >
       {/* Step 1: Quick Entry */}
       {step === 1 && !editingBlock && (
-        <div className="p-4 space-y-5">
+        <div className="p-4 pb-0 space-y-5">
           {/* Schedule vs Log Toggle - hidden for challenge blocks (always Log) */}
           {blockType !== 'challenge' ? (
             <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
@@ -686,7 +686,7 @@ export function BlockModal({
 
       {/* Step 2: Details */}
       {(step === 2 || editingBlock) && (
-        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-4 pb-0 space-y-4">
           {/* Summary Header */}
           {!editingBlock && (
             <div className="p-4 rounded-[12px] bg-[var(--surface-2)] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
