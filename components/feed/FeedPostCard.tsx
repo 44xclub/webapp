@@ -511,10 +511,26 @@ function ChallengeDataPanel({ payload }: { payload: FeedPostPayload }) {
   )
 }
 
+// Normalize media item to handle both field naming conventions
+// DB may have: { path, type } OR { storage_path, media_type }
+function normalizeMediaItem(item: any): { path: string; type: 'image' | 'video' } | null {
+  const path = item?.path || item?.storage_path
+  const type = item?.type || item?.media_type || 'image'
+  if (!path) return null
+  return { path, type }
+}
+
 // Media Display Component
 function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaPath: string | null }) {
-  const media = payload?.media || []
-  const allMedia = mediaPath ? [{ type: 'image' as const, path: mediaPath }, ...media] : media
+  const rawMedia = payload?.media || []
+
+  // Normalize all media items and filter out invalid ones
+  const normalizedMedia = rawMedia.map(normalizeMediaItem).filter(Boolean) as { path: string; type: 'image' | 'video' }[]
+
+  // Add mediaPath as first item if present
+  const allMedia = mediaPath
+    ? [{ type: 'image' as const, path: mediaPath }, ...normalizedMedia]
+    : normalizedMedia
 
   if (allMedia.length === 0) return null
 
