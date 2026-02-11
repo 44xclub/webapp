@@ -11,13 +11,13 @@ interface SquareCardProps {
   className?: string
 }
 
-export function SquareCard({ title, imageUrl, isActive, activeColor = '#3b82f6', onClick, className }: SquareCardProps) {
+export function SquareCard({ title, imageUrl, isActive, activeColor = '#22c55e', onClick, className }: SquareCardProps) {
   return (
     <button
       onClick={onClick}
       className={cn(
         'relative flex-shrink-0 w-[140px] h-[140px] overflow-hidden rounded-[14px] text-left transition-all duration-200 group',
-        isActive && 'ring-[1.5px]',
+        isActive && 'ring-2 ring-offset-1 ring-offset-[#07090d]',
         !isActive && 'hover:brightness-110',
         className
       )}
@@ -35,7 +35,7 @@ export function SquareCard({ title, imageUrl, isActive, activeColor = '#3b82f6',
       <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
         {isActive && (
           <span
-            className="absolute top-2 left-2 text-[9px] font-bold text-white px-[6px] py-[2px] rounded-full"
+            className="absolute top-2 left-2 text-[10px] font-semibold text-white px-2 py-0.5 rounded-[5px] shadow-sm"
             style={{ backgroundColor: activeColor }}
           >
             Active

@@ -119,16 +119,16 @@ export function ProgrammeSection({
       <div>
         <SectionHeader title="Active Programme" subtitle="Your current training plan" />
 
-        {/* Compact Active Programme Card - clickable to open modal */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setDetailModalOpen(true)}
-          onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
-          className="w-full text-left bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden transition-all duration-200 hover:border-[rgba(255,255,255,0.10)] group cursor-pointer"
-        >
-          {/* Image Banner */}
-          <div className="relative h-[110px]">
+        {/* Premium Active Programme Card - 3 region structure */}
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[16px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+          {/* Region 1: Media Header - clickable to open modal */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDetailModalOpen(true)}
+            onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
+            className="relative h-[100px] md:h-[120px] cursor-pointer group"
+          >
             {imageUrl ? (
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]"
@@ -137,31 +137,56 @@ export function ProgrammeSection({
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-            <div className="absolute inset-0 p-3 flex flex-col justify-end">
-              <span className="absolute top-2.5 left-2.5 text-[9px] font-bold text-white bg-[#f97316] px-2 py-[2px] rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white" /> Active
-              </span>
-              <h3 className="text-[16px] font-bold text-white">{programme.title}</h3>
-            </div>
+            {/* Strong dark scrim overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.85)] via-[rgba(0,0,0,0.5)] to-[rgba(0,0,0,0.3)]" />
+
+            {/* Status Chip */}
+            <span className="absolute top-3 left-3 text-[10px] font-semibold text-white bg-[#22c55e] px-2.5 py-1 rounded-[6px] flex items-center gap-1.5 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Active
+            </span>
           </div>
 
-          {/* Description */}
-          <div className="px-3 pt-2.5 pb-3">
+          {/* Region 2: Content Body - clickable to open modal */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setDetailModalOpen(true)}
+            onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
+            className="px-4 py-3.5 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+          >
+            <h3 className="text-[17px] font-semibold text-[#eef2ff] leading-tight line-clamp-1 mb-1">
+              {programme.title}
+            </h3>
             {programme.overview && (
-              <p className="text-[12px] text-[rgba(238,242,255,0.45)] leading-relaxed line-clamp-2 mb-3">{programme.overview}</p>
+              <p className="text-[12px] text-[rgba(238,242,255,0.5)] leading-relaxed line-clamp-2">
+                {programme.overview}
+              </p>
             )}
+          </div>
 
-            {/* Action Buttons - stop propagation so card click doesn't fire */}
-            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-              <Button variant="outline" size="sm" onClick={() => setScheduleModalOpen(true)} className="flex-1">
-                <Calendar className="h-3.5 w-3.5" /> Schedule Week
+          {/* Region 3: Action Bar - dedicated area with proper spacing */}
+          <div
+            className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.15)] px-4 py-3.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex gap-3">
+              {/* Primary CTA: Schedule Week */}
+              <Button
+                size="sm"
+                onClick={() => setScheduleModalOpen(true)}
+                className="flex-1 h-10 bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_2px_8px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] border-0 text-[13px] font-semibold"
+              >
+                <Calendar className="h-4 w-4 mr-1.5" />
+                Schedule Week
               </Button>
+
+              {/* Secondary/Destructive: Deactivate */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setDeactivateConfirmOpen(true)}
-                className="flex-1 text-rose-400 border-rose-500/30 hover:bg-rose-500/10"
+                className="flex-1 h-10 text-[13px] font-medium text-[rgba(248,113,113,0.9)] border-[rgba(248,113,113,0.2)] bg-transparent hover:bg-[rgba(248,113,113,0.08)] hover:border-[rgba(248,113,113,0.3)] hover:text-[#f87171]"
               >
                 Deactivate
               </Button>
