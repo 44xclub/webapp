@@ -32,29 +32,83 @@ const descriptionCategories: WorkoutCategory[] = ['running', 'sport', 'other']
 
 // Programme session exercise format (from programme_sessions.payload)
 interface ProgrammeExercise {
-  exercise_name: string
-  sets: number
-  reps: string
+  exercise_name?: string
+  name?: string // Alternative key
+  exercise?: string // Alternative key (matrix format)
+  sets?: number | Array<{ set: number; reps: string; weight: string }>
+  reps?: string
   notes?: string
   sort_order?: number
 }
 
 // Transform programme session exercises to exercise matrix format
+// Handles multiple possible payload structures
 function transformProgrammeExercisesToMatrix(exercises: ProgrammeExercise[]) {
-  if (!exercises || !Array.isArray(exercises)) return []
+  if (!exercises || !Array.isArray(exercises) || exercises.length === 0) return []
 
   // Sort by sort_order if available
   const sorted = [...exercises].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
-  return sorted.map((ex) => ({
-    exercise: ex.exercise_name || '',
-    sets: Array.from({ length: ex.sets || 1 }, (_, i) => ({
-      set: i + 1,
-      reps: ex.reps || '',
-      weight: '',
-    })),
-    notes: ex.notes || '',
-  }))
+  return sorted.map((ex) => {
+    // Get exercise name from various possible keys
+    const exerciseName = ex.exercise_name || ex.name || ex.exercise || ''
+
+    // Handle sets - could be a number or already an array
+    let setsArray: Array<{ set: number; reps: string; weight: string }>
+    if (Array.isArray(ex.sets)) {
+      // Already in matrix format
+      setsArray = ex.sets
+    } else {
+      // Convert number of sets to array
+      const numSets = typeof ex.sets === 'number' ? ex.sets : 1
+      setsArray = Array.from({ length: numSets }, (_, i) => ({
+        set: i + 1,
+        reps: ex.reps || '',
+        weight: '',
+      }))
+    }
+
+    return {
+      exercise: exerciseName,
+      sets: setsArray,
+      notes: ex.notes || '',
+    }
+  })
+}
+
+// Extract exercises from various payload structures
+function extractExercisesFromPayload(payload: any): ProgrammeExercise[] | null {
+  if (!payload) return null
+
+  // Format 1: { exercises: [...] } - Standard format
+  if (payload.exercises && Array.isArray(payload.exercises)) {
+    return payload.exercises
+  }
+
+  // Format 2: { exercise_matrix: [...] } - Matrix format (already transformed)
+  if (payload.exercise_matrix && Array.isArray(payload.exercise_matrix)) {
+    return payload.exercise_matrix
+  }
+
+  // Format 3: Direct array at root
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  // Format 4: Check for any array property that looks like exercises
+  for (const key of Object.keys(payload)) {
+    const value = payload[key]
+    if (Array.isArray(value) && value.length > 0) {
+      const firstItem = value[0]
+      // Check if it looks like an exercise object
+      if (firstItem && typeof firstItem === 'object' &&
+          (firstItem.exercise_name || firstItem.name || firstItem.exercise)) {
+        return value
+      }
+    }
+  }
+
+  return null
 }
 
 export function WorkoutForm({
@@ -122,26 +176,35 @@ export function WorkoutForm({
 
       // Transform and populate exercise matrix from session payload
       const sessionPayload = selectedSession.payload as any
-      if (sessionPayload) {
-        // Check for exercises array (standard format from requirements)
-        if (sessionPayload.exercises && Array.isArray(sessionPayload.exercises)) {
-          const matrix = transformProgrammeExercisesToMatrix(sessionPayload.exercises)
+
+      // Debug: Log the payload structure
+      console.log('[WorkoutForm] Session payload:', sessionPayload)
+
+      // Extract exercises from various possible payload structures
+      const exercises = extractExercisesFromPayload(sessionPayload)
+
+      if (exercises && exercises.length > 0) {
+        // Always transform to ensure consistent matrix format
+        const matrix = transformProgrammeExercisesToMatrix(exercises)
+        if (matrix.length > 0) {
           setValue('payload.exercise_matrix', matrix)
-        }
-        // Also check for exercise_matrix directly (if already in matrix format)
-        else if (sessionPayload.exercise_matrix && Array.isArray(sessionPayload.exercise_matrix)) {
-          setValue('payload.exercise_matrix', sessionPayload.exercise_matrix)
-        }
-        // No exercises found - initialize empty matrix
-        else {
+          console.log('[WorkoutForm] Populated matrix with', matrix.length, 'exercises')
+        } else {
+          // Transformation failed, initialize empty matrix
           setValue('payload.exercise_matrix', [
             { exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }
           ])
         }
-
-        // Copy session title for reference
-        setValue('payload.session_title', selectedSession.title)
+      } else {
+        // No exercises found - initialize empty matrix
+        console.log('[WorkoutForm] No exercises found in payload, initializing empty matrix')
+        setValue('payload.exercise_matrix', [
+          { exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }
+        ])
       }
+
+      // Copy session title for reference
+      setValue('payload.session_title', selectedSession.title)
 
       // Small delay to show loading state
       setTimeout(() => setIsLoadingSession(false), 200)
