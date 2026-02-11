@@ -539,35 +539,36 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
 
   if (allMedia.length === 0) return null
 
-  // Single image - 4:5 aspect ratio (mobile-first portrait), constrained on desktop
+  // Single image - constrained max-width on desktop for better proportions
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
-      <div className="rounded-[10px] overflow-hidden mb-3 max-h-[280px] sm:max-h-[240px]">
-        <img
-          src={imageUrl}
-          alt="Post media"
-          className="w-full h-full object-cover"
-          style={{ maxHeight: 'inherit' }}
-        />
+      <div className="rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
+        <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
+          <img
+            src={imageUrl}
+            alt="Post media"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
       </div>
     )
   }
 
-  // Two images - side by side, constrained height
+  // Two images - side by side with max-width on desktop
   if (allMedia.length === 2) {
     return (
-      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[500px]">
         {allMedia.map((item, idx) => {
           const imageUrl = getStorageUrl(item.path)
           if (!imageUrl) return null
           return (
-            <div key={idx} className="relative h-[140px] sm:h-[120px]">
+            <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
               <img
                 src={imageUrl}
                 alt={`Post media ${idx + 1}`}
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
           )
@@ -586,7 +587,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     if (!primaryUrl || !secondaryUrl || !tertiaryUrl) return null
 
     return (
-      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[160px]">
+      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[200px] sm:max-w-[500px]">
         {/* Primary image - spans 2 columns */}
         <div className="col-span-2 relative h-full">
           <img
@@ -620,16 +621,16 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   // 4+ images - 2x2 grid with +N overlay
   const displayMedia = allMedia.slice(0, 4)
   return (
-    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
       {displayMedia.map((item, idx) => {
         const imageUrl = getStorageUrl(item.path)
         if (!imageUrl) return null
         return (
-          <div key={idx} className="relative h-[100px] sm:h-[90px]">
+          <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
             <img
               src={imageUrl}
               alt={`Post media ${idx + 1}`}
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
             {idx === 3 && allMedia.length > 4 && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
