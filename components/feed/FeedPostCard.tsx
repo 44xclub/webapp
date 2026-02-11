@@ -537,22 +537,22 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
 
   if (allMedia.length === 0) return null
 
-  // Single image
+  // Single image - constrained height for clean feed look
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
-      <div className="rounded-[10px] overflow-hidden mb-3">
+      <div className="rounded-[10px] overflow-hidden mb-3 max-w-full">
         <img
           src={imageUrl}
           alt="Post media"
-          className="w-full h-auto max-h-[300px] object-cover"
+          className="w-full h-auto max-h-[180px] sm:max-h-[220px] object-cover"
         />
       </div>
     )
   }
 
-  // Grid for multiple images (2x2 max)
+  // Grid for multiple images (2x2 max) - compact sizing
   const displayMedia = allMedia.slice(0, 4)
   return (
     <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3">
@@ -560,7 +560,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
         const imageUrl = getStorageUrl(item.path)
         if (!imageUrl) return null
         return (
-          <div key={idx} className="relative aspect-square">
+          <div key={idx} className="relative h-[100px] sm:h-[120px]">
             <img
               src={imageUrl}
               alt={`Post media ${idx + 1}`}
