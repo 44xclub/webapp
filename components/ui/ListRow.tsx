@@ -24,7 +24,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(
         )}
         <div className="flex-1 min-w-0">
           <div className="text-label truncate">{label}</div>
-          {meta && <div className="text-meta truncate">{meta}</div>}
+          {meta && <div className="text-meta font-normal truncate">{meta}</div>}
         </div>
         {value && <div className="flex-shrink-0 text-meta">{value}</div>}
         {showChevron && (

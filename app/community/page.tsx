@@ -359,7 +359,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
       <div className="section-card text-center">
         <Users className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
         <h3 className="text-label mb-2">No Team Yet</h3>
-        <p className="text-meta">
+        <p className="text-meta font-normal">
           You&apos;ll be assigned to a team of 8 members to keep each other accountable.
         </p>
       </div>
