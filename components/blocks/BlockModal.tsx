@@ -264,13 +264,13 @@ export function BlockModal({
     }
   }, [startTime, endTimeWatched, editingBlock, blockType, form])
 
-  // Reset form when modal opens
+  // Reset form when modal opens (NOT when blockType changes - that's handled separately)
   useEffect(() => {
     if (isOpen) {
       if (editingBlock) {
         setStep(2) // Go directly to step 2 when editing
         setBlockType(editingBlock.block_type)
-        
+
         // Calculate duration from existing times or payload
         const existingDuration = (editingBlock.payload as any)?.duration_minutes || calculateMinutesBetween(
           editingBlock.start_time.slice(0, 5),
@@ -293,7 +293,7 @@ export function BlockModal({
             }
           }
         }
-        
+
         form.reset({
           date: editingBlock.date,
           start_time: editingBlock.start_time.slice(0, 5),
@@ -306,6 +306,7 @@ export function BlockModal({
         } as BlockFormData)
       } else {
         setStep(1)
+        setBlockType('workout') // Reset to default type
         setSelectedDuration(30)
         setCustomDurationValue('')
         setCustomDurationUnit('min')
@@ -315,15 +316,16 @@ export function BlockModal({
           date: formatDateForApi(initialDate),
           start_time: roundToNearest5Minutes(),
           end_time: null,
-          block_type: blockType,
+          block_type: 'workout',
           title: '',
           notes: '',
-          payload: getDefaultPayload(blockType),
+          payload: getDefaultPayload('workout'),
           repeat_rule: { pattern: 'none' as const },
         } as BlockFormData)
       }
     }
-  }, [isOpen, editingBlock, initialDate, blockType, form])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingBlock, initialDate])
 
   const handleBlockTypeChange = (newType: BlockType) => {
     if (editingBlock) return
@@ -519,7 +521,7 @@ export function BlockModal({
     >
       {/* Step 1: Quick Entry - Premium UI */}
       {step === 1 && !editingBlock && (
-        <div className="p-5 pb-0 space-y-6">
+        <div className="p-5 space-y-6">
           {/* Schedule vs Log Toggle */}
           {blockType !== 'challenge' ? (
             <div className="bg-[rgba(0,0,0,0.25)] rounded-[14px] p-1.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
@@ -704,7 +706,7 @@ export function BlockModal({
 
       {/* Step 2: Details - Premium UI */}
       {(step === 2 || editingBlock) && (
-        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-5 pb-0 space-y-5">
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-5 space-y-5">
           {/* Summary Header for new blocks */}
           {!editingBlock && (
             <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[14px] border border-[rgba(59,130,246,0.15)] p-4">

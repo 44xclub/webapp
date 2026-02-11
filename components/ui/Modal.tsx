@@ -90,9 +90,9 @@ export function Modal({
           {children}
         </div>
 
-        {/* Sticky Footer - Action Bar with 20px vertical padding */}
+        {/* Sticky Footer - Action Bar with centered content */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 py-5 safe-bottom">
+          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-5 pt-4 pb-4 safe-bottom">
             {footer}
           </div>
         )}
