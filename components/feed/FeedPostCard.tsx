@@ -523,6 +523,8 @@ function normalizeMediaItem(item: any): { path: string; type: 'image' | 'video' 
 
 // Media Display Component
 function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaPath: string | null }) {
+  console.log('[MediaDisplay] called with:', { mediaPath, payloadMedia: payload?.media })
+
   const rawMedia = payload?.media || []
 
   // Normalize all media items and filter out invalid ones
@@ -532,6 +534,8 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   const allMedia = mediaPath
     ? [{ type: 'image' as const, path: mediaPath }, ...normalizedMedia]
     : normalizedMedia
+
+  console.log('[MediaDisplay] allMedia:', allMedia)
 
   if (allMedia.length === 0) return null
 
