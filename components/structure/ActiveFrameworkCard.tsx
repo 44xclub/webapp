@@ -20,12 +20,9 @@ export function ActiveFrameworkCard({
 }: ActiveFrameworkCardProps) {
   if (!activeFramework?.framework_template) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3.5">
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-[rgba(238,242,255,0.35)] uppercase tracking-wider mb-0.5">Active Framework</p>
-            <p className="text-[13px] font-medium text-[rgba(238,242,255,0.70)]">No framework activated</p>
-          </div>
+          <p className="text-[13px] text-[rgba(238,242,255,0.55)]">No framework activated</p>
           <a href="#available-frameworks" className="text-[12px] text-[#3b82f6] font-medium hover:underline">
             Choose one
           </a>
@@ -92,10 +89,7 @@ export function ActiveFrameworkCard({
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
       <div className="absolute inset-0 p-3.5 flex flex-col justify-between">
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[10px] text-white/55 uppercase tracking-wider mb-0.5">Active Framework</p>
-            <p className="text-[15px] font-semibold text-white">{activeFramework.framework_template.title}</p>
-          </div>
+          <p className="text-[16px] font-semibold text-white">{activeFramework.framework_template.title}</p>
           <div className="flex items-center gap-1.5">
             {isLocked && (
               <span className="flex items-center gap-1 text-[9px] text-white/50 bg-white/10 px-1.5 py-0.5 rounded-full">

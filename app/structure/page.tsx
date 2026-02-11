@@ -94,8 +94,10 @@ export default function StructurePage() {
       <main className="px-4 pt-4 space-y-[var(--space-section)]">
         {activeTab === 'discipline' ? (
           <>
-            {/* Community Challenge */}
-            <SectionCard title="Community Challenge">
+            {/* Community Challenge - title outside card */}
+            <div>
+              <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-1">Community Challenge</h2>
+              <p className="text-[12px] text-[var(--text-secondary)] mb-4">This month's challenge for all members</p>
               {challengeLoading ? (
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
@@ -107,18 +109,20 @@ export default function StructurePage() {
                   onLogToday={() => setChallengeModalOpen(true)}
                 />
               )}
-            </SectionCard>
+            </div>
 
-            {/* Active Framework */}
+            {/* Active Framework - title outside card */}
             {!frameworksLoading && (
-              <SectionCard title="Active Framework">
+              <div>
+                <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-1">Active Framework</h2>
+                <p className="text-[12px] text-[var(--text-secondary)] mb-4">Your current daily structure</p>
                 <ActiveFrameworkCard
                   activeFramework={activeFramework}
                   todaySubmission={todaySubmission}
                   completionCount={completionCount}
                   onOpenChecklist={() => setFrameworkModalOpen(true)}
                 />
-              </SectionCard>
+              </div>
             )}
 
             {/* Available Frameworks */}
