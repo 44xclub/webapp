@@ -15,7 +15,7 @@ interface SharePromptModalProps {
   block: Block | null
   userId?: string
   userProfile?: Profile | null
-  onMediaUpload?: (blockId: string, file: File) => Promise<BlockMedia | void>
+  onMediaUpload?: (blockId: string, file: File, meta?: Record<string, unknown>) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   onConfirm: (shareToFeed: boolean) => Promise<void>
 }
@@ -226,9 +226,9 @@ export function SharePromptModal({
     onClose()
   }
 
-  const handleMediaUpload = async (blockId: string, file: File) => {
+  const handleMediaUpload = async (blockId: string, file: File, meta?: Record<string, unknown>) => {
     if (onMediaUpload) {
-      const media = await onMediaUpload(blockId, file)
+      const media = await onMediaUpload(blockId, file, meta)
       if (media) {
         setUploadedMedia((prev) => [...prev, media])
       }

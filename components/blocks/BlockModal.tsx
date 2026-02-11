@@ -36,7 +36,7 @@ interface BlockModalProps {
   editingBlock?: Block | null
   blockMedia?: BlockMedia[]
   userId?: string
-  onMediaUpload?: (blockId: string, file: File, position?: number) => Promise<BlockMedia | void>
+  onMediaUpload?: (blockId: string, file: File, meta?: Record<string, unknown>) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   userHasHeight?: boolean
   activeProgramme?: UserProgramme | null
@@ -374,16 +374,19 @@ export function BlockModal({
       // Pass entry mode for new blocks (not editing)
       const createdBlock = await onSave(enrichedData, editingBlock ? undefined : entryMode)
 
-      // Upload pending media for check-in blocks (with position for ordering)
+      // Upload pending media for check-in blocks
       if (createdBlock && blockType === 'checkin' && pendingMedia.length > 0 && onMediaUpload) {
-        // Upload all pending media in parallel, passing position index
+        // Upload all pending media in parallel
         await Promise.all(
           pendingMedia.map(async (item, index) => {
             // Create a File from the compressed blob
             const file = new File([item.blob], `checkin-${Date.now()}-${index}.webp`, {
               type: 'image/webp',
             })
-            await onMediaUpload(createdBlock.id, file, index)
+            await onMediaUpload(createdBlock.id, file, {
+              sort_order: index,
+              is_cropped: false,
+            })
           })
         )
         setPendingMedia([]) // Clear pending media after upload

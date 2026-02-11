@@ -270,12 +270,12 @@ export function useBlockMedia(userId: string | undefined) {
   const supabase = useMemo(() => createClient(), [])
 
   const uploadMedia = useCallback(
-    async (blockId: string, file: File, position: number = 0) => {
+    async (blockId: string, file: File, meta?: Record<string, unknown>) => {
       if (!userId) throw new Error('Not authenticated')
 
       // Storage path: block-media/<user_id>/<block_id>/<filename>
       const ext = file.name.split('.').pop() || 'webp'
-      const filename = `${Date.now()}-${position}.${ext}`
+      const filename = `${Date.now()}.${ext}`
       const storagePath = `${userId}/${blockId}/${filename}`
 
       // Upload to storage
@@ -285,7 +285,7 @@ export function useBlockMedia(userId: string | undefined) {
 
       if (uploadError) throw uploadError
 
-      // Create media record
+      // Create media record with optional metadata
       const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
       const { data, error: insertError } = await supabase
         .from('block_media')
@@ -294,7 +294,8 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
-          sort_order: position,
+          sort_order: 0,
+          meta: meta || null,
         })
         .select()
         .single()
