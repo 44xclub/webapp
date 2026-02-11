@@ -145,6 +145,16 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
   const [showMenu, setShowMenu] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
+  // DEBUG: Test Supabase URL generation
+  const supabase = useMemo(() => createClient(), [])
+  const testUrl = useMemo(() => {
+    const { data } = supabase.storage.from('block-media').getPublicUrl('test/path.jpg')
+    console.log('[FeedPostCard] Supabase test URL:', data.publicUrl)
+    console.log('[FeedPostCard] post.media_path:', post.media_path)
+    console.log('[FeedPostCard] post.payload:', post.payload)
+    return data.publicUrl
+  }, [supabase, post.media_path, post.payload])
+
   const displayName = post.user_profile?.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
   const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
