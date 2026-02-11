@@ -25,7 +25,7 @@ import {
 import { blockTypeLabels, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
 import type { Block, BlockType, BlockMedia, ProgrammeSession, UserProgramme } from '@/lib/types'
-import { Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Clock, ChevronLeft, ChevronRight, Dumbbell, Sparkles, Utensils, Scale, FileText } from 'lucide-react'
 
 interface BlockModalProps {
   isOpen: boolean
@@ -46,11 +46,11 @@ interface BlockModalProps {
 
 // Challenge is handled by ChallengeLogModal (requires media + preview)
 const blockTypeOptions = [
-  { value: 'workout', label: 'Workout', schedulable: true },
-  { value: 'habit', label: 'Habit', schedulable: true },
-  { value: 'nutrition', label: 'Nutrition', schedulable: true },
-  { value: 'checkin', label: 'Check-in', schedulable: false },
-  { value: 'personal', label: 'Personal', schedulable: true },
+  { value: 'workout', label: 'Workout', schedulable: true, icon: Dumbbell },
+  { value: 'habit', label: 'Habit', schedulable: true, icon: Sparkles },
+  { value: 'nutrition', label: 'Nutrition', schedulable: true, icon: Utensils },
+  { value: 'checkin', label: 'Check-in', schedulable: false, icon: Scale },
+  { value: 'personal', label: 'Personal', schedulable: true, icon: FileText },
 ]
 
 const durationOptions = [
@@ -474,12 +474,12 @@ export function BlockModal({
     return !isScheduledFuture
   }, [blockType, editingBlock, isScheduledFuture])
 
-  // Step 1 footer
+  // Step 1 footer - Premium Continue button
   const step1Footer = (
     <Button
       type="button"
       onClick={handleContinue}
-      className="w-full"
+      className="w-full h-12 text-[14px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_4px_12px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
       size="lg"
     >
       Continue
@@ -487,14 +487,14 @@ export function BlockModal({
     </Button>
   )
 
-  // Step 2 footer
+  // Step 2 footer - Cancel/Save buttons
   const step2Footer = (
     <div className="flex gap-3">
       <Button
         type="button"
         variant="outline"
         onClick={handleClose}
-        className="flex-1"
+        className="flex-1 h-12 text-[14px] font-semibold bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)]"
       >
         Cancel
       </Button>
@@ -502,7 +502,7 @@ export function BlockModal({
         type="submit"
         form="block-form"
         loading={isSubmitting}
-        className="flex-1"
+        className="flex-1 h-12 text-[14px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_4px_12px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
       >
         {editingBlock ? 'Save Changes' : 'Create Block'}
       </Button>
@@ -517,65 +517,74 @@ export function BlockModal({
       showClose={true}
       footer={step === 1 && !editingBlock ? step1Footer : step2Footer}
     >
-      {/* Step 1: Quick Entry */}
+      {/* Step 1: Quick Entry - Premium UI */}
       {step === 1 && !editingBlock && (
-        <div className="p-4 pb-0 space-y-5">
-          {/* Schedule vs Log Toggle - hidden for challenge blocks (always Log) */}
+        <div className="p-5 pb-0 space-y-6">
+          {/* Schedule vs Log Toggle */}
           {blockType !== 'challenge' ? (
-            <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
-              <button
-                type="button"
-                onClick={() => setEntryMode('schedule')}
-                className={cn(
-                  'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
-                  entryMode === 'schedule'
-                    ? 'bg-[#3b82f6] text-white'
-                    : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
-                )}
-              >
-                Schedule
-              </button>
-              <button
-                type="button"
-                onClick={() => setEntryMode('log')}
-                className={cn(
-                  'flex-1 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-200',
-                  entryMode === 'log'
-                    ? 'bg-[#3b82f6] text-white'
-                    : 'text-[rgba(238,242,255,0.60)] hover:text-[rgba(238,242,255,0.80)]'
-                )}
-              >
-                Log
-              </button>
+            <div className="bg-[rgba(0,0,0,0.25)] rounded-[14px] p-1.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]">
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('schedule')}
+                  className={cn(
+                    'py-2.5 rounded-[10px] text-[13px] font-semibold transition-all duration-200',
+                    entryMode === 'schedule'
+                      ? 'bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.4),inset_0_1px_0_rgba(255,255,255,0.15)]'
+                      : 'text-[rgba(238,242,255,0.55)] hover:text-[rgba(238,242,255,0.75)] hover:bg-[rgba(255,255,255,0.04)]'
+                  )}
+                >
+                  Schedule
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('log')}
+                  className={cn(
+                    'py-2.5 rounded-[10px] text-[13px] font-semibold transition-all duration-200',
+                    entryMode === 'log'
+                      ? 'bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.4),inset_0_1px_0_rgba(255,255,255,0.15)]'
+                      : 'text-[rgba(238,242,255,0.55)] hover:text-[rgba(238,242,255,0.75)] hover:bg-[rgba(255,255,255,0.04)]'
+                  )}
+                >
+                  Log
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="p-3 bg-[rgba(245,158,11,0.08)] rounded-[10px] border border-[rgba(245,158,11,0.2)]">
+            <div className="p-3.5 bg-gradient-to-r from-[rgba(245,158,11,0.12)] to-[rgba(245,158,11,0.06)] rounded-[12px] border border-[rgba(245,158,11,0.25)]">
               <p className="text-[12px] text-amber-400 font-medium">
                 🏆 Challenge blocks can only be logged, not scheduled.
               </p>
             </div>
           )}
 
-          {/* Block Type Selector - filtered by entry mode */}
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-            {filteredBlockTypes.map((option) => {
-              const isSelected = blockType === option.value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleBlockTypeChange(option.value as BlockType)}
-                  className={cn(
-                    'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
-                    isSelected
-                      ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
-                      : 'bg-[var(--surface-2)] text-[rgba(238,242,255,0.65)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(59,130,246,0.4)] hover:text-[rgba(238,242,255,0.85)] shadow-[0_2px_4px_rgba(0,0,0,0.2)]'
-                  )}
-                >
-                  {option.label}
-                </button>
-              )
-            })}
+          {/* Block Type Selector with Icons */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[rgba(238,242,255,0.45)] uppercase tracking-wider mb-3">
+              Block Type
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {filteredBlockTypes.map((option) => {
+                const isSelected = blockType === option.value
+                const IconComponent = option.icon
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleBlockTypeChange(option.value as BlockType)}
+                    className={cn(
+                      'flex flex-col items-center gap-1.5 py-3 px-2 rounded-[12px] text-[11px] font-medium transition-all duration-200 border',
+                      isSelected
+                        ? 'bg-gradient-to-b from-[rgba(59,130,246,0.2)] to-[rgba(59,130,246,0.1)] text-[#60a5fa] border-[rgba(59,130,246,0.4)] shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+                        : 'bg-[rgba(255,255,255,0.03)] text-[rgba(238,242,255,0.5)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(238,242,255,0.7)]'
+                    )}
+                  >
+                    <IconComponent className={cn('h-5 w-5', isSelected ? 'text-[#60a5fa]' : 'text-[rgba(238,242,255,0.4)]')} />
+                    <span>{option.label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Title Input */}
@@ -592,62 +601,71 @@ export function BlockModal({
             />
           </div>
 
-          {/* Date Row */}
-          <div className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-[#3b82f6]" />
-              <span className="text-[15px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
-            </div>
-            {isToday(dateValue) && (
-              <span className="text-[12px] text-[#3b82f6] font-medium">Today</span>
-            )}
-          </div>
-
-          {/* Time Section */}
-          <div>
-            <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
-              {blockType === 'checkin' ? 'Time' : 'Start Time'}
-            </label>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 relative">
-                <Input
-                  type="time"
-                  {...form.register('start_time')}
-                  className="w-full"
-                />
-              </div>
-              {/* Only show end time for blocks with duration */}
-              {blockType !== 'checkin' && (
-                <div className="flex items-center gap-2 text-[14px] text-[rgba(238,242,255,0.52)]">
-                  <span>to</span>
-                  <span className="text-[#eef2ff] font-medium">{endTime ? formatDisplayTime(endTime) : '--:--'}</span>
+          {/* Date & Time Card */}
+          <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+            {/* Date Row */}
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-[rgba(255,255,255,0.06)]">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                  <Calendar className="h-4 w-4 text-[#60a5fa]" />
                 </div>
+                <div>
+                  <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium">Date</p>
+                  <p className="text-[14px] text-[#eef2ff] font-medium">{formatDisplayDate(dateValue)}</p>
+                </div>
+              </div>
+              {isToday(dateValue) && (
+                <span className="text-[11px] text-[#60a5fa] font-semibold bg-[rgba(59,130,246,0.12)] px-2 py-1 rounded-[6px]">Today</span>
               )}
             </div>
+
+            {/* Time Row */}
+            <div className="px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-[#60a5fa]" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium mb-1">{blockType === 'checkin' ? 'Time' : 'Start Time'}</p>
+                  <Input
+                    type="time"
+                    {...form.register('start_time')}
+                    className="w-full"
+                  />
+                </div>
+                {blockType !== 'checkin' && (
+                  <div className="text-center">
+                    <p className="text-[11px] text-[rgba(238,242,255,0.4)] font-medium mb-1">End</p>
+                    <p className="text-[14px] text-[#eef2ff] font-semibold">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Duration Quick Select - hidden for check-in (point-in-time) */}
+          {/* Duration Quick Select */}
           {blockType !== 'checkin' && (
             <div>
-              <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">Duration</label>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <label className="block text-[11px] font-semibold text-[rgba(238,242,255,0.45)] uppercase tracking-wider mb-3">
+                Duration
+              </label>
+              <div className="grid grid-cols-7 gap-1.5">
                 {durationOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => {
                       setSelectedDuration(option.value as number | 'custom')
-                      // Pre-fill custom input when switching from preset
                       if (option.value === 'custom' && typeof selectedDuration === 'number') {
                         setCustomDurationValue(String(selectedDuration))
                         setCustomDurationUnit('min')
                       }
                     }}
                     className={cn(
-                      'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
+                      'py-2.5 rounded-[10px] text-[12px] font-semibold transition-all duration-200',
                       selectedDuration === option.value
-                        ? 'bg-[#3b82f6] text-white border-transparent shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
-                        : 'bg-[var(--surface-2)] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] shadow-[0_2px_4px_rgba(0,0,0,0.2)]'
+                        ? 'bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]'
+                        : 'bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.6)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[rgba(238,242,255,0.8)]'
                     )}
                   >
                     {option.label}
@@ -672,7 +690,7 @@ export function BlockModal({
                   <select
                     value={customDurationUnit}
                     onChange={(e) => setCustomDurationUnit(e.target.value as 'min' | 'hr')}
-                    className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[var(--surface-2)] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
+                    className="px-4 py-2.5 rounded-[10px] text-[13px] font-semibold bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.7)] border border-[rgba(255,255,255,0.08)] focus:border-[#60a5fa] focus:outline-none transition-colors"
                   >
                     <option value="min">min</option>
                     <option value="hr">hr</option>
@@ -684,24 +702,24 @@ export function BlockModal({
         </div>
       )}
 
-      {/* Step 2: Details */}
+      {/* Step 2: Details - Premium UI */}
       {(step === 2 || editingBlock) && (
-        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-4 pb-0 space-y-4">
-          {/* Summary Header */}
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-5 pb-0 space-y-5">
+          {/* Summary Header for new blocks */}
           {!editingBlock && (
-            <div className="p-4 rounded-[12px] bg-[var(--surface-2)] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.2)]">
-                  <Clock className="h-5 w-5 text-[#3b82f6]" />
+            <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[14px] border border-[rgba(59,130,246,0.15)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-[12px] flex items-center justify-center bg-gradient-to-b from-[rgba(59,130,246,0.25)] to-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.2)]">
+                  <Clock className="h-5 w-5 text-[#60a5fa]" />
                 </div>
-                <div>
-                  <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
+                <div className="flex-1">
+                  <p className="text-[12px] text-[rgba(238,242,255,0.5)] font-medium">
                     {blockType === 'checkin'
                       ? formatDisplayTime(startTime)
-                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} (${actualDuration} min)`
+                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${actualDuration} min`
                     }
                   </p>
-                  <p className="text-[14px] font-semibold text-[#eef2ff]">
+                  <p className="text-[15px] font-semibold text-[#eef2ff]">
                     {titleValue || blockTypeLabels[blockType]}
                   </p>
                 </div>
@@ -714,31 +732,33 @@ export function BlockModal({
             <button
               type="button"
               onClick={handleBack}
-              className="flex items-center gap-1 text-[12px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)] transition-colors"
+              className="inline-flex items-center gap-1 text-[12px] text-[rgba(238,242,255,0.45)] hover:text-[#60a5fa] transition-colors font-medium"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to basics
             </button>
           )}
 
-          {/* Locked State Banner - shows when editing blocks after cutoff */}
+          {/* Locked State Banner */}
           {editingBlock?.locked_at && (
-            <div className="p-3 bg-[rgba(245,158,11,0.08)] rounded-[10px] border border-[rgba(245,158,11,0.2)] flex items-center gap-2">
-              <span className="text-[12px]">🔒</span>
+            <div className="p-3.5 bg-gradient-to-r from-[rgba(245,158,11,0.12)] to-[rgba(245,158,11,0.06)] rounded-[12px] border border-[rgba(245,158,11,0.25)] flex items-center gap-2.5">
+              <span className="text-[14px]">🔒</span>
               <p className="text-[12px] text-amber-400 font-medium">
                 Locked — edits won&apos;t affect score.
               </p>
             </div>
           )}
 
-          {/* Clean date/time edit section */}
+          {/* Date/Time edit section for existing blocks */}
           {editingBlock && (
-            <div className="p-4 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)] space-y-4">
+            <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
               {/* Date Row */}
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.50)] flex-shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[rgba(255,255,255,0.06)]">
+                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
+                  <Calendar className="h-4 w-4 text-[#60a5fa]" />
+                </div>
                 <div className="flex-1">
-                  <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">Date</label>
+                  <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Date</label>
                   <Input
                     type="date"
                     {...form.register('date')}
@@ -748,11 +768,13 @@ export function BlockModal({
               </div>
 
               {/* Time Row */}
-              <div className="flex items-start gap-3">
-                <Clock className="h-4 w-4 text-[rgba(238,242,255,0.50)] flex-shrink-0 mt-6" />
+              <div className="flex items-center gap-3 px-4 py-3.5">
+                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
+                  <Clock className="h-4 w-4 text-[#60a5fa]" />
+                </div>
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">Start</label>
+                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Start</label>
                     <Input
                       type="time"
                       {...form.register('start_time')}
@@ -760,7 +782,7 @@ export function BlockModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-1">End</label>
+                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">End</label>
                     <Input
                       type="time"
                       {...form.register('end_time')}
@@ -772,9 +794,11 @@ export function BlockModal({
 
               {/* Duration display */}
               {endTime && (
-                <p className="text-[11px] text-[rgba(238,242,255,0.40)] text-right">
-                  Duration: {calculateMinutesBetween(startTime, endTime) || 0} min
-                </p>
+                <div className="px-4 pb-3 text-right">
+                  <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
+                    Duration: {calculateMinutesBetween(startTime, endTime) || 0} min
+                  </span>
+                </div>
               )}
             </div>
           )}
@@ -784,10 +808,10 @@ export function BlockModal({
             {renderForm()}
           </div>
 
-          {/* Media & Share Section - conditionally shown based on scheduling */}
+          {/* Media & Share Section */}
           {showShareMediaControls && (
-            <>
-              {/* Media Upload - only for existing blocks */}
+            <div className="space-y-4">
+              {/* Media Upload */}
               {editingBlock && userId && onMediaUpload && onMediaDelete && (
                 <MediaUploader
                   blockId={editingBlock.id}
@@ -799,30 +823,30 @@ export function BlockModal({
               )}
 
               {/* Share to Feed Toggle */}
-              <div className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
+              <div className="flex items-center justify-between p-4 bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)]">
                 <div>
-                  <p className="text-[13px] font-medium text-[#eef2ff]">Share to Feed</p>
-                  <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
+                  <p className="text-[13px] font-semibold text-[#eef2ff]">Share to Feed</p>
+                  <p className="text-[11px] text-[rgba(238,242,255,0.4)] mt-0.5">
                     {blockType === 'challenge' ? 'Required for challenges' : 'Post to community feed on completion'}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    if (blockType === 'challenge') return // forced
+                    if (blockType === 'challenge') return
                     const current = form.getValues('shared_to_feed' as any)
                     form.setValue('shared_to_feed' as any, !current)
                   }}
                   className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors duration-200',
+                    'relative w-12 h-7 rounded-full transition-all duration-200',
                     (blockType === 'challenge' || form.watch('shared_to_feed' as any))
-                      ? 'bg-[#3b82f6]'
-                      : 'bg-[rgba(255,255,255,0.12)]'
+                      ? 'bg-gradient-to-r from-[#4f8ef7] to-[#3b7ce6] shadow-[0_2px_8px_rgba(59,130,246,0.35)]'
+                      : 'bg-[rgba(255,255,255,0.1)]'
                   )}
                 >
                   <span
                     className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200',
+                      'absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200',
                       (blockType === 'challenge' || form.watch('shared_to_feed' as any))
                         ? 'translate-x-5'
                         : 'translate-x-0'
@@ -830,13 +854,13 @@ export function BlockModal({
                   />
                 </button>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Future-scheduled info notice (when share/media is hidden) */}
+          {/* Future-scheduled info notice */}
           {!showShareMediaControls && blockType !== 'personal' && !editingBlock && isScheduledFuture && (
-            <div className="p-3 bg-[rgba(59,130,246,0.08)] rounded-[12px] border border-[rgba(59,130,246,0.2)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-              <p className="text-[12px] text-[rgba(238,242,255,0.72)]">
+            <div className="p-4 bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[14px] border border-[rgba(59,130,246,0.15)]">
+              <p className="text-[12px] text-[rgba(238,242,255,0.7)] font-medium">
                 📸 You can add photos and share to the feed when you complete this block.
               </p>
             </div>
