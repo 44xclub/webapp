@@ -76,6 +76,41 @@ function transformProgrammeExercisesToMatrix(exercises: ProgrammeExercise[]) {
   })
 }
 
+// Parse plain text plan format: "Exercise Name – 4×6–8\nExercise 2 – 3×10"
+function parsePlanTextToExercises(planText: string): ProgrammeExercise[] {
+  if (!planText) return []
+
+  // Split by newlines (handle both \n and \\n)
+  const lines = planText.split(/\\n|\n/).filter(line => line.trim())
+
+  return lines.map((line, index) => {
+    // Pattern: "Exercise Name – SetsxReps" or "Exercise Name - SetsxReps"
+    // The separator can be – (en-dash), — (em-dash), or - (hyphen)
+    // Reps pattern can be "6–8", "8-10", "12", etc.
+    const separatorMatch = line.match(/^(.+?)\s*[–—-]\s*(\d+)\s*[×xX]\s*(.+)$/)
+
+    if (separatorMatch) {
+      const [, exerciseName, sets, reps] = separatorMatch
+      return {
+        exercise_name: exerciseName.trim(),
+        sets: parseInt(sets, 10) || 3,
+        reps: reps.trim(),
+        notes: '',
+        sort_order: index,
+      }
+    }
+
+    // Fallback: Just use the whole line as exercise name
+    return {
+      exercise_name: line.trim(),
+      sets: 3,
+      reps: '',
+      notes: '',
+      sort_order: index,
+    }
+  })
+}
+
 // Extract exercises from various payload structures
 function extractExercisesFromPayload(payload: any): ProgrammeExercise[] | null {
   if (!payload) return null
@@ -95,7 +130,15 @@ function extractExercisesFromPayload(payload: any): ProgrammeExercise[] | null {
     return payload
   }
 
-  // Format 4: Check for any array property that looks like exercises
+  // Format 4: { plan: "Exercise – SetsxReps\n..." } - Plain text format
+  if (payload.plan && typeof payload.plan === 'string') {
+    const exercises = parsePlanTextToExercises(payload.plan)
+    if (exercises.length > 0) {
+      return exercises
+    }
+  }
+
+  // Format 5: Check for any array property that looks like exercises
   for (const key of Object.keys(payload)) {
     const value = payload[key]
     if (Array.isArray(value) && value.length > 0) {
