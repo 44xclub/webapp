@@ -42,7 +42,10 @@ export const workoutSchema = baseBlockSchema.extend({
     description: z.string().optional(),
     duration: z.number().positive().optional(),
     rpe: z.number().min(1).max(10).optional(),
+    // Programme reference fields
+    programme_template_id: z.string().optional(),
     programme_session_id: z.string().optional(),
+    session_title: z.string().optional(), // Snapshot of session title at time of creation
     // Running/Sport/Other specific fields
     distance_km: z.number().positive().optional(),
     pace: z.string().optional(), // e.g., "4:45/km"

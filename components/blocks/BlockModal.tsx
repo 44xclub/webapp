@@ -416,6 +416,7 @@ export function BlockModal({
             form={form as ReturnType<typeof useForm<typeof workoutSchema._type>>}
             activeProgramme={activeProgramme}
             programmeSessions={programmeSessions}
+            isEditing={!!editingBlock}
           />
         )
       case 'habit':

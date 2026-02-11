@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 import { Input, Textarea } from '@/components/ui'
 import { ExerciseMatrix } from '@/components/blocks/ExerciseMatrix'
@@ -12,6 +12,7 @@ interface WorkoutFormProps {
   form: UseFormReturn<WorkoutFormData>
   activeProgramme?: UserProgramme | null
   programmeSessions?: ProgrammeSession[]
+  isEditing?: boolean // True when editing an existing block (don't re-populate from session)
 }
 
 const workoutCategories: { value: WorkoutCategory; label: string }[] = [
@@ -29,10 +30,38 @@ const matrixCategories: WorkoutCategory[] = ['weight_lifting', 'hyrox', 'hybrid'
 // Categories that use description instead of exercise matrix
 const descriptionCategories: WorkoutCategory[] = ['running', 'sport', 'other']
 
+// Programme session exercise format (from programme_sessions.payload)
+interface ProgrammeExercise {
+  exercise_name: string
+  sets: number
+  reps: string
+  notes?: string
+  sort_order?: number
+}
+
+// Transform programme session exercises to exercise matrix format
+function transformProgrammeExercisesToMatrix(exercises: ProgrammeExercise[]) {
+  if (!exercises || !Array.isArray(exercises)) return []
+
+  // Sort by sort_order if available
+  const sorted = [...exercises].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+
+  return sorted.map((ex) => ({
+    exercise: ex.exercise_name || '',
+    sets: Array.from({ length: ex.sets || 1 }, (_, i) => ({
+      set: i + 1,
+      reps: ex.reps || '',
+      weight: '',
+    })),
+    notes: ex.notes || '',
+  }))
+}
+
 export function WorkoutForm({
   form,
   activeProgramme,
   programmeSessions = [],
+  isEditing = false,
 }: WorkoutFormProps) {
   const {
     register,
@@ -41,11 +70,24 @@ export function WorkoutForm({
     formState: { errors },
   } = form
 
+  const [isLoadingSession, setIsLoadingSession] = useState(false)
+  const [hasPopulatedFromSession, setHasPopulatedFromSession] = useState(false)
+
   const hasProgramme = !!activeProgramme
   const subtype = watch('payload.subtype') || 'custom'
   const category = (watch('payload.category') || 'weight_lifting') as WorkoutCategory
   const selectedSessionId = watch('payload.programme_session_id')
-  const showMatrix = matrixCategories.includes(category) && subtype === 'custom'
+
+  // Show matrix for custom weight lifting/hyrox/hybrid OR for programme with selected session
+  const showMatrixForCustom = matrixCategories.includes(category) && subtype === 'custom'
+  const showMatrixForProgramme = subtype === 'programme' && !!selectedSessionId
+  const showMatrix = showMatrixForCustom || showMatrixForProgramme
+
+  // Get selected session details
+  const selectedSession = useMemo(() => {
+    if (!selectedSessionId) return null
+    return programmeSessions.find(s => s.id === selectedSessionId) || null
+  }, [selectedSessionId, programmeSessions])
 
   // Set defaults on mount
   useEffect(() => {
@@ -57,24 +99,78 @@ export function WorkoutForm({
     }
   }, [hasProgramme, setValue, watch])
 
-  // When session is selected, update title with session title
+  // When session is selected (NEW blocks only), populate the exercise matrix from session payload
+  // For editing, the matrix is already loaded from block.payload by BlockModal
   useEffect(() => {
-    if (subtype === 'programme' && selectedSessionId) {
-      const session = programmeSessions.find(s => s.id === selectedSessionId)
-      if (session) {
-        setValue('title', session.title)
-        // Also copy session payload (exercise matrix if present)
-        if (session.payload) {
-          setValue('payload.exercise_matrix', (session.payload as any).exercise_matrix || [])
-        }
+    // Skip if editing - exercise matrix is already loaded from block payload
+    if (isEditing) return
+
+    // Skip if already populated to prevent re-triggering
+    if (hasPopulatedFromSession && selectedSessionId) return
+
+    if (subtype === 'programme' && selectedSessionId && selectedSession) {
+      setIsLoadingSession(true)
+      setHasPopulatedFromSession(true)
+
+      // Set title from session
+      setValue('title', selectedSession.title)
+
+      // Set programme_template_id for saving
+      if (activeProgramme?.programme_template_id) {
+        setValue('payload.programme_template_id', activeProgramme.programme_template_id)
       }
+
+      // Transform and populate exercise matrix from session payload
+      const sessionPayload = selectedSession.payload as any
+      if (sessionPayload) {
+        // Check for exercises array (standard format from requirements)
+        if (sessionPayload.exercises && Array.isArray(sessionPayload.exercises)) {
+          const matrix = transformProgrammeExercisesToMatrix(sessionPayload.exercises)
+          setValue('payload.exercise_matrix', matrix)
+        }
+        // Also check for exercise_matrix directly (if already in matrix format)
+        else if (sessionPayload.exercise_matrix && Array.isArray(sessionPayload.exercise_matrix)) {
+          setValue('payload.exercise_matrix', sessionPayload.exercise_matrix)
+        }
+        // No exercises found - initialize empty matrix
+        else {
+          setValue('payload.exercise_matrix', [
+            { exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }
+          ])
+        }
+
+        // Copy session title for reference
+        setValue('payload.session_title', selectedSession.title)
+      }
+
+      // Small delay to show loading state
+      setTimeout(() => setIsLoadingSession(false), 200)
     }
-  }, [selectedSessionId, subtype, programmeSessions, setValue])
+  }, [selectedSessionId, subtype, selectedSession, activeProgramme, setValue, isEditing, hasPopulatedFromSession])
+
+  // Reset population flag when session changes (to allow re-population for different sessions)
+  useEffect(() => {
+    if (!selectedSessionId) {
+      setHasPopulatedFromSession(false)
+    }
+  }, [selectedSessionId])
+
+  // Get session title from payload for display (for editing blocks)
+  const sessionTitle = watch('payload.session_title')
 
   return (
     <div className="space-y-4">
-      {/* Programme/Custom Subtype Selector - only if user has active programme */}
-      {hasProgramme && (
+      {/* Programme info banner - show when editing a programme block without active programme */}
+      {isEditing && subtype === 'programme' && !hasProgramme && sessionTitle && (
+        <div className="p-3 bg-[rgba(59,130,246,0.08)] rounded-[10px] border border-[rgba(59,130,246,0.2)]">
+          <p className="text-[12px] text-[#60a5fa] font-medium">
+            📋 Programme Workout: {sessionTitle}
+          </p>
+        </div>
+      )}
+
+      {/* Programme/Custom Subtype Selector - only if user has active programme and not editing a programme block */}
+      {hasProgramme && !(isEditing && subtype === 'programme') && (
         <div>
           <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
             Workout Type
@@ -114,8 +210,8 @@ export function WorkoutForm({
         </div>
       )}
 
-      {/* Programme Session Selector - shown when Programme subtype is selected */}
-      {subtype === 'programme' && hasProgramme && (
+      {/* Programme Session Selector - shown when Programme subtype is selected (not when editing) */}
+      {subtype === 'programme' && hasProgramme && !isEditing && (
         <div>
           <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
             Select Session <span className="text-[#ef4444]">*</span>
@@ -209,9 +305,35 @@ export function WorkoutForm({
         </div>
       )}
 
-      {/* Exercise Matrix - for lifting/hyrox/hybrid custom workouts */}
+      {/* Exercise Matrix - for lifting/hyrox/hybrid custom workouts OR programme workouts */}
       {showMatrix && (
-        <ExerciseMatrix form={form} />
+        <>
+          {isLoadingSession ? (
+            <div className="p-6 bg-[var(--surface-1)] rounded-[14px] border border-[rgba(255,255,255,0.06)] text-center">
+              <p className="text-[13px] text-[rgba(238,242,255,0.52)]">Loading session...</p>
+            </div>
+          ) : (
+            <ExerciseMatrix form={form} />
+          )}
+        </>
+      )}
+
+      {/* No exercises warning for programme sessions */}
+      {subtype === 'programme' && selectedSessionId && !isLoadingSession && (
+        (() => {
+          const matrix = watch('payload.exercise_matrix')
+          const hasExercises = matrix && matrix.length > 0 && matrix.some(ex => ex.exercise?.trim())
+          if (!hasExercises) {
+            return (
+              <div className="p-3.5 bg-gradient-to-r from-[rgba(245,158,11,0.12)] to-[rgba(245,158,11,0.06)] rounded-[12px] border border-[rgba(245,158,11,0.25)]">
+                <p className="text-[12px] text-amber-400 font-medium">
+                  ⚠️ This session has no exercises configured. Add exercises below or switch to Custom.
+                </p>
+              </div>
+            )
+          }
+          return null
+        })()
       )}
 
       {/* Session Details - for running/sport/other custom workouts */}

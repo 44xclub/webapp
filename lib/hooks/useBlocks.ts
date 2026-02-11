@@ -66,6 +66,11 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       const now = new Date().toISOString()
 
+      // Extract programme references from workout payload for top-level columns
+      const payload = data.payload || {}
+      const programmeTemplateId = (payload as any).programme_template_id || null
+      const programmeSessionId = (payload as any).programme_session_id || null
+
       const insertData: Record<string, unknown> = {
         user_id: userId,
         date: data.date,
@@ -78,6 +83,9 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         repeat_rule: data.repeat_rule || null,
         shared_to_feed: sharedToFeed,
         is_planned: isPlanned,
+        // Set programme references as top-level columns for workout blocks
+        programme_template_id: programmeTemplateId,
+        programme_session_id: programmeSessionId,
       }
 
       // Auto-set completed_at and performed_at for Log mode (logging something already done)
