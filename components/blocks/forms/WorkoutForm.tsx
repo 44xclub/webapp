@@ -168,7 +168,7 @@ export function WorkoutForm({
   } = form
 
   const [isLoadingSession, setIsLoadingSession] = useState(false)
-  const [hasPopulatedFromSession, setHasPopulatedFromSession] = useState(false)
+  const [lastPopulatedSessionId, setLastPopulatedSessionId] = useState<string | null>(null)
 
   const hasProgramme = !!activeProgramme
   const subtype = watch('payload.subtype') || 'custom'
@@ -202,12 +202,12 @@ export function WorkoutForm({
     // Skip if editing - exercise matrix is already loaded from block payload
     if (isEditing) return
 
-    // Skip if already populated to prevent re-triggering
-    if (hasPopulatedFromSession && selectedSessionId) return
+    // Skip if same session already populated
+    if (selectedSessionId && selectedSessionId === lastPopulatedSessionId) return
 
     if (subtype === 'programme' && selectedSessionId && selectedSession) {
       setIsLoadingSession(true)
-      setHasPopulatedFromSession(true)
+      setLastPopulatedSessionId(selectedSessionId)
 
       // Set title from session
       setValue('title', selectedSession.title)
@@ -252,14 +252,7 @@ export function WorkoutForm({
       // Small delay to show loading state
       setTimeout(() => setIsLoadingSession(false), 200)
     }
-  }, [selectedSessionId, subtype, selectedSession, activeProgramme, setValue, isEditing, hasPopulatedFromSession])
-
-  // Reset population flag when session changes (to allow re-population for different sessions)
-  useEffect(() => {
-    if (!selectedSessionId) {
-      setHasPopulatedFromSession(false)
-    }
-  }, [selectedSessionId])
+  }, [selectedSessionId, subtype, selectedSession, activeProgramme, setValue, isEditing, lastPopulatedSessionId])
 
   // Get session title from payload for display (for editing blocks)
   const sessionTitle = watch('payload.session_title')
