@@ -15,6 +15,7 @@ interface ModalProps {
   onClose: () => void
   title?: string
   children: ReactNode
+  footer?: ReactNode
   className?: string
   showClose?: boolean
 }
@@ -24,6 +25,7 @@ export function Modal({
   onClose,
   title,
   children,
+  footer,
   className,
   showClose = true,
 }: ModalProps) {
@@ -59,13 +61,13 @@ export function Modal({
       {/* Modal content - bottom sheet on mobile, centered on desktop */}
       <div
         className={cn(
-          'relative z-10 w-full sm:max-w-lg max-h-[90vh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg',
+          'relative z-10 w-full sm:max-w-lg max-h-[90vh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg flex flex-col',
           className
         )}
       >
         {/* Header */}
         {(title || showClose) && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
             <h2 className="text-[15px] font-bold text-[#eef2ff]">
               {title}
             </h2>
@@ -80,10 +82,20 @@ export function Modal({
           </div>
         )}
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-60px)] safe-bottom">
+        {/* Scrollable Content */}
+        <div className={cn(
+          'flex-1 overflow-y-auto',
+          footer ? 'max-h-[calc(90vh-140px)]' : 'max-h-[calc(90vh-60px)]'
+        )}>
           {children}
         </div>
+
+        {/* Sticky Footer - Action Bar with 20px vertical padding */}
+        {footer && (
+          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 py-5 safe-bottom">
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     document.body

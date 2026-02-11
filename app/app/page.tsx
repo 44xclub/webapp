@@ -15,13 +15,14 @@ import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2, Target } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
+import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -204,22 +205,15 @@ export default function AppPage() {
       )}
 
       {/* Challenge Quick Action - show if active challenge and not completed today */}
+      {/* Challenge Card - compact variant for Home */}
       {viewMode === 'day' && challenge && !challengeTodayBlock?.completed_at && (
         <div className="mx-4 mt-3">
-          <button
-            onClick={() => setChallengeModalOpen(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-[var(--radius-card)] bg-[var(--accent-blue-muted)] border border-[rgba(59,130,246,0.15)] hover:bg-[rgba(59,130,246,0.24)] transition-colors text-left"
-          >
-            <div className="p-2 rounded-[var(--radius-button)] bg-[rgba(59,130,246,0.15)]">
-              <Target className="h-4 w-4 text-[var(--accent-blue)]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-label truncate">
-                {challenge.title}
-              </p>
-              <p className="text-micro normal-case text-[var(--accent-blue)]">Tap to log today&apos;s challenge</p>
-            </div>
-          </button>
+          <ChallengeCard
+            challenge={challenge}
+            todayBlock={challengeTodayBlock}
+            onLogToday={() => setChallengeModalOpen(true)}
+            variant="compact"
+          />
         </div>
       )}
 

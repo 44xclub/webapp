@@ -450,7 +450,16 @@ export function usePersonalProgramme(programmeId: string | null) {
           *,
           days:personal_programme_days(
             *,
-            exercises:personal_programme_exercises(*)
+            exercises:personal_programme_exercises(
+              id,
+              programme_day_id,
+              sort_order,
+              exercise_name,
+              sets,
+              reps,
+              notes,
+              created_at
+            )
           )
         `)
         .eq('id', programmeId)

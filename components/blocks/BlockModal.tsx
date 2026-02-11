@@ -474,16 +474,52 @@ export function BlockModal({
     return !isScheduledFuture
   }, [blockType, editingBlock, isScheduledFuture])
 
+  // Step 1 footer
+  const step1Footer = (
+    <Button
+      type="button"
+      onClick={handleContinue}
+      className="w-full"
+      size="lg"
+    >
+      Continue
+      <ChevronRight className="h-5 w-5 ml-1" />
+    </Button>
+  )
+
+  // Step 2 footer
+  const step2Footer = (
+    <div className="flex gap-3">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleClose}
+        className="flex-1"
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="block-form"
+        loading={isSubmitting}
+        className="flex-1"
+      >
+        {editingBlock ? 'Save Changes' : 'Create Block'}
+      </Button>
+    </div>
+  )
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
       title={editingBlock ? `Edit ${blockTypeLabels[blockType]}` : step === 1 ? 'New Block' : 'Details'}
       showClose={true}
+      footer={step === 1 && !editingBlock ? step1Footer : step2Footer}
     >
       {/* Step 1: Quick Entry */}
       {step === 1 && !editingBlock && (
-        <div className="p-4 space-y-5">
+        <div className="p-4 pb-0 space-y-5">
           {/* Schedule vs Log Toggle - hidden for challenge blocks (always Log) */}
           {blockType !== 'challenge' ? (
             <div className="flex bg-[rgba(255,255,255,0.04)] rounded-[10px] p-1">
@@ -532,8 +568,8 @@ export function BlockModal({
                   className={cn(
                     'px-4 py-2 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border',
                     isSelected
-                      ? 'bg-[#3b82f6] text-white border-[#3b82f6]'
-                      : 'bg-[#0d1014] text-[rgba(238,242,255,0.65)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(59,130,246,0.4)] hover:text-[rgba(238,242,255,0.85)]'
+                      ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                      : 'bg-[var(--surface-2)] text-[rgba(238,242,255,0.65)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(59,130,246,0.4)] hover:text-[rgba(238,242,255,0.85)] shadow-[0_2px_4px_rgba(0,0,0,0.2)]'
                   )}
                 >
                   {option.label}
@@ -557,7 +593,7 @@ export function BlockModal({
           </div>
 
           {/* Date Row */}
-          <div className="flex items-center justify-between p-3 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)]">
+          <div className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-[#3b82f6]" />
               <span className="text-[15px] text-[#eef2ff]">{formatDisplayDate(dateValue)}</span>
@@ -610,8 +646,8 @@ export function BlockModal({
                     className={cn(
                       'px-4 py-2.5 rounded-[10px] text-[13px] font-medium whitespace-nowrap transition-all duration-200 border min-w-[56px]',
                       selectedDuration === option.value
-                        ? 'bg-[#3b82f6] text-white border-transparent'
-                        : 'bg-[#0d1014] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]'
+                        ? 'bg-[#3b82f6] text-white border-transparent shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                        : 'bg-[var(--surface-2)] text-[rgba(238,242,255,0.72)] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] shadow-[0_2px_4px_rgba(0,0,0,0.2)]'
                     )}
                   >
                     {option.label}
@@ -636,7 +672,7 @@ export function BlockModal({
                   <select
                     value={customDurationUnit}
                     onChange={(e) => setCustomDurationUnit(e.target.value as 'min' | 'hr')}
-                    className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[#0d1014] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none"
+                    className="px-3 py-2.5 rounded-[10px] text-[13px] font-medium bg-[var(--surface-2)] text-[rgba(238,242,255,0.72)] border border-[rgba(255,255,255,0.08)] focus:border-[#3b82f6] focus:outline-none shadow-[0_2px_4px_rgba(0,0,0,0.2)]"
                   >
                     <option value="min">min</option>
                     <option value="hr">hr</option>
@@ -645,28 +681,17 @@ export function BlockModal({
               )}
             </div>
           )}
-
-          {/* Continue Button */}
-          <Button
-            type="button"
-            onClick={handleContinue}
-            className="w-full"
-            size="lg"
-          >
-            Continue
-            <ChevronRight className="h-5 w-5 ml-1" />
-          </Button>
         </div>
       )}
 
       {/* Step 2: Details */}
       {(step === 2 || editingBlock) && (
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-4 pb-0 space-y-4">
           {/* Summary Header */}
           {!editingBlock && (
-            <div className="p-4 rounded-[12px] border bg-[#0d1014] border-[rgba(255,255,255,0.08)]">
+            <div className="p-4 rounded-[12px] bg-[var(--surface-2)] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
               <div className="flex items-center gap-3 mb-2">
-                <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)]">
+                <div className="h-10 w-10 rounded-[10px] flex items-center justify-center bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.2)]">
                   <Clock className="h-5 w-5 text-[#3b82f6]" />
                 </div>
                 <div>
@@ -708,7 +733,7 @@ export function BlockModal({
 
           {/* Clean date/time edit section */}
           {editingBlock && (
-            <div className="p-4 bg-[#0d1014] rounded-[12px] border border-[rgba(255,255,255,0.08)] space-y-4">
+            <div className="p-4 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)] space-y-4">
               {/* Date Row */}
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-[rgba(238,242,255,0.50)] flex-shrink-0" />
@@ -774,7 +799,7 @@ export function BlockModal({
               )}
 
               {/* Share to Feed Toggle */}
-              <div className="flex items-center justify-between p-3 bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)]">
+              <div className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-[12px] border border-[rgba(255,255,255,0.08)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
                 <div>
                   <p className="text-[13px] font-medium text-[#eef2ff]">Share to Feed</p>
                   <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
@@ -810,27 +835,12 @@ export function BlockModal({
 
           {/* Future-scheduled info notice (when share/media is hidden) */}
           {!showShareMediaControls && blockType !== 'personal' && !editingBlock && isScheduledFuture && (
-            <div className="p-3 bg-[rgba(59,130,246,0.08)] rounded-[12px] border border-[rgba(59,130,246,0.2)]">
+            <div className="p-3 bg-[rgba(59,130,246,0.08)] rounded-[12px] border border-[rgba(59,130,246,0.2)] shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
               <p className="text-[12px] text-[rgba(238,242,255,0.72)]">
                 📸 You can add photos and share to the feed when you complete this block.
               </p>
             </div>
           )}
-
-          {/* Submit Button */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" loading={isSubmitting} className="flex-1">
-              {editingBlock ? 'Save Changes' : 'Create Block'}
-            </Button>
-          </div>
         </form>
       )}
     </Modal>
