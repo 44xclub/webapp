@@ -65,7 +65,7 @@ export function Modal({
           className
         )}
       >
-        {/* Header */}
+        {/* Header - fixed */}
         {(title || showClose) && (
           <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
             <h2 className="text-[15px] font-bold text-[#eef2ff]">
@@ -82,18 +82,18 @@ export function Modal({
           </div>
         )}
 
-        {/* Scrollable Content */}
+        {/* Scrollable Content - body */}
         <div className={cn(
-          'flex-1 overflow-y-auto',
+          'flex-1 overflow-y-auto overscroll-contain',
           footer ? 'max-h-[calc(90dvh-140px)]' : 'max-h-[calc(90dvh-60px)]'
         )}>
           {children}
         </div>
 
-        {/* Sticky Footer - Action Bar with safe area padding */}
+        {/* Sticky Footer - fixed with safe area + centered padding */}
         {footer && (
           <div
-            className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 py-4"
+            className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 pt-4"
             style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
           >
             {footer}

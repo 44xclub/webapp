@@ -41,16 +41,18 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
   if (loading || !profile || !disciplineData) {
     return (
-      <div className="sticky top-0 z-50 bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-[rgba(255,255,255,0.045)] rounded-[16px] animate-pulse" />
-            <div className="space-y-1">
-              <div className="h-4 w-20 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
-              <div className="h-3 w-16 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
+      <div className="sticky top-0 z-50 bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] safe-top">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-[rgba(255,255,255,0.045)] rounded-[16px] animate-pulse" />
+              <div className="space-y-1">
+                <div className="h-4 w-20 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
+                <div className="h-3 w-16 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
+              </div>
             </div>
+            <div className="h-8 w-24 bg-[rgba(255,255,255,0.045)] rounded-[12px] animate-pulse" />
           </div>
-          <div className="h-8 w-24 bg-[rgba(255,255,255,0.045)] rounded-[12px] animate-pulse" />
         </div>
       </div>
     )
@@ -64,7 +66,7 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
   const badgeDisplay = `${disciplineData.badge} ${romanNumerals[disciplineData.badgeLevel - 1] || 'I'}`
 
   return (
-    <div className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
+    <div className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href="/profile" className="flex items-center gap-3 group">

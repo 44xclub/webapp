@@ -28,9 +28,9 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
 
   if (!challenge) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3">
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[var(--radius-section)] p-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)]">
+          <div className="p-1.5 rounded-[var(--radius-button)] bg-[rgba(255,255,255,0.04)]">
             <Target className="h-4 w-4 text-[rgba(238,242,255,0.30)]" />
           </div>
           <div>
@@ -49,7 +49,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
     return (
       <button
         onClick={isCompleted ? onViewPost : onLogToday}
-        className="w-full relative overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
+        className="w-full relative overflow-hidden rounded-[var(--radius-section)] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
       >
         {/* Background */}
         {imageUrl ? (
@@ -87,7 +87,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
 
   // Full variant - vertical layout for Structure page
   return (
-    <div className="relative overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.08)]">
+    <div className="relative overflow-hidden rounded-[var(--radius-section)] border border-[rgba(255,255,255,0.08)]">
       {/* Background image or gradient */}
       {imageUrl ? (
         <div
@@ -102,10 +102,10 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
 
       {/* Content */}
-      <div className="relative z-10 p-4">
+      <div className="relative z-10 p-3">
         {/* Header row: Title + Status badge inline */}
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className="text-[15px] font-semibold text-white leading-tight flex-1">
+        <div className="flex items-center justify-between gap-3 mb-1.5">
+          <h3 className="text-[14px] font-semibold text-white leading-tight flex-1 truncate">
             {challenge.title}
           </h3>
           {isCompleted ? (
@@ -118,14 +118,14 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
           )}
         </div>
 
-        {/* Description */}
+        {/* Description - max 2 lines */}
         {challenge.description && (
-          <p className="text-[12px] text-[rgba(255,255,255,0.60)] leading-snug line-clamp-2 mb-3">
+          <p className="text-[12px] text-[rgba(255,255,255,0.55)] leading-snug line-clamp-2 mb-2.5">
             {challenge.description}
           </p>
         )}
 
-        {/* Action button */}
+        {/* Action button - full width CTA */}
         {isCompleted ? (
           onViewPost ? (
             <Button
@@ -137,7 +137,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
               View Post
             </Button>
           ) : (
-            <div className="flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-[var(--accent-success-light)]">
+            <div className="flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-medium text-[var(--accent-success-light)]">
               <Check className="h-3.5 w-3.5" />
               Completed Today
             </div>
