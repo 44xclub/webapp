@@ -57,10 +57,10 @@ export async function verifyWhopToken(token: string): Promise<WhopUser | null> {
 }
 
 /**
- * Check whether a Whop user has access to a specific experience/product.
+ * Check whether a Whop user has an active paid membership.
  * Requires WHOP_API_KEY (server-side Bearer key).
  *
- * Optional hardening — can be enabled later.
+ * FAIL-CLOSED: denies access if WHOP_API_KEY is missing or API call fails.
  */
 export async function checkWhopAccess(
   whopUserId: string,
@@ -68,8 +68,8 @@ export async function checkWhopAccess(
 ): Promise<boolean> {
   const apiKey = process.env.WHOP_API_KEY
   if (!apiKey) {
-    console.warn('[whop] WHOP_API_KEY not set — skipping entitlement check')
-    return true // fail-open when key not configured
+    console.error('[whop] WHOP_API_KEY not set — denying access (fail-closed)')
+    return false
   }
 
   try {

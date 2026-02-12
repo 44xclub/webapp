@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyWhopToken } from '@/lib/whop/verify'
+import { verifyWhopToken, checkWhopAccess } from '@/lib/whop/verify'
+import { createSessionValue, COOKIE_NAME, COOKIE_TTL_S } from '@/lib/whop/session'
 import { createHmac } from 'crypto'
 
 /**
  * GET /api/auth/bootstrap
  *
- * Called once on app start (inside Whop embed) to:
- *  1. Verify the Whop token
- *  2. Find-or-create a Supabase user mapped to the Whop user
- *  3. Sign them in and return credentials the client stores
- *  4. Upsert the profile with whop_user_id linkage
+ * The ONLY entry point for authentication. Called by WhopGate on app start.
  *
- * Required env vars:
- *   SUPABASE_SERVICE_ROLE_KEY  — admin operations
- *   WHOP_AUTH_SECRET           — deterministic password derivation
- *   NEXT_PUBLIC_SUPABASE_URL
- *   NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *  1. Verify x-whop-user-token with Whop API (rejects forged tokens)
+ *  2. Verify paid access via Whop memberships API (rejects non-members)
+ *  3. Find-or-create a Supabase user mapped to the Whop user
+ *  4. Set a signed session cookie (HMAC-bound to user + expiry)
+ *  5. Return Supabase session credentials
  */
 
-// Rate-limit map (in-memory, per-instance — sufficient for basic protection)
+// ── Rate limiting (in-memory, per-instance) ──────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
-const RATE_LIMIT_MAX = 20          // requests per window
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 10 // tightened from 20
 
 function isRateLimited(key: string): boolean {
   const now = Date.now()
@@ -36,6 +33,14 @@ function isRateLimited(key: string): boolean {
   entry.count++
   return entry.count > RATE_LIMIT_MAX
 }
+
+// Clean up stale entries periodically to prevent memory leak
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key)
+  }
+}, 5 * 60_000)
 
 function derivePassword(whopUserId: string, secret: string): string {
   return createHmac('sha256', secret).update(whopUserId).digest('hex')
@@ -57,12 +62,12 @@ export async function GET(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (isRateLimited(clientIp)) {
     return NextResponse.json(
-      { error: 'Too many requests' },
+      { error: 'Too many requests', access: false },
       { status: 429 },
     )
   }
 
-  // ── Read Whop token ────────────────────────────────────────────
+  // ── Step 1: Read Whop token ────────────────────────────────────
   const whopToken = request.headers.get('x-whop-user-token')
   if (!whopToken) {
     return NextResponse.json(
@@ -71,11 +76,21 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // ── Verify with Whop API ───────────────────────────────────────
+  // ── Step 2: Verify token with Whop API ─────────────────────────
   const whopUser = await verifyWhopToken(whopToken)
   if (!whopUser) {
     return NextResponse.json(
       { error: 'Invalid or expired Whop token', access: false },
+      { status: 403 },
+    )
+  }
+
+  // ── Step 3: Verify paid access (entitlement check) ─────────────
+  const experienceId = process.env.WHOP_EXPERIENCE_ID || ''
+  const hasAccess = await checkWhopAccess(whopUser.id, experienceId)
+  if (!hasAccess) {
+    return NextResponse.json(
+      { error: 'No active 44CLUB membership', access: false },
       { status: 403 },
     )
   }
@@ -101,7 +116,6 @@ export async function GET(request: NextRequest) {
     const password = derivePassword(whopUser.id, authSecret)
 
     // ── Find or create the Supabase user ───────────────────────
-    // Try to sign in first (fast path for returning users)
     const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
@@ -129,7 +143,7 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Now sign in as the new user
+      // Sign in as the new user
       signInResult = await anonClient.auth.signInWithPassword({ email, password })
 
       if (signInResult.error) {
@@ -140,7 +154,7 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Upsert profile with Whop identity (new user)
+      // Upsert profile with Whop identity
       if (newUser.user) {
         await admin.from('profiles').upsert({
           id: newUser.user.id,
@@ -155,7 +169,7 @@ export async function GET(request: NextRequest) {
         }, { onConflict: 'id' })
       }
     } else {
-      // Existing user — update Whop metadata on each login
+      // Existing user — update Whop metadata
       const userId = signInResult.data.user?.id
       if (userId) {
         await admin.from('profiles').update({
@@ -173,7 +187,9 @@ export async function GET(request: NextRequest) {
 
     const session = signInResult.data.session!
 
-    return NextResponse.json({
+    // ── Step 4: Set signed session cookie ────────────────────────
+    const cookieValue = await createSessionValue(whopUser.id)
+    const res = NextResponse.json({
       access: true,
       whop_user_id: whopUser.id,
       access_token: session.access_token,
@@ -184,6 +200,16 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
       },
     })
+
+    res.cookies.set(COOKIE_NAME, cookieValue, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none', // required for cross-origin iframe
+      maxAge: COOKIE_TTL_S,
+      path: '/',
+    })
+
+    return res
   } catch (err) {
     console.error('[bootstrap] Unexpected error:', err)
     return NextResponse.json(
