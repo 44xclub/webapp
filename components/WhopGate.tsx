@@ -20,7 +20,7 @@ import { AccessWall } from './AccessWall'
 
 type GateState = 'loading' | 'ready' | 'blocked' | 'error'
 
-export function WhopGate({ children }: { children: React.ReactNode }) {
+export function WhopGate({ children, whopToken }: { children: React.ReactNode; whopToken?: string | null }) {
   const [state, setState] = useState<GateState>('loading')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const router = useRouter()
@@ -37,8 +37,14 @@ export function WhopGate({ children }: { children: React.ReactNode }) {
 
     // ── Slow path: call bootstrap to verify Whop token ────────────
     try {
+      const headers: Record<string, string> = {}
+      if (whopToken) {
+        headers['x-whop-user-token'] = whopToken
+      }
+
       const res = await fetch('/api/auth/bootstrap', {
         credentials: 'include',
+        headers,
       })
 
       if (res.status === 401 || res.status === 403) {
@@ -80,7 +86,7 @@ export function WhopGate({ children }: { children: React.ReactNode }) {
       setErrorMsg('Connection error')
       setState('error')
     }
-  }, [router])
+  }, [router, whopToken])
 
   useEffect(() => {
     bootstrap()
