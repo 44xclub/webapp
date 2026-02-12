@@ -87,8 +87,10 @@ export async function GET(request: NextRequest) {
 
   // ── Step 3: Verify paid access (entitlement check) ─────────────
   const experienceId = process.env.WHOP_EXPERIENCE_ID || ''
+  console.log('[bootstrap] Checking access for user:', whopUser.id, 'with experienceId:', experienceId || '(empty)')
   const hasAccess = await checkWhopAccess(whopUser.id, experienceId)
   if (!hasAccess) {
+    console.warn('[bootstrap] Access DENIED for user:', whopUser.id, '— check WHOP_EXPERIENCE_ID in server logs above')
     return NextResponse.json(
       { error: 'No active 44CLUB membership', access: false },
       { status: 403 },

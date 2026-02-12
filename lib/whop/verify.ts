@@ -84,11 +84,28 @@ export async function checkWhopAccess(
     if (!res.ok) return false
 
     const data = await res.json()
+
+    // Diagnostic: log what Whop returned vs what we're matching against
+    const memberships = data.data ?? []
+    const experienceIds = memberships.map(
+      (m: { experience_id?: string; product_id?: string; status?: string }) => ({
+        experience_id: m.experience_id,
+        product_id: m.product_id,
+        status: m.status,
+      }),
+    )
+    console.log('[whop] checkWhopAccess debug:', {
+      whopUserId,
+      configuredExperienceId: experienceId || '(empty — accepting any)',
+      membershipCount: memberships.length,
+      memberships: experienceIds,
+    })
+
     // If any membership matches the experience, they have access
-    if (!experienceId) return (data.data?.length ?? 0) > 0
-    return data.data?.some(
+    if (!experienceId) return memberships.length > 0
+    return memberships.some(
       (m: { experience_id?: string }) => m.experience_id === experienceId,
-    ) ?? false
+    )
   } catch {
     return false
   }
