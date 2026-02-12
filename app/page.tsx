@@ -1,39 +1,16 @@
-'use client'
-
-import { WhopGate } from '@/components/WhopGate'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { headers } from 'next/headers'
+import { HomePageClient } from './HomePageClient'
 
 /**
- * Root page — WhopGate entry point.
+ * Root page (Server Component).
  *
- * WhopGate handles:
- *  1. Verifying the Whop embed token
- *  2. Bootstrapping the Supabase session
- *  3. Showing Access Wall if outside Whop
- *
- * Once authenticated, redirects to /app.
+ * Reads the x-whop-user-token header that Whop injects on the initial
+ * iframe load and passes it to the client-side WhopGate so it can call
+ * the bootstrap endpoint.
  */
-function RedirectToApp() {
-  const router = useRouter()
+export default async function HomePage() {
+  const headersList = await headers()
+  const whopToken = headersList.get('x-whop-user-token') || null
 
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        router.replace('/app')
-      }
-    })
-  }, [router])
-
-  return null
-}
-
-export default function HomePage() {
-  return (
-    <WhopGate>
-      <RedirectToApp />
-    </WhopGate>
-  )
+  return <HomePageClient whopToken={whopToken} />
 }

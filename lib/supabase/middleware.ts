@@ -29,7 +29,9 @@ function addSecurityHeaders(response: NextResponse): void {
     "frame-ancestors 'self' https://*.whop.com https://whop.com;",
   )
   response.headers.set('X-Robots-Tag', 'noindex, nofollow')
-  response.headers.set('X-Frame-Options', 'DENY') // fallback for older browsers outside CSP
+  // X-Frame-Options intentionally omitted — CSP frame-ancestors handles
+  // iframe policy and takes precedence in all modern browsers. Setting
+  // X-Frame-Options: DENY here would conflict and block the Whop embed.
 }
 
 /**
