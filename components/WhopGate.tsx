@@ -26,11 +26,16 @@ export function WhopGate({ children, whopToken }: { children: React.ReactNode; w
   const router = useRouter()
 
   const bootstrap = useCallback(async () => {
+    console.log('[WhopGate] ▶ bootstrap start')
+    console.log('[WhopGate] whopToken received:', whopToken ? `yes (${whopToken.slice(0, 12)}…)` : 'NO — Whop did not inject the header')
+
     const supabase = createClient()
 
     // ── Fast path: already have a valid Supabase session ──────────
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: getUserError } = await supabase.auth.getUser()
+    console.log('[WhopGate] existing session check:', user ? `user ${user.id}` : 'no user', getUserError ? `(err: ${getUserError.message})` : '')
     if (user) {
+      console.log('[WhopGate] ✓ fast path — already authenticated')
       setState('ready')
       return
     }
@@ -42,26 +47,33 @@ export function WhopGate({ children, whopToken }: { children: React.ReactNode; w
         headers['x-whop-user-token'] = whopToken
       }
 
+      console.log('[WhopGate] calling /api/auth/bootstrap…')
       const res = await fetch('/api/auth/bootstrap', {
         credentials: 'include',
         headers,
       })
+      console.log('[WhopGate] bootstrap response:', res.status, res.statusText)
 
       if (res.status === 401 || res.status === 403) {
+        const body = await res.json().catch(() => ({}))
+        console.error('[WhopGate] ✗ blocked —', res.status, body.error || '')
         setState('blocked')
         return
       }
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[WhopGate] ✗ bootstrap failed —', res.status, body.error)
         setErrorMsg(body.error || 'Bootstrap failed')
         setState('error')
         return
       }
 
       const data = await res.json()
+      console.log('[WhopGate] bootstrap data:', { access: data.access, hasToken: !!data.access_token, whop_user_id: data.whop_user_id })
 
       if (!data.access || !data.access_token) {
+        console.error('[WhopGate] ✗ no access or token in response')
         setState('blocked')
         return
       }
@@ -73,16 +85,17 @@ export function WhopGate({ children, whopToken }: { children: React.ReactNode; w
       })
 
       if (sessionError) {
-        console.error('[WhopGate] setSession failed:', sessionError.message)
+        console.error('[WhopGate] ✗ setSession failed:', sessionError.message)
         setErrorMsg('Session error — reload within Whop')
         setState('error')
         return
       }
 
+      console.log('[WhopGate] ✓ authenticated — redirecting to /app')
       setState('ready')
       router.refresh()
     } catch (err) {
-      console.error('[WhopGate] bootstrap error:', err)
+      console.error('[WhopGate] ✗ bootstrap error:', err)
       setErrorMsg('Connection error')
       setState('error')
     }
