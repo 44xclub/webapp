@@ -89,8 +89,8 @@ function TableSection({ title, icon, children }: { title: string; icon?: React.R
 
 export function DisciplineSystemModal({ isOpen, onClose, todayBreakdown }: DisciplineSystemModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Discipline System">
-      <div className="px-3 pb-4 space-y-4 max-h-[70vh] overflow-y-auto">
+    <Modal isOpen={isOpen} onClose={onClose} title="Discipline System" fullScreen={true}>
+      <div className="px-3 pb-4 space-y-4">
         {/* Summary */}
         <div className="bg-[rgba(59,130,246,0.08)] rounded-[10px] border border-[rgba(59,130,246,0.2)] p-3">
           <p className="text-[12px] text-[rgba(238,242,255,0.75)] leading-relaxed">

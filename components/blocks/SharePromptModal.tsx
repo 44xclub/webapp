@@ -251,8 +251,9 @@ export function SharePromptModal({
       onClose={handleNotNow}
       title="Share to Feed"
       showClose={true}
+      fullScreen={true}
     >
-      <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div className="p-4 space-y-4">
         {/* Post Preview */}
         <div>
           <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">

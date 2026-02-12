@@ -93,11 +93,12 @@ export function FrameworkChecklistModal({
       isOpen={isOpen}
       onClose={onClose}
       title={framework.title}
+      fullScreen={true}
       footer={onDeactivate && (
         <button
           onClick={handleDeactivate}
           disabled={deactivating}
-          className="btn btn--danger w-full"
+          className="btn btn--danger w-full h-11"
         >
           {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Deactivate Framework'}
         </button>

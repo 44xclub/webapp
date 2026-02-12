@@ -56,7 +56,7 @@ export function CheckinDetailsModal({ isOpen, onClose, checkin }: CheckinDetails
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Check-in Details" showClose>
+      <Modal isOpen={isOpen} onClose={onClose} title="Check-in Details" showClose fullScreen={true}>
         <div className="p-4 space-y-4">
           {/* Date & Time */}
           <div className="flex items-center gap-3 pb-3 border-b border-[rgba(255,255,255,0.06)]">

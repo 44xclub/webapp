@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useCallback, type ReactNode } from 'react'
+import { useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { X, Search } from 'lucide-react'
+import { lockBodyScroll, unlockBodyScroll } from './Modal'
 
 interface FullScreenOverlayProps {
   isOpen: boolean
@@ -33,14 +34,20 @@ export function FullScreenOverlay({
     [onClose]
   )
 
+  const wasOpen = useRef(false)
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpen.current) {
       document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      lockBodyScroll()
+      wasOpen.current = true
     }
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
+      if (wasOpen.current) {
+        unlockBodyScroll()
+        wasOpen.current = false
+      }
     }
   }, [isOpen, handleEscape])
 

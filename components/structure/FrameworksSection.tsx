@@ -149,7 +149,27 @@ export function FrameworksSection({ frameworks, activeFramework, onActivateFrame
       </FullScreenOverlay>
 
       {/* Detail Modal */}
-      <Modal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} title={selectedFramework?.title || 'Framework'}>
+      <Modal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        title={selectedFramework?.title || 'Framework'}
+        fullScreen={true}
+        footer={selectedFramework && (
+          <Button
+            onClick={() => handleActivate(selectedFramework)}
+            disabled={activating || activeFramework?.framework_template_id === selectedFramework.id}
+            className="w-full h-11"
+          >
+            {activating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : activeFramework?.framework_template_id === selectedFramework.id ? (
+              'Currently Active'
+            ) : (
+              'Activate Framework'
+            )}
+          </Button>
+        )}
+      >
         {selectedFramework && (
           <div className="space-y-4 px-4 pb-4">
             {selectedFramework.description && (
@@ -179,21 +199,6 @@ export function FrameworksSection({ frameworks, activeFramework, onActivateFrame
                 </div>
               </div>
             )}
-            <div className="pt-1">
-              <Button
-                onClick={() => handleActivate(selectedFramework)}
-                disabled={activating || activeFramework?.framework_template_id === selectedFramework.id}
-                className="w-full"
-              >
-                {activating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : activeFramework?.framework_template_id === selectedFramework.id ? (
-                  'Currently Active'
-                ) : (
-                  'Activate Framework'
-                )}
-              </Button>
-            </div>
           </div>
         )}
       </Modal>

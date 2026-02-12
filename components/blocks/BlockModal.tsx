@@ -57,7 +57,6 @@ const durationOptions = [
   { value: 15, label: '15m' },
   { value: 30, label: '30m' },
   { value: 60, label: '1h' },
-  { value: 120, label: '2h' },
   { value: 'custom', label: 'Custom' },
 ]
 
@@ -568,7 +567,7 @@ export function BlockModal({
             <label className="block text-[11px] font-semibold text-[rgba(238,242,255,0.45)] uppercase tracking-wider mb-3">
               Block Type
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="flex gap-2">
               {filteredBlockTypes.map((option) => {
                 const isSelected = blockType === option.value
                 const IconComponent = option.icon
@@ -578,9 +577,9 @@ export function BlockModal({
                     type="button"
                     onClick={() => handleBlockTypeChange(option.value as BlockType)}
                     className={cn(
-                      'flex flex-col items-center gap-1.5 py-3 px-2 rounded-[12px] text-[11px] font-medium transition-all duration-200 border',
+                      'flex flex-col items-center gap-1.5 w-[60px] h-[60px] justify-center rounded-[12px] text-[11px] font-medium transition-all duration-200 border flex-shrink-0',
                       isSelected
-                        ? 'bg-gradient-to-b from-[rgba(59,130,246,0.2)] to-[rgba(59,130,246,0.1)] text-[#60a5fa] border-[rgba(59,130,246,0.4)] shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+                        ? 'bg-gradient-to-b from-[rgba(59,130,246,0.2)] to-[rgba(59,130,246,0.1)] text-[#60a5fa] border-[rgba(59,130,246,0.4)]'
                         : 'bg-[rgba(255,255,255,0.03)] text-[rgba(238,242,255,0.5)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[rgba(238,242,255,0.7)]'
                     )}
                   >
@@ -606,19 +605,19 @@ export function BlockModal({
             />
           </div>
 
-          {/* Date & Time - compact single row: [Date] [Start] [End] */}
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-3">
-            <div className="flex items-center gap-2">
-              {/* Date */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">Date</p>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-[18px] w-[18px] text-[#60a5fa] flex-shrink-0" />
-                  <p className="text-[14px] text-[#eef2ff] font-medium truncate">{formatDisplayDate(dateValue)}</p>
-                </div>
+          {/* Date & Time - 2-row layout */}
+          <div className="bg-[rgba(255,255,255,0.03)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-3 space-y-2.5">
+            {/* Row 1: Date (100%) */}
+            <div>
+              <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">Date</p>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-[18px] w-[18px] text-[#60a5fa] flex-shrink-0" />
+                <p className="text-[14px] text-[#eef2ff] font-medium truncate">{formatDisplayDate(dateValue)}</p>
               </div>
-              {/* Start Time */}
-              <div className="w-[90px] flex-shrink-0">
+            </div>
+            {/* Row 2: Start (40%) + End (40%) + Spacer (20%) */}
+            <div className="flex items-end gap-2">
+              <div className="w-[40%]">
                 <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">{(blockType === 'checkin' || blockType === 'nutrition') ? 'Time' : 'Start'}</p>
                 <Input
                   type="time"
@@ -626,13 +625,13 @@ export function BlockModal({
                   className="w-full text-[14px]"
                 />
               </div>
-              {/* End Time */}
               {blockType !== 'checkin' && blockType !== 'nutrition' && (
-                <div className="w-[80px] flex-shrink-0 text-center">
+                <div className="w-[40%] text-center">
                   <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">End</p>
-                  <p className="text-[14px] text-[#eef2ff] font-semibold">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
+                  <p className="text-[14px] text-[#eef2ff] font-semibold py-[7px]">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
                 </div>
               )}
+              <div className="w-[20%]" />
             </div>
           </div>
 
@@ -642,7 +641,7 @@ export function BlockModal({
               <label className="block text-[11px] font-semibold text-[rgba(238,242,255,0.45)] uppercase tracking-wider mb-3">
                 Duration
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {durationOptions.map((option) => (
                   <button
                     key={option.value}
@@ -655,9 +654,9 @@ export function BlockModal({
                       }
                     }}
                     className={cn(
-                      'h-[38px] rounded-[var(--radius-button)] text-[13px] font-semibold transition-all duration-200',
+                      'h-[36px] rounded-[var(--radius-button)] text-[13px] font-semibold transition-all duration-200',
                       selectedDuration === option.value
-                        ? 'bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(59,130,246,0.3)]'
+                        ? 'bg-[var(--accent-primary)] text-white'
                         : 'bg-[rgba(255,255,255,0.04)] text-[rgba(238,242,255,0.6)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)]'
                     )}
                   >

@@ -153,10 +153,44 @@ export function ProgrammeDetailModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} showClose={false} className="!max-w-lg">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        showClose={false}
+        fullScreen={true}
+        footer={
+          <div className="flex gap-2">
+            {isActive ? (
+              <>
+                <Button
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); setScheduleModalOpen(true) }}
+                  className="flex-1 h-11"
+                >
+                  <Calendar className="h-3.5 w-3.5" /> Schedule Week
+                </Button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDeactivateConfirmOpen(true) }}
+                  className="btn btn--sm btn--danger flex-1 h-11"
+                >
+                  Deactivate
+                </button>
+              </>
+            ) : onActivate ? (
+              <Button
+                onClick={() => onActivate(programme)}
+                disabled={activating}
+                className="w-full h-11"
+              >
+                {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Activate Programme'}
+              </Button>
+            ) : null}
+          </div>
+        }
+      >
         <div className="relative">
-          {/* Hero Image */}
-          <div className="relative h-[200px]">
+          {/* Hero Image - max 240px */}
+          <div className="relative h-[200px] max-h-[240px]">
             {imageUrl ? (
               <div
                 className="absolute inset-0 bg-cover bg-center"
@@ -175,7 +209,7 @@ export function ProgrammeDetailModal({
               <span className="text-[16px]">&#x2715;</span>
             </button>
 
-            {/* Active badge - unified pill system */}
+            {/* Active badge */}
             {isActive && (
               <span className="pill pill--success-solid pill--pulse absolute bottom-4 left-4">
                 Active
@@ -185,34 +219,34 @@ export function ProgrammeDetailModal({
 
           {/* Content */}
           <div className="px-4 pb-4 -mt-2">
-            <h2 className="text-[20px] font-bold text-[#eef2ff] mb-1.5">{programme.title}</h2>
+            <h2 className="text-[18px] font-bold text-[#eef2ff] mb-1">{programme.title}</h2>
 
             {programme.overview && (
-              <p className="text-[13px] text-[rgba(238,242,255,0.55)] leading-relaxed mb-4">
+              <p className="text-[13px] text-[rgba(238,242,255,0.55)] leading-relaxed mb-3 line-clamp-3">
                 {programme.overview}
               </p>
             )}
 
-            {/* Plan Details */}
+            {/* Plan Details - compact */}
             {(programme.structure || programme.equipment) && (
-              <div className="space-y-2.5 mb-4 py-3 border-t border-[rgba(255,255,255,0.06)]">
-                <p className="text-[11px] uppercase tracking-wider text-[rgba(238,242,255,0.35)] font-semibold">Plan Details</p>
+              <div className="space-y-1.5 mb-3 py-2.5 border-t border-[rgba(255,255,255,0.06)]">
+                <p className="text-[10px] uppercase tracking-wider text-[rgba(238,242,255,0.35)] font-semibold">Plan Details</p>
                 {programme.structure && (
                   <div className="flex justify-between items-center">
                     <span className="text-[12px] text-[rgba(238,242,255,0.45)]">Structure</span>
-                    <span className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{programme.structure}</span>
+                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.85)]">{programme.structure}</span>
                   </div>
                 )}
                 {programme.equipment && (
                   <div className="flex justify-between items-center">
                     <span className="text-[12px] text-[rgba(238,242,255,0.45)]">Equipment</span>
-                    <span className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">{programme.equipment}</span>
+                    <span className="text-[12px] font-medium text-[rgba(238,242,255,0.85)]">{programme.equipment}</span>
                   </div>
                 )}
                 {programme.tags && programme.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex gap-1.5 pt-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                     {programme.tags.map((tag) => (
-                      <span key={tag} className="text-[10px] font-medium text-[rgba(238,242,255,0.50)] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] px-2 py-0.5 rounded-full">
+                      <span key={tag} className="text-[10px] font-medium text-[rgba(238,242,255,0.50)] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
                         {tag}
                       </span>
                     ))}
@@ -223,14 +257,14 @@ export function ProgrammeDetailModal({
 
             {/* Sessions */}
             {loadingSessions ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-[rgba(238,242,255,0.35)]" />
               </div>
             ) : uniqueDays.length > 0 ? (
-              <div className="border-t border-[rgba(255,255,255,0.06)] pt-3">
-                <p className="text-[11px] uppercase tracking-wider text-[rgba(238,242,255,0.35)] font-semibold mb-2">Sessions</p>
+              <div className="border-t border-[rgba(255,255,255,0.06)] pt-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-[rgba(238,242,255,0.35)] font-semibold mb-2">Sessions</p>
 
-                {/* Day Tabs - unified tab system */}
+                {/* Day Tabs */}
                 <div className="flex gap-1 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
                   {uniqueDays.map((dayIndex) => (
                     <button
@@ -245,9 +279,9 @@ export function ProgrammeDetailModal({
 
                 {/* Selected Session */}
                 {selectedSession && (
-                  <div className="space-y-2 mt-2">
-                    <div className="p-2.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
-                      <p className="text-[14px] font-semibold text-[rgba(238,242,255,0.90)]">{selectedSession.title}</p>
+                  <div className="space-y-1.5 mt-1.5">
+                    <div className="p-2 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
+                      <p className="text-[13px] font-semibold text-[rgba(238,242,255,0.90)]">{selectedSession.title}</p>
                     </div>
                     {renderSessionPayload(selectedSession.payload)}
                   </div>
@@ -258,35 +292,6 @@ export function ProgrammeDetailModal({
                 No sessions defined for this programme.
               </p>
             )}
-
-            {/* Action buttons - unified btn system */}
-            <div className="flex gap-2 pt-4 mt-2">
-              {isActive ? (
-                <>
-                  <Button
-                    size="sm"
-                    onClick={(e) => { e.stopPropagation(); setScheduleModalOpen(true) }}
-                    className="flex-1"
-                  >
-                    <Calendar className="h-3.5 w-3.5" /> Schedule Week
-                  </Button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeactivateConfirmOpen(true) }}
-                    className="btn btn--sm btn--danger flex-1"
-                  >
-                    Deactivate
-                  </button>
-                </>
-              ) : onActivate ? (
-                <Button
-                  onClick={() => onActivate(programme)}
-                  disabled={activating}
-                  className="w-full"
-                >
-                  {activating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Activate Programme'}
-                </Button>
-              ) : null}
-            </div>
           </div>
         </div>
       </Modal>

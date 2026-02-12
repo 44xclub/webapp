@@ -539,12 +539,12 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
 
   if (allMedia.length === 0) return null
 
-  // Single image - constrained max-width on desktop for better proportions
+  // Single image - max 420px
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
-      <div className="rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
+      <div className="rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
         <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
           <img
             src={imageUrl}
@@ -556,10 +556,10 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     )
   }
 
-  // Two images - side by side with max-width on desktop
+  // Two images - side by side, max 420px
   if (allMedia.length === 2) {
     return (
-      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[500px]">
+      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
         {allMedia.map((item, idx) => {
           const imageUrl = getStorageUrl(item.path)
           if (!imageUrl) return null
@@ -587,7 +587,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     if (!primaryUrl || !secondaryUrl || !tertiaryUrl) return null
 
     return (
-      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[200px] sm:max-w-[500px]">
+      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[200px] max-w-[420px]">
         {/* Primary image - spans 2 columns */}
         <div className="col-span-2 relative h-full">
           <img
@@ -621,7 +621,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   // 4+ images - 2x2 grid with +N overlay
   const displayMedia = allMedia.slice(0, 4)
   return (
-    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
+    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
       {displayMedia.map((item, idx) => {
         const imageUrl = getStorageUrl(item.path)
         if (!imageUrl) return null

@@ -205,7 +205,17 @@ export function ChallengeLogModal({
   // Form step
   if (step === 'form') {
     return (
-      <Modal isOpen={isOpen} onClose={handleClose} title="Log Challenge">
+      <Modal isOpen={isOpen} onClose={handleClose} title="Log Challenge" fullScreen={true}
+        footer={
+          <Button
+            onClick={handlePreview}
+            disabled={!canProceedToPreview}
+            className="w-full h-11"
+          >
+            Preview Post
+          </Button>
+        }
+      >
         <div className="px-4 pb-4 space-y-4">
           {/* Challenge info */}
           <div className="p-3 rounded-[12px] bg-[rgba(59,130,246,0.08)] border border-[rgba(59,130,246,0.15)]">
@@ -312,15 +322,6 @@ export function ChallengeLogModal({
           {error && (
             <p className="text-[12px] text-rose-400 text-center">{error}</p>
           )}
-
-          {/* Actions */}
-          <Button
-            onClick={handlePreview}
-            disabled={!canProceedToPreview}
-            className="w-full"
-          >
-            Preview Post
-          </Button>
         </div>
       </Modal>
     )
@@ -328,7 +329,38 @@ export function ChallengeLogModal({
 
   // Preview step
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Preview Post">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Preview Post" fullScreen={true}
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setStep('form')}
+            disabled={isSubmitting}
+            className="flex-1 h-11"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          <Button
+            onClick={handlePost}
+            disabled={isSubmitting}
+            className="flex-1 h-11"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-1" />
+                Post
+              </>
+            )}
+          </Button>
+        </div>
+      }
+    >
       <div className="px-4 pb-4 space-y-4">
         {/* Post preview */}
         <div className="rounded-[14px] border border-[rgba(255,255,255,0.08)] overflow-hidden bg-[rgba(255,255,255,0.02)]">
@@ -406,36 +438,6 @@ export function ChallengeLogModal({
         {error && (
           <p className="text-[12px] text-rose-400 text-center">{error}</p>
         )}
-
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setStep('form')}
-            disabled={isSubmitting}
-            className="flex-1"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <Button
-            onClick={handlePost}
-            disabled={isSubmitting}
-            className="flex-1"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Posting...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4 mr-1" />
-                Post
-              </>
-            )}
-          </Button>
-        </div>
       </div>
     </Modal>
   )

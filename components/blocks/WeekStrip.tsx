@@ -12,7 +12,7 @@ import {
   getPreviousWeek,
 } from '@/lib/date'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { isToday, addDays, subDays } from 'date-fns'
+import { isToday, format } from 'date-fns'
 import type { Block } from '@/lib/types'
 import type { ViewMode } from './ViewModeToggle'
 
@@ -36,35 +36,34 @@ export function WeekStrip({
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
   const today = useMemo(() => new Date(), [])
 
-  // Navigate based on active mode: day = ±1 day, week = ±1 week
-  const goBack = useCallback(() => {
-    if (viewMode === 'day') {
-      const prev = subDays(selectedDate, 1)
-      onSelectDate(prev)
-      // If the prev day falls outside current week, shift week too
-      const weekStart = weekDays[0]
-      if (prev < weekStart) onWeekChange(prev)
-    } else {
-      onWeekChange(getPreviousWeek(selectedDate))
+  // Week label: "Week of Feb 9–15" or "Week of Jan 27 – Feb 2" (cross-month)
+  const weekLabel = useMemo(() => {
+    const start = weekDays[0]
+    const end = weekDays[6]
+    const startMonth = format(start, 'MMM')
+    const endMonth = format(end, 'MMM')
+    if (startMonth === endMonth) {
+      return `Week of ${startMonth} ${start.getDate()}–${end.getDate()}`
     }
-  }, [viewMode, selectedDate, onSelectDate, onWeekChange, weekDays])
+    return `Week of ${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}`
+  }, [weekDays])
+
+  // Arrows ALWAYS change week, maintaining weekday index
+  const goBack = useCallback(() => {
+    const newDate = getPreviousWeek(selectedDate)
+    onWeekChange(newDate)
+    onSelectDate(newDate)
+  }, [selectedDate, onWeekChange, onSelectDate])
 
   const goForward = useCallback(() => {
-    if (viewMode === 'day') {
-      const next = addDays(selectedDate, 1)
-      onSelectDate(next)
-      // If the next day falls outside current week, shift week too
-      const weekEnd = weekDays[6]
-      if (next > weekEnd) onWeekChange(next)
-    } else {
-      onWeekChange(getNextWeek(selectedDate))
-    }
-  }, [viewMode, selectedDate, onSelectDate, onWeekChange, weekDays])
+    const newDate = getNextWeek(selectedDate)
+    onWeekChange(newDate)
+    onSelectDate(newDate)
+  }, [selectedDate, onWeekChange, onSelectDate])
 
   // Clicking the active mode button resets to today
   const handleModeClick = useCallback((mode: ViewMode) => {
     if (viewMode === mode) {
-      // Already active: reset to today
       onSelectDate(today)
       onWeekChange(today)
     } else {
@@ -74,24 +73,37 @@ export function WeekStrip({
 
   return (
     <div className="bg-[#07090d] border-b border-[rgba(255,255,255,0.07)]">
-      {/* Centered navigation: ← [DAY | WEEK] → */}
-      <div className="flex items-center justify-center gap-1 px-4 py-1.5">
+      {/* Row 1: ← Week of Feb 9–15 → */}
+      <div className="flex items-center justify-between px-4 py-1.5">
         <button
           onClick={goBack}
           className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
-          aria-label={viewMode === 'day' ? 'Previous day' : 'Previous week'}
+          aria-label="Previous week"
         >
           <ChevronLeft className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
         </button>
+        <span className="text-[13px] font-semibold text-[rgba(238,242,255,0.72)]">
+          {weekLabel}
+        </span>
+        <button
+          onClick={goForward}
+          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          aria-label="Next week"
+        >
+          <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
+        </button>
+      </div>
 
-        {onViewModeChange && (
-          <div className="flex bg-[rgba(255,255,255,0.05)] rounded-[var(--radius-button)] p-0.5 h-[40px]">
+      {/* Row 2: [Day | Week] toggle centered */}
+      {onViewModeChange && (
+        <div className="flex justify-center pb-1.5">
+          <div className="flex bg-[rgba(255,255,255,0.05)] rounded-[var(--radius-button)] p-0.5 h-[32px]">
             <button
               onClick={() => handleModeClick('day')}
               className={cn(
-                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[13px] font-semibold transition-all duration-150',
+                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[12px] font-semibold transition-all duration-150',
                 viewMode === 'day'
-                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                  ? 'bg-[var(--accent-primary)] text-white'
                   : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
               )}
             >
@@ -100,25 +112,17 @@ export function WeekStrip({
             <button
               onClick={() => handleModeClick('week')}
               className={cn(
-                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[13px] font-semibold transition-all duration-150',
+                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[12px] font-semibold transition-all duration-150',
                 viewMode === 'week'
-                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                  ? 'bg-[var(--accent-primary)] text-white'
                   : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
               )}
             >
               Week
             </button>
           </div>
-        )}
-
-        <button
-          onClick={goForward}
-          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
-          aria-label={viewMode === 'day' ? 'Next day' : 'Next week'}
-        >
-          <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* 7 Day Cards - compact, 8px spacing between */}
       <div className="flex justify-around px-1.5 pb-2 gap-[8px]">
