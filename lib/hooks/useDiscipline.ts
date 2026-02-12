@@ -50,19 +50,20 @@ export function useCommunityChallenge(userId: string | undefined) {
           .single()
         if (!error) challengeData = data as CommunityChallenge
       } else {
-        // Fallback: fetch by date range
+        // Fallback: fetch by date range.
+        // Use maybeSingle() so 0 rows returns null instead of a 406 error.
         const { data, error } = await supabase
           .from('community_challenges')
           .select('*')
           .lte('start_date', today)
           .gte('end_date', today)
           .limit(1)
-          .single()
+          .maybeSingle()
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
           console.error('Failed to fetch challenge:', error)
         }
-        if (!error) challengeData = data as CommunityChallenge
+        challengeData = (data as CommunityChallenge) ?? null
       }
 
       setChallenge(challengeData)
