@@ -361,7 +361,7 @@ export function BlockModal({
       // Add duration_minutes to payload and compute end_time
       const enrichedData = {
         ...data,
-        end_time: isCheckin ? data.start_time : addMinutesToTime(data.start_time, actualDuration),
+        end_time: isCheckin ? null : addMinutesToTime(data.start_time, actualDuration),
         payload: {
           ...data.payload,
           ...(isCheckin ? {} : { duration_minutes: actualDuration }),

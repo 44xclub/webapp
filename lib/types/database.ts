@@ -76,6 +76,8 @@ export interface Database {
           repeat_rule: RepeatRule | null
           completed_at: string | null
           locked_at: string | null
+          is_planned: boolean
+          performed_at: string | null
           is_backfilled: boolean
           backfilled_at: string | null
           challenge_id: string | null
@@ -99,6 +101,8 @@ export interface Database {
           repeat_rule?: RepeatRule | null
           completed_at?: string | null
           locked_at?: string | null
+          is_planned?: boolean
+          performed_at?: string | null
           is_backfilled?: boolean
           backfilled_at?: string | null
           challenge_id?: string | null
@@ -122,6 +126,8 @@ export interface Database {
           repeat_rule?: RepeatRule | null
           completed_at?: string | null
           locked_at?: string | null
+          is_planned?: boolean
+          performed_at?: string | null
           is_backfilled?: boolean
           backfilled_at?: string | null
           challenge_id?: string | null
@@ -140,6 +146,9 @@ export interface Database {
           user_id: string
           storage_path: string
           media_type: 'image' | 'video'
+          sort_order: number
+          slot: 'generic' | 'front' | 'side' | 'back' | null
+          meta: Json
           created_at: string
         }
         Insert: {
@@ -148,6 +157,9 @@ export interface Database {
           user_id: string
           storage_path: string
           media_type: 'image' | 'video'
+          sort_order?: number
+          slot?: 'generic' | 'front' | 'side' | 'back' | null
+          meta?: Json
           created_at?: string
         }
         Update: {
@@ -156,6 +168,9 @@ export interface Database {
           user_id?: string
           storage_path?: string
           media_type?: 'image' | 'video'
+          sort_order?: number
+          slot?: 'generic' | 'front' | 'side' | 'back' | null
+          meta?: Json
           created_at?: string
         }
       }
