@@ -1,16 +1,39 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+'use client'
 
-// Force dynamic rendering - this page depends on auth state
-export const dynamic = 'force-dynamic'
+import { WhopGate } from '@/components/WhopGate'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-export default async function HomePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+/**
+ * Root page — WhopGate entry point.
+ *
+ * WhopGate handles:
+ *  1. Verifying the Whop embed token
+ *  2. Bootstrapping the Supabase session
+ *  3. Showing Access Wall if outside Whop
+ *
+ * Once authenticated, redirects to /app.
+ */
+function RedirectToApp() {
+  const router = useRouter()
 
-  if (user) {
-    redirect('/app')
-  } else {
-    redirect('/login')
-  }
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        router.replace('/app')
+      }
+    })
+  }, [router])
+
+  return null
+}
+
+export default function HomePage() {
+  return (
+    <WhopGate>
+      <RedirectToApp />
+    </WhopGate>
+  )
 }

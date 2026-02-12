@@ -79,14 +79,14 @@ export default function CommunityPage() {
         if (!isMounted) return
 
         if (error || !user) {
-          router.push('/login')
+          router.push('/')
           return
         }
         setUser(user)
         setAuthLoading(false)
       } catch (err) {
         if (isMounted) {
-          router.push('/login')
+          router.push('/')
         }
       }
     }
@@ -97,7 +97,7 @@ export default function CommunityPage() {
         if (!isMounted) return
 
         if (event === 'SIGNED_OUT') {
-          router.push('/login')
+          router.push('/')
         } else if (session?.user) {
           setUser(session.user)
           setAuthLoading(false)
