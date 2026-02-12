@@ -4,9 +4,11 @@ import Image from 'next/image'
 import { ShieldX, ExternalLink } from 'lucide-react'
 
 /**
- * Access Wall — shown when the app is opened outside the Whop embed.
+ * Access Wall — shown when a user doesn't have an active 44CLUB membership.
  *
- * No login form. No signup. Just a clear message and a link to Whop.
+ * Reached via:
+ *  - WhopGate (iframe) when bootstrap returns 403
+ *  - OAuth callback when membership check fails
  */
 
 const WHOP_PRODUCT_URL = process.env.NEXT_PUBLIC_WHOP_PRODUCT_URL || 'https://whop.com/44club/'
@@ -41,17 +43,17 @@ export function AccessWall() {
 
         {/* Body */}
         <p className="text-[14px] text-[rgba(238,242,255,0.52)] leading-relaxed mb-8">
-          This app is only available inside <span className="text-[#eef2ff] font-medium">44CLUB</span> on Whop.
+          An active <span className="text-[#eef2ff] font-medium">44CLUB</span> membership on Whop is required to use this app.
         </p>
 
-        {/* CTA — Open in Whop */}
+        {/* CTA — Get access on Whop */}
         <a
           href={WHOP_PRODUCT_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full h-[48px] rounded-[14px] bg-[#eef2ff] text-[#07090d] text-[15px] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
         >
-          Open in Whop
+          Get access on Whop
           <ExternalLink className="h-4 w-4" />
         </a>
 
