@@ -83,10 +83,10 @@ export async function updateSession(request: NextRequest) {
     //  b) Standalone: redirect to /login so the user can sign in via OAuth
     if (pathname === '/') {
       const fetchDest = request.headers.get('sec-fetch-dest')
-      if (fetchDest === 'iframe' || fetchDest === 'empty') {
-        // Loaded inside Whop iframe or client-side navigation — allow through
+      if (fetchDest === 'iframe') {
+        // Loaded inside Whop iframe — allow through for WhopGate bootstrap
       } else {
-        // Direct browser visit — redirect to login
+        // Direct browser visit (document), client nav (empty), or unknown — redirect to login
         return denyAccess(request)
       }
     } else {
