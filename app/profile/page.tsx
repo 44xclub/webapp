@@ -89,16 +89,16 @@ export default function ProfilePage() {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
+        if (error || !user) { router.push('/'); return }
         setUser(user)
         setAuthLoading(false)
-      } catch { if (isMounted) router.push('/login') }
+      } catch { if (isMounted) router.push('/') }
     }
     checkAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return
-      if (event === 'SIGNED_OUT') router.push('/login')
+      if (event === 'SIGNED_OUT') router.push('/')
       else if (session?.user) { setUser(session.user); setAuthLoading(false) }
     })
 
@@ -161,7 +161,7 @@ export default function ProfilePage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push('/')
   }
 
   const handleSaveProfile = async () => {

@@ -56,13 +56,13 @@ export default function PersonalFrameworkPage() {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
         if (error || !user) {
-          router.push('/login')
+          router.push('/')
           return
         }
         setUser(user)
         setAuthLoading(false)
       } catch {
-        if (isMounted) router.push('/login')
+        if (isMounted) router.push('/')
       }
     }
     checkAuth()

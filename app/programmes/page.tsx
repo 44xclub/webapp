@@ -52,13 +52,13 @@ export default function PersonalProgrammesPage() {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
         if (error || !user) {
-          router.push('/login')
+          router.push('/')
           return
         }
         setUser(user)
         setAuthLoading(false)
       } catch {
-        if (isMounted) router.push('/login')
+        if (isMounted) router.push('/')
       }
     }
     checkAuth()
@@ -67,7 +67,7 @@ export default function PersonalProgrammesPage() {
       (event, session) => {
         if (!isMounted) return
         if (event === 'SIGNED_OUT') {
-          router.push('/login')
+          router.push('/')
         } else if (session?.user) {
           setUser(session.user)
           setAuthLoading(false)
