@@ -530,20 +530,22 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   // Normalize all media items and filter out invalid ones
   const normalizedMedia = rawMedia.map(normalizeMediaItem).filter(Boolean) as { path: string; type: 'image' | 'video' }[]
 
-  // Add mediaPath as first item if present
-  const allMedia = mediaPath
+  // Only add mediaPath if it's not already in the normalized media (avoid duplicates)
+  const mediaPathAlreadyIncluded = mediaPath && normalizedMedia.some(m => m.path === mediaPath)
+
+  const allMedia = (mediaPath && !mediaPathAlreadyIncluded)
     ? [{ type: 'image' as const, path: mediaPath }, ...normalizedMedia]
     : normalizedMedia
 
   if (allMedia.length === 0) return null
 
-  // Single image - 4:5 aspect ratio (mobile-first portrait)
+  // Single image - constrained max-width on desktop for better proportions
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
-      <div className="rounded-[10px] overflow-hidden mb-3">
-        <div className="relative w-full" style={{ paddingBottom: '125%' }}> {/* 4:5 = 80% width, 100% height => 125% padding */}
+      <div className="rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
+        <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
           <img
             src={imageUrl}
             alt="Post media"
@@ -554,15 +556,15 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     )
   }
 
-  // Two images - side by side, equal height
+  // Two images - side by side with max-width on desktop
   if (allMedia.length === 2) {
     return (
-      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[500px]">
         {allMedia.map((item, idx) => {
           const imageUrl = getStorageUrl(item.path)
           if (!imageUrl) return null
           return (
-            <div key={idx} className="relative" style={{ paddingBottom: '100%' }}> {/* 1:1 aspect */}
+            <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
               <img
                 src={imageUrl}
                 alt={`Post media ${idx + 1}`}
@@ -585,7 +587,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     if (!primaryUrl || !secondaryUrl || !tertiaryUrl) return null
 
     return (
-      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3" style={{ height: '200px' }}>
+      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[200px] sm:max-w-[500px]">
         {/* Primary image - spans 2 columns */}
         <div className="col-span-2 relative h-full">
           <img
@@ -619,12 +621,12 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
   // 4+ images - 2x2 grid with +N overlay
   const displayMedia = allMedia.slice(0, 4)
   return (
-    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3">
+    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 sm:max-w-[400px]">
       {displayMedia.map((item, idx) => {
         const imageUrl = getStorageUrl(item.path)
         if (!imageUrl) return null
         return (
-          <div key={idx} className="relative" style={{ paddingBottom: '100%' }}>
+          <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
             <img
               src={imageUrl}
               alt={`Post media ${idx + 1}`}
