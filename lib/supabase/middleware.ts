@@ -77,10 +77,16 @@ export async function updateSession(request: NextRequest) {
     // No valid signed session cookie.
     // The raw x-whop-user-token header is NOT trusted here — the user must
     // hit /api/auth/bootstrap first, which verifies the token with Whop
-    // and sets the signed cookie. We allow the root page through so the
-    // WhopGate component can call bootstrap.
+    // and sets the signed cookie. We allow the root page through ONLY when
+    // loaded inside an iframe (Whop embed) so WhopGate can call bootstrap.
     if (pathname === '/') {
-      // Allow root page — WhopGate will handle bootstrap
+      const fetchDest = request.headers.get('sec-fetch-dest')
+      if (fetchDest === 'iframe' || fetchDest === 'empty') {
+        // Loaded inside Whop iframe or client-side navigation — allow through
+      } else {
+        // Direct browser visit (sec-fetch-dest: document) — block immediately
+        return denyAccess(request)
+      }
     } else {
       return denyAccess(request)
     }
