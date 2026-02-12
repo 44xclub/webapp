@@ -28,7 +28,16 @@ export function createClient(): SupabaseClient {
     )
   }
 
-  // Create and cache the browser client
-  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey)
+  // Create and cache the browser client.
+  // Cookie options: sameSite 'none' + secure required because the app runs
+  // inside a cross-origin Whop iframe (app.44club.uk inside whop.com).
+  // Without this, browsers block the cookies as third-party.
+  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      sameSite: 'none',
+      secure: true,
+      path: '/',
+    },
+  })
   return browserClient
 }

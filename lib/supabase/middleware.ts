@@ -64,26 +64,25 @@ export async function updateSession(request: NextRequest) {
   // ── Whop embed gate ────────────────────────────────────────────
   const { pathname } = request.nextUrl
 
-  if (!shouldBypassWhopGate(pathname)) {
-    // Check for a valid HMAC-signed session cookie (set by bootstrap after verification).
-    const sessionCookie = request.cookies.get(COOKIE_NAME)?.value
-    let whopUserId: string | null = null
+  // Check for a valid HMAC-signed session cookie (set by bootstrap).
+  // Hoisted so it's available for both the gate check and the
+  // Supabase auth fallback below.
+  const sessionCookie = request.cookies.get(COOKIE_NAME)?.value
+  let whopUserId: string | null = null
+  if (sessionCookie) {
+    whopUserId = await verifySessionValue(sessionCookie)
+  }
 
-    if (sessionCookie) {
-      whopUserId = await verifySessionValue(sessionCookie)
-    }
-
-    if (!whopUserId) {
-      // No valid signed session cookie.
-      // The raw x-whop-user-token header is NOT trusted here — the user must
-      // hit /api/auth/bootstrap first, which verifies the token with Whop
-      // and sets the signed cookie. We allow the root page through so the
-      // WhopGate component can call bootstrap.
-      if (pathname === '/') {
-        // Allow root page — WhopGate will handle bootstrap
-      } else {
-        return denyAccess(request)
-      }
+  if (!shouldBypassWhopGate(pathname) && !whopUserId) {
+    // No valid signed session cookie.
+    // The raw x-whop-user-token header is NOT trusted here — the user must
+    // hit /api/auth/bootstrap first, which verifies the token with Whop
+    // and sets the signed cookie. We allow the root page through so the
+    // WhopGate component can call bootstrap.
+    if (pathname === '/') {
+      // Allow root page — WhopGate will handle bootstrap
+    } else {
+      return denyAccess(request)
     }
   }
 
@@ -93,34 +92,44 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
+  // Cross-origin cookie defaults (app runs in Whop iframe)
+  const crossOriginCookie = { sameSite: 'none' as const, secure: true, path: '/' }
+
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: crossOriginCookie,
     cookies: {
       get(name: string) {
         return request.cookies.get(name)?.value
       },
       set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({ name, value, ...options })
+        const merged = { ...options, ...crossOriginCookie }
+        request.cookies.set({ name, value, ...merged })
         response = NextResponse.next({
           request: { headers: request.headers },
         })
         addSecurityHeaders(response)
-        response.cookies.set({ name, value, ...options })
+        response.cookies.set({ name, value, ...merged })
       },
       remove(name: string, options: CookieOptions) {
-        request.cookies.set({ name, value: '', ...options })
+        const merged = { ...options, ...crossOriginCookie }
+        request.cookies.set({ name, value: '', ...merged })
         response = NextResponse.next({
           request: { headers: request.headers },
         })
         addSecurityHeaders(response)
-        response.cookies.set({ name, value: '', ...options })
+        response.cookies.set({ name, value: '', ...merged })
       },
     },
   })
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /app and /profile routes — need Supabase session
-  if (!user && (pathname.startsWith('/app') || pathname.startsWith('/profile'))) {
+  // Protect /app and /profile routes — need Supabase session.
+  // However, if the Whop session cookie is valid, skip this redirect.
+  // On the first load the Supabase cookies may not have arrived yet
+  // (bootstrap sets them client-side after the initial page load).
+  // Redirecting would create an infinite loop: /app → / → /app → …
+  if (!user && !whopUserId && (pathname.startsWith('/app') || pathname.startsWith('/profile'))) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
