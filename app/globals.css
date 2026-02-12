@@ -46,10 +46,10 @@
   --radius-chip: 6px;             /* Small elements */
 
   /* ---- SPACING ---- */
-  --space-section: 20px;          /* Gap between sections */
-  --space-card: 14px;             /* Padding inside cards */
-  --space-item: 10px;             /* Gap between list items */
-  --space-inline: 8px;            /* Inline element spacing */
+  --space-section: 18px;          /* Gap between sections */
+  --space-card: 12px;             /* Padding inside cards */
+  --space-item: 8px;              /* Gap between list items */
+  --space-inline: 6px;            /* Inline element spacing */
 
   /* ---- TYPOGRAPHY (4 roles only) ---- */
   --text-title-size: 18px;

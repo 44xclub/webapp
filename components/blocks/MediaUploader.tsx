@@ -7,8 +7,8 @@ import { ImageCropper, type CropMetadata } from '@/components/media/ImageCropper
 import type { BlockMedia } from '@/lib/types'
 
 // File size limits
-const MAX_IMAGE_SIZE = 8 * 1024 * 1024 // 8MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_VIDEO_SIZE = 25 * 1024 * 1024 // 25MB
 const MAX_MEDIA_COUNT = 3
 
 // Allowed file types

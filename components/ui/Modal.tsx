@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, type ReactNode } from 'react'
+import { useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { X } from 'lucide-react'
@@ -9,6 +9,32 @@ import { X } from 'lucide-react'
   44CLUB Modal
   Clean. Focused. No decoration.
 */
+
+// Ref-counted body scroll lock to prevent stacking issues
+let lockCount = 0
+let savedScrollY = 0
+export function lockBodyScroll() {
+  if (lockCount === 0) {
+    savedScrollY = window.scrollY
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${savedScrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+  }
+  lockCount++
+}
+export function unlockBodyScroll() {
+  lockCount = Math.max(0, lockCount - 1)
+  if (lockCount === 0) {
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.left = ''
+    document.body.style.right = ''
+    window.scrollTo(0, savedScrollY)
+  }
+}
 
 interface ModalProps {
   isOpen: boolean
@@ -38,15 +64,21 @@ export function Modal({
     [onClose]
   )
 
+  const wasOpen = useRef(false)
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpen.current) {
       document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      lockBodyScroll()
+      wasOpen.current = true
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
+      if (wasOpen.current) {
+        unlockBodyScroll()
+        wasOpen.current = false
+      }
     }
   }, [isOpen, handleEscape])
 
