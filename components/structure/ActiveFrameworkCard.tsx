@@ -79,7 +79,7 @@ export function ActiveFrameworkCard({
   return (
     <button
       onClick={onOpenChecklist}
-      className="w-full text-left relative overflow-hidden rounded-[var(--radius-section)] h-[100px] transition-all hover:brightness-105 group"
+      className="w-full text-left relative overflow-hidden rounded-[var(--radius-section)] h-[80px] transition-all hover:brightness-105 group"
     >
       {imageUrl ? (
         <div className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -87,9 +87,9 @@ export function ActiveFrameworkCard({
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-      <div className="absolute inset-0 p-3.5 flex flex-col justify-between">
+      <div className="absolute inset-0 p-3 flex flex-col justify-between">
         <div className="flex items-start justify-between">
-          <p className="text-[16px] font-semibold text-white">{activeFramework.framework_template.title}</p>
+          <p className="text-[14px] font-semibold text-white leading-tight">{activeFramework.framework_template.title}</p>
           <div className="flex items-center gap-1.5">
             {isLocked && (
               <span className="flex items-center gap-1 text-[9px] text-white/50 bg-white/10 px-1.5 py-0.5 rounded-full">
@@ -102,8 +102,8 @@ export function ActiveFrameworkCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-[5px] bg-white/15 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-500 ${isComplete ? 'bg-[var(--accent-success)]' : completed > 0 ? 'bg-[var(--accent-primary)]' : 'bg-white/25'}`}
               style={{ width: `${progressPercent}%` }}

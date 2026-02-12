@@ -42,17 +42,18 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
   if (loading || !profile || !disciplineData) {
     return (
       <div className="sticky top-0 z-50 bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] safe-top">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-[rgba(255,255,255,0.045)] rounded-[16px] animate-pulse" />
-              <div className="space-y-1">
-                <div className="h-4 w-20 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
-                <div className="h-3 w-16 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
-              </div>
+        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 bg-[rgba(255,255,255,0.045)] rounded-full animate-pulse" />
+            <div className="space-y-1">
+              <div className="h-3.5 w-20 bg-[rgba(255,255,255,0.045)] rounded-[6px] animate-pulse" />
+              <div className="h-2.5 w-16 bg-[rgba(255,255,255,0.045)] rounded-[6px] animate-pulse" />
             </div>
-            <div className="h-8 w-24 bg-[rgba(255,255,255,0.045)] rounded-[12px] animate-pulse" />
           </div>
+          <div className="h-7 w-16 bg-[rgba(255,255,255,0.045)] rounded-[8px] animate-pulse" />
+        </div>
+        <div className="px-4 pb-3">
+          <div className="h-[6px] bg-[rgba(255,255,255,0.03)] rounded-full animate-pulse" />
         </div>
       </div>
     )
@@ -67,50 +68,47 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
   return (
     <div className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Link href="/profile" className="flex items-center gap-3 group">
-            <div className="h-11 w-11 rounded-[16px] bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms] shadow-sm">
-              <span className="text-[15px] text-[#eef2ff] font-bold">{initials}</span>
-            </div>
-            <div>
-              <p className="text-[15px] font-bold text-[#eef2ff] group-hover:text-[#60a5fa] transition-colors duration-[140ms]">
-                {displayName}
-              </p>
-              <div className="flex items-center gap-1.5">
-                {!disciplineData.canWearBadge && (
-                  <Lock className="h-3 w-3 text-[rgba(238,242,255,0.40)]" />
-                )}
-                <BadgeIcon className={`h-3.5 w-3.5 ${disciplineData.canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]'}`} />
-                <span className={`text-[12px] font-medium ${disciplineData.canWearBadge ? 'text-[rgba(238,242,255,0.60)]' : 'text-[rgba(238,242,255,0.40)]'}`}>
-                  {badgeDisplay}
-                </span>
-              </div>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            {/* Notifications */}
-            <NotificationBell userId={profile.id} />
-
-            {/* Discipline Score Module - clickable to open explanation */}
-            <DisciplineScoreModule
-              rank={rank}
-              score={profile.discipline_score}
-              variant="full"
-              showProgress={false}
-              clickable={true}
-            />
+      {/* Row 1: Avatar + Name/Level (left) | Score (right) */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <Link href="/profile" className="flex items-center gap-2.5 group flex-1 min-w-0">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center flex-shrink-0 group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms]">
+            <span className="text-[14px] text-[#eef2ff] font-bold">{initials}</span>
           </div>
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-[#eef2ff] truncate group-hover:text-[#60a5fa] transition-colors duration-[140ms]">
+              {displayName}
+            </p>
+            <div className="flex items-center gap-1.5">
+              {!disciplineData.canWearBadge && (
+                <Lock className="h-3 w-3 text-[rgba(238,242,255,0.40)]" />
+              )}
+              <BadgeIcon className={`h-3 w-3 ${disciplineData.canWearBadge ? badgeColor : 'text-[rgba(238,242,255,0.40)]'}`} />
+              <span className={`text-[11px] font-medium ${disciplineData.canWearBadge ? 'text-[rgba(238,242,255,0.55)]' : 'text-[rgba(238,242,255,0.40)]'}`}>
+                {badgeDisplay}
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <NotificationBell userId={profile.id} />
+          {/* Compact score display */}
+          <DisciplineScoreModule
+            rank={rank}
+            score={profile.discipline_score}
+            variant="compact"
+            showProgress={false}
+            clickable={true}
+          />
         </div>
       </div>
 
-      {/* Progress Bar - show progress within badge */}
+      {/* Row 2: Progress bar - directly under level, tight spacing */}
       {disciplineData.badge !== '44 Pro' && (
         <div className="px-4 pb-3">
-          <div className="flex items-center justify-between text-[10px] font-medium text-[rgba(238,242,255,0.52)] mb-1.5">
+          <div className="flex items-center justify-between text-[10px] font-medium text-[rgba(238,242,255,0.45)] mb-1">
             <span>{badgeDisplay}</span>
-            <span className="text-[rgba(238,242,255,0.60)]">
+            <span className="text-[rgba(238,242,255,0.55)]">
               {Math.round(disciplineData.progress)}%
             </span>
             <span>
@@ -120,7 +118,7 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
               }
             </span>
           </div>
-          <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+          <div className="h-[6px] bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${disciplineData.canWearBadge ? badgeBgColor : 'bg-[rgba(238,242,255,0.20)]'}`}
               style={{ width: `${Math.min(disciplineData.progress, 100)}%` }}
@@ -131,8 +129,8 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
       {/* Max badge indicator */}
       {disciplineData.badge === '44 Pro' && disciplineData.badgeLevel >= 5 && (
-        <div className="px-4 pb-3">
-          <div className="text-center text-[12px] font-medium text-purple-400">
+        <div className="px-4 pb-2">
+          <div className="text-center text-[11px] font-medium text-purple-400">
             Maximum Badge Achieved
           </div>
         </div>

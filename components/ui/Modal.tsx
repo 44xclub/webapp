@@ -18,6 +18,7 @@ interface ModalProps {
   footer?: ReactNode
   className?: string
   showClose?: boolean
+  fullScreen?: boolean
 }
 
 export function Modal({
@@ -28,6 +29,7 @@ export function Modal({
   footer,
   className,
   showClose = true,
+  fullScreen = false,
 }: ModalProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -58,10 +60,13 @@ export function Modal({
         onClick={onClose}
       />
 
-      {/* Modal content - bottom sheet on mobile, centered on desktop */}
+      {/* Modal content - full screen, bottom sheet on mobile, or centered on desktop */}
       <div
         className={cn(
-          'relative z-10 w-full sm:max-w-lg max-h-[90dvh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg flex flex-col',
+          'relative z-10 bg-[#0d1014] overflow-hidden animate-slideUp shadow-lg flex flex-col',
+          fullScreen
+            ? 'w-full h-[100dvh] safe-top'
+            : 'w-full sm:max-w-lg max-h-[90dvh] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px]',
           className
         )}
       >
@@ -85,7 +90,7 @@ export function Modal({
         {/* Scrollable Content - body */}
         <div className={cn(
           'flex-1 overflow-y-auto overscroll-contain',
-          footer ? 'max-h-[calc(90dvh-140px)]' : 'max-h-[calc(90dvh-60px)]'
+          !fullScreen && (footer ? 'max-h-[calc(90dvh-140px)]' : 'max-h-[calc(90dvh-60px)]')
         )}>
           {children}
         </div>
