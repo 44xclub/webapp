@@ -227,7 +227,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="px-4 py-4 space-y-[var(--space-card)]">
+      <main className="px-4 py-4 space-y-[var(--space-section)]">
         {/* Profile Card */}
         <div className="section-card p-0 overflow-hidden">
           <div className="p-5 flex flex-col items-center">
@@ -260,9 +260,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="section-card p-0 overflow-hidden">
-          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
-            <h3 className="text-label">Profile Details</h3>
+        <div className="section-card">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[14px] font-semibold text-[var(--text-secondary)]">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
                 <button onClick={handleCancelEdit} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="h-4 w-4" /></button>
@@ -271,11 +271,11 @@ export default function ProfilePage() {
                 </button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="text-micro normal-case text-[var(--accent-blue)] hover:underline">Edit</button>
+              <button onClick={() => setEditing(true)} className="text-[12px] text-[var(--accent-blue)] hover:underline">Edit</button>
             )}
           </div>
 
-          <div className={editing ? "p-[var(--space-card)] space-y-4" : "px-[var(--space-card)]"}>
+          <div className={editing ? "space-y-4" : ""}>
             {editing ? (
               <>
                 <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
@@ -287,30 +287,26 @@ export default function ProfilePage() {
                 <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
               </>
             ) : (
-              <div>
+              <>
                 <ProfileRow icon={UserIcon} label="Display Name" value={profile?.display_name || 'Not set'} />
                 <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
                 <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
                 <ProfileRow icon={Scale} label="Weight" value={profile?.weight_kg ? `${profile.weight_kg} kg` : 'Not set'} />
                 <ProfileRow icon={Settings} label="Email" value={user?.email || 'Not set'} />
-                <ProfileRow icon={Clock} label="Timezone" value={profile?.timezone || 'Europe/London'} />
-              </div>
+                <ProfileRow icon={Clock} label="Timezone" value={profile?.timezone || 'Europe/London'} isLast />
+              </>
             )}
           </div>
         </div>
 
         {/* Streak Stats - using shared component */}
-        <div className="section-card p-0">
-          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)]">
-            <h3 className="text-label">Streaks</h3>
-          </div>
-          <div className="p-[var(--space-card)]">
-            <StreakCard
-              currentStreak={profile?.current_streak || 0}
-              bestStreak={profile?.best_streak || 0}
-              variant="full"
-            />
-          </div>
+        <div className="section-card">
+          <h3 className="text-[14px] font-semibold text-[var(--text-secondary)] mb-3">Streaks</h3>
+          <StreakCard
+            currentStreak={profile?.current_streak || 0}
+            bestStreak={profile?.best_streak || 0}
+            variant="full"
+          />
         </div>
 
         {/* Reflection & Planning - Link to dedicated page */}
@@ -428,25 +424,21 @@ export default function ProfilePage() {
         </Link>
 
         {/* Statistics */}
-        <div className="section-card p-0">
-          <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)]">
-            <h3 className="text-label">Statistics</h3>
+        <div className="section-card">
+          <h3 className="text-[14px] font-semibold text-[var(--text-secondary)] mb-3">Statistics</h3>
+          <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2.5">
+              <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="text-[13px] text-[var(--text-secondary)]">Member since</span>
+            </div>
+            <span className="text-[14px] text-[var(--text-primary)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
           </div>
-          <div className="px-[var(--space-card)]">
-            <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2.5">
-                <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
-                <span className="text-[13px] text-[var(--text-secondary)]">Member since</span>
-              </div>
-              <span className="text-[14px] font-medium text-[var(--text-primary)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
+          <div className="flex items-center justify-between py-2.5">
+            <div className="flex items-center gap-2.5">
+              <Dumbbell className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="text-[13px] text-[var(--text-secondary)]">Total Points</span>
             </div>
-            <div className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-2.5">
-                <Dumbbell className="h-4 w-4 text-[var(--text-muted)]" />
-                <span className="text-[13px] text-[var(--text-secondary)]">Total Points</span>
-              </div>
-              <span className="text-[15px] font-semibold text-[var(--text-primary)]">{profile?.discipline_score || 0}</span>
-            </div>
+            <span className="text-[14px] font-medium text-[var(--text-primary)]">{profile?.discipline_score || 0}</span>
           </div>
         </div>
 
@@ -460,14 +452,14 @@ export default function ProfilePage() {
   )
 }
 
-function ProfileRow({ icon: Icon, label, value }: { icon: typeof UserIcon; label: string; value: string }) {
+function ProfileRow({ icon: Icon, label, value, isLast }: { icon: typeof UserIcon; label: string; value: string; isLast?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+    <div className={`flex items-center justify-between py-2.5 ${isLast ? '' : 'border-b border-[var(--border-subtle)]'}`}>
       <div className="flex items-center gap-2.5">
         <Icon className="h-4 w-4 text-[var(--text-muted)]" />
         <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
       </div>
-      <span className="text-[14px] font-medium text-[var(--text-primary)]">{value}</span>
+      <span className="text-[14px] text-[var(--text-primary)]">{value}</span>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar } from 'lucide-react'
+import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -232,7 +232,7 @@ export default function CommunityPage() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 py-4 space-y-[var(--space-card)]">
+      <main className="px-4 py-4 space-y-[var(--space-section)]">
         {activeTab === 'team' ? (
           <TeamOverview userId={user?.id} supabase={supabase} />
         ) : (
@@ -253,6 +253,9 @@ export default function CommunityPage() {
   )
 }
 
+// Team state: 'loading' | 'unassigned' | 'error' | 'loaded'
+type TeamState = 'loading' | 'unassigned' | 'error' | 'loaded'
+
 // Team Overview Component
 function TeamOverview({ userId, supabase }: { userId: string | undefined; supabase: any }) {
   const [teamData, setTeamData] = useState<{
@@ -261,7 +264,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     role: 'captain' | 'member'
     dailyOverviews: TeamDailyOverview[]
   } | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [teamState, setTeamState] = useState<TeamState>('loading')
   const [membersExpanded, setMembersExpanded] = useState(false)
 
   useEffect(() => {
@@ -271,7 +274,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   }, [userId])
 
   const fetchTeamData = async () => {
-    setLoading(true)
+    setTeamState('loading')
 
     try {
       // Step 1: Fetch user's team membership
@@ -281,14 +284,19 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         .eq('user_id', userId)
         .is('left_at', null)
 
-      if (membershipError || !memberships || memberships.length === 0) {
+      // No membership = truly unassigned
+      if (!memberships || memberships.length === 0) {
+        if (membershipError) {
+          console.error('[Team] Membership query error:', membershipError)
+        }
         setTeamData(null)
+        setTeamState('unassigned')
         return
       }
 
       const membership = memberships[0]
 
-      // Step 2: Fetch team details
+      // Step 2: Fetch team details - if this fails, user IS assigned but data unavailable
       const { data: team, error: teamError } = await supabase
         .from('teams')
         .select('id, team_number')
@@ -296,7 +304,9 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         .single()
 
       if (teamError || !team) {
+        console.error('[Team] Team data error (user is assigned but data unavailable):', teamError)
         setTeamData(null)
+        setTeamState('error')
         return
       }
 
@@ -338,29 +348,52 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         role: membership.role,
         dailyOverviews: (overviews || []) as TeamDailyOverview[],
       })
+      setTeamState('loaded')
     } catch (err) {
-      console.error('[Team] Failed to fetch team:', err)
+      console.error('[Team] Unexpected error:', err)
       setTeamData(null)
-    } finally {
-      setLoading(false)
+      setTeamState('error')
     }
   }
 
-  if (loading) {
+  // Loading state
+  if (teamState === 'loading') {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" />
+      <div className="section-card flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-muted)] mb-3" />
+        <p className="text-[13px] text-[var(--text-secondary)]">Checking your team...</p>
       </div>
     )
   }
 
-  if (!teamData?.team) {
+  // Error state - user is assigned but data unavailable
+  if (teamState === 'error') {
     return (
-      <div className="section-card text-center">
-        <Users className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
-        <h3 className="text-label mb-2">No Team Yet</h3>
-        <p className="text-meta font-normal">
-          You&apos;ll be assigned to a team of 8 members to keep each other accountable.
+      <div className="section-card text-center py-10">
+        <Users className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">Couldn&apos;t Load Team</h3>
+        <p className="text-[13px] text-[var(--text-secondary)] mb-4">
+          Tap to try again
+        </p>
+        <button
+          onClick={fetchTeamData}
+          className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[var(--text-primary)] bg-[var(--surface-2)] rounded-[var(--radius-button)] hover:bg-[var(--surface-3)] transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  // Truly unassigned state
+  if (teamState === 'unassigned' || !teamData?.team) {
+    return (
+      <div className="section-card text-center py-10">
+        <Users className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">No Team Yet</h3>
+        <p className="text-[13px] text-[var(--text-secondary)]">
+          You&apos;ll be assigned to a team of 8 to keep each other accountable.
         </p>
       </div>
     )
@@ -455,9 +488,9 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         <h3 className="text-label px-1">Daily Overviews</h3>
 
         {teamData.dailyOverviews.length === 0 ? (
-          <div className="section-card text-center">
-            <Calendar className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3" />
-            <p className="text-meta">
+          <div className="section-card text-center py-8">
+            <Calendar className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
+            <p className="text-[13px] text-[var(--text-secondary)]">
               No daily overviews yet. Check back after the first day resolves.
             </p>
           </div>
@@ -637,10 +670,10 @@ function FeedView({
 
   if (posts.length === 0) {
     return (
-      <div className="section-card text-center">
-        <Activity className="h-12 w-12 text-[var(--text-muted)] mx-auto mb-4" />
-        <h3 className="text-label mb-2">No Posts Yet</h3>
-        <p className="text-meta">
+      <div className="section-card text-center py-10">
+        <Activity className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">No Posts Yet</h3>
+        <p className="text-[13px] text-[var(--text-secondary)]">
           Share your workouts and achievements to inspire others.
         </p>
       </div>

@@ -61,7 +61,7 @@ export function Modal({
       {/* Modal content - bottom sheet on mobile, centered on desktop */}
       <div
         className={cn(
-          'relative z-10 w-full sm:max-w-lg max-h-[90vh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg flex flex-col',
+          'relative z-10 w-full sm:max-w-lg max-h-[90dvh] bg-[#0d1014] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px] overflow-hidden animate-slideUp shadow-lg flex flex-col',
           className
         )}
       >
@@ -85,19 +85,18 @@ export function Modal({
         {/* Scrollable Content */}
         <div className={cn(
           'flex-1 overflow-y-auto',
-          footer ? 'max-h-[calc(90vh-140px)]' : 'max-h-[calc(90vh-60px)]'
+          footer ? 'max-h-[calc(90dvh-140px)]' : 'max-h-[calc(90dvh-60px)]'
         )}>
           {children}
         </div>
 
-        {/* Sticky Footer - Action Bar with centered content */}
+        {/* Sticky Footer - Action Bar with safe area padding */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)]">
-            <div className="px-5 py-4">
-              {footer}
-            </div>
-            {/* Safe area spacer - separate from visual padding for true centering */}
-            <div className="safe-bottom" />
+          <div
+            className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 py-4"
+            style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
+          >
+            {footer}
           </div>
         )}
       </div>

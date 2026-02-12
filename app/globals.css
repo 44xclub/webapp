@@ -20,6 +20,14 @@
    ============================================ */
 
 :root {
+  /* ---- SAFE AREA & MOBILE ---- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --bottom-nav-height: 64px;
+  --bottom-nav-total: calc(var(--bottom-nav-height) + var(--safe-bottom));
+
   /* ---- SURFACES (3-tier hierarchy) ---- */
   --surface-0: #07090d;           /* Background - deepest level */
   --surface-1: #0c1016;           /* Section cards - middle level */
@@ -143,6 +151,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height - Safari safe */
 }
 
 ::selection {
@@ -165,8 +174,45 @@ body {
   background: var(--border-emphasis);
 }
 
+/* ---- SAFE AREA UTILITIES ---- */
 .safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Page container with bottom nav clearance */
+.page-container {
+  min-height: 100dvh;
+  padding-bottom: var(--bottom-nav-total);
+}
+
+/* Modal footer with safe area */
+.modal-footer-safe {
+  padding: 16px;
+  padding-bottom: calc(16px + var(--safe-bottom));
+}
+
+/* Page header standardization */
+.page-header {
+  padding: 24px 16px 16px 16px;
+}
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.page-header .subtext {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-top: 4px;
 }
 
 input[type="number"]::-webkit-inner-spin-button,

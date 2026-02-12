@@ -174,7 +174,7 @@ export default function AppPage() {
 
       {/* Streak Module - using shared component */}
       {profile && (
-        <div className="mx-3 mt-2">
+        <div className="mx-4 mt-3">
           <StreakCard
             currentStreak={profile.current_streak || 0}
             bestStreak={profile.best_streak || 0}
@@ -233,12 +233,17 @@ export default function AppPage() {
         )}
       </main>
 
-      {/* FAB */}
-      <div className="fixed bottom-20 right-4 z-30">
-        <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
+      {/* FAB - positioned above bottom nav with safe area */}
+      {!modalOpen && !challengeModalOpen && (
+        <div
+          className="fixed right-4 z-30"
+          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
       <BottomNav />
 
