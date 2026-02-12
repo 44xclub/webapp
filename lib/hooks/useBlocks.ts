@@ -287,6 +287,7 @@ export function useBlockMedia(userId: string | undefined) {
 
       // Create media record with optional metadata
       const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
+      const sortOrder = (meta?.sort_order as number) ?? 0
       const { data, error: insertError } = await supabase
         .from('block_media')
         .insert({
@@ -294,7 +295,7 @@ export function useBlockMedia(userId: string | undefined) {
           user_id: userId,
           storage_path: storagePath,
           media_type: mediaType,
-          sort_order: 0,
+          sort_order: sortOrder,
           meta: meta || null,
         })
         .select()
