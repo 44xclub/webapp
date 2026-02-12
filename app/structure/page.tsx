@@ -16,6 +16,7 @@ import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { SegmentedControl, SectionCard, ListRow } from '@/components/ui'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 type TabType = 'discipline' | 'training'
@@ -77,11 +78,11 @@ export default function StructurePage() {
   }
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Tab Navigation */}
-      <div className="px-4 pt-2 pb-1">
+      <div className="px-4 pt-3 pb-2">
         <SegmentedControl
           tabs={TABS}
           activeTab={activeTab}
@@ -90,13 +91,12 @@ export default function StructurePage() {
       </div>
 
       {/* Content */}
-      <main className="px-4 pt-4 space-y-[var(--space-section)]">
+      <main className="px-4 pt-2 space-y-5">
         {activeTab === 'discipline' ? (
           <>
-            {/* Community Challenge - title outside card */}
+            {/* Community Challenge */}
             <div>
-              <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-1">Community Challenge</h2>
-              <p className="text-[12px] text-[var(--text-secondary)] mb-4">This month's challenge for all members</p>
+              <SectionHeader title="Community Challenge" subtitle="This month's challenge for all members" />
               {challengeLoading ? (
                 <div className="flex justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
@@ -110,11 +110,10 @@ export default function StructurePage() {
               )}
             </div>
 
-            {/* Active Framework - title outside card */}
+            {/* Active Framework */}
             {!frameworksLoading && (
               <div>
-                <h2 className="text-[18px] font-semibold text-[var(--text-primary)] mb-1">Active Framework</h2>
-                <p className="text-[12px] text-[var(--text-secondary)] mb-4">Your current daily structure</p>
+                <SectionHeader title="Active Framework" subtitle="Your current daily structure" />
                 <ActiveFrameworkCard
                   activeFramework={activeFramework}
                   todaySubmission={todaySubmission}

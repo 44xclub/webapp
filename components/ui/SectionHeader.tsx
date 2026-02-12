@@ -25,7 +25,7 @@ export function SectionHeader({ title, subtitle, action, onAction, className }: 
         )}
       </div>
       {subtitle && (
-        <p className="text-[12px] text-[rgba(238,242,255,0.40)] mt-0.5 leading-snug">{subtitle}</p>
+        <p className="text-[13px] text-[var(--text-tertiary)] mt-0.5 leading-snug">{subtitle}</p>
       )}
     </div>
   )

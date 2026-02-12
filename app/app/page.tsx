@@ -169,12 +169,12 @@ export default function AppPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex flex-col pb-16">
+    <div className="min-h-[100dvh] flex flex-col" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
       {/* Streak Module - using shared component */}
       {profile && (
-        <div className="mx-4 mt-3">
+        <div className="px-4 pt-3">
           <StreakCard
             currentStreak={profile.current_streak || 0}
             bestStreak={profile.best_streak || 0}
@@ -194,7 +194,7 @@ export default function AppPage() {
 
       {/* Active Framework Card - same as Structure page */}
       {viewMode === 'day' && !frameworkLoading && (
-        <div className="mx-4 mt-3">
+        <div className="px-4 pt-3">
           <ActiveFrameworkCard
             activeFramework={activeFramework}
             todaySubmission={null}
@@ -204,10 +204,9 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* Challenge Quick Action - show if active challenge and not completed today */}
       {/* Challenge Card - compact variant for Home */}
       {viewMode === 'day' && challenge && !challengeTodayBlock?.completed_at && (
-        <div className="mx-4 mt-3">
+        <div className="px-4 pt-3">
           <ChallengeCard
             challenge={challenge}
             todayBlock={challengeTodayBlock}
@@ -217,13 +216,13 @@ export default function AppPage() {
         </div>
       )}
 
-      <main className="flex-1 pb-8 overflow-y-auto">
+      <main className="flex-1 pb-4">
         {blocksLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
           </div>
         ) : viewMode === 'day' ? (
-          <div className="pt-2">
+          <div className="pt-3">
             <DayView date={selectedDate} blocks={selectedDateBlocks} onAddBlock={handleAddBlock} onToggleComplete={handleToggleComplete} onEdit={handleEditBlock} onDuplicate={handleDuplicate} onDelete={handleDelete} />
           </div>
         ) : (
@@ -233,11 +232,14 @@ export default function AppPage() {
         )}
       </main>
 
-      {/* FAB - positioned above bottom nav with safe area */}
+      {/* FAB - positioned above bottom nav with safe area + 16px gap */}
       {!modalOpen && !challengeModalOpen && (
         <div
-          className="fixed right-4 z-30"
-          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+          className="fixed z-30"
+          style={{
+            bottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px)',
+            right: 'calc(16px + env(safe-area-inset-right, 0px))',
+          }}
         >
           <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>
             <Plus className="h-6 w-6" />

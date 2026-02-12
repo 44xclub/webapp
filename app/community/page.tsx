@@ -217,13 +217,12 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="app-shell">
-    <div className="min-h-screen min-h-[100dvh] pb-20">
+    <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Tab Navigation */}
-      <div className="px-4 pt-2 pb-1">
+      <div className="px-4 pt-3 pb-2">
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}
@@ -232,7 +231,7 @@ export default function CommunityPage() {
       </div>
 
       {/* Main Content */}
-      <main className="px-4 py-4 space-y-[var(--space-section)]">
+      <main className="px-4 pt-2 pb-4 space-y-5">
         {activeTab === 'team' ? (
           <TeamOverview userId={user?.id} supabase={supabase} />
         ) : (
@@ -248,7 +247,6 @@ export default function CommunityPage() {
 
       {/* Bottom Navigation */}
       <BottomNav />
-    </div>
     </div>
   )
 }
@@ -356,28 +354,28 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     }
   }
 
-  // Loading state
+  // State 1: Loading skeleton with message
   if (teamState === 'loading') {
     return (
       <div className="section-card flex flex-col items-center justify-center py-12">
         <Loader2 className="h-5 w-5 animate-spin text-[var(--text-muted)] mb-3" />
-        <p className="text-[13px] text-[var(--text-secondary)]">Checking your team...</p>
+        <p className="text-[13px] text-[var(--text-tertiary)]">Checking your team...</p>
       </div>
     )
   }
 
-  // Error state - user is assigned but data unavailable
+  // State 2: Error - user IS assigned but team data unavailable (RLS / network)
   if (teamState === 'error') {
     return (
       <div className="section-card text-center py-10">
-        <Users className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
-        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">Couldn&apos;t Load Team</h3>
-        <p className="text-[13px] text-[var(--text-secondary)] mb-4">
-          Tap to try again
+        <Users className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-40" />
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">Team Data Unavailable</h3>
+        <p className="text-[13px] text-[var(--text-tertiary)] mb-4 max-w-[240px] mx-auto">
+          We couldn&apos;t load your team right now. This may be temporary.
         </p>
         <button
           onClick={fetchTeamData}
-          className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[var(--text-primary)] bg-[var(--surface-2)] rounded-[var(--radius-button)] hover:bg-[var(--surface-3)] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[var(--text-primary)] bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-button)] hover:border-[var(--border-emphasis)] transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
           Retry
@@ -386,13 +384,13 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     )
   }
 
-  // Truly unassigned state
+  // State 3: Truly unassigned - no team_members row exists
   if (teamState === 'unassigned' || !teamData?.team) {
     return (
       <div className="section-card text-center py-10">
-        <Users className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
-        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">No Team Yet</h3>
-        <p className="text-[13px] text-[var(--text-secondary)]">
+        <Users className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-40" />
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">No Team Yet</h3>
+        <p className="text-[13px] text-[var(--text-tertiary)] max-w-[240px] mx-auto">
           You&apos;ll be assigned to a team of 8 to keep each other accountable.
         </p>
       </div>

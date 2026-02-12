@@ -216,9 +216,9 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen min-h-[100dvh] pb-20">
+    <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Page Header */}
-      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)]">
+      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] safe-top">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-title">Profile</h1>
           <button onClick={handleSignOut} className="p-2 rounded-[var(--radius-button)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
@@ -227,11 +227,11 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="px-4 py-4 space-y-[var(--space-section)]">
+      <main className="px-4 pt-3 pb-4 space-y-5">
         {/* Profile Card */}
         <div className="section-card p-0 overflow-hidden">
-          <div className="p-5 flex flex-col items-center">
-            <div className="mb-3">
+          <div className="p-4 flex flex-col items-center">
+            <div className="mb-2.5">
               {user && (
                 <AvatarUpload
                   userId={user.id}
@@ -241,13 +241,13 @@ export default function ProfilePage() {
                 />
               )}
             </div>
-            <h2 className="text-title mb-0.5">{displayName}</h2>
-            <p className="text-meta">{user?.email}</p>
+            <h2 className="text-[16px] font-semibold text-[var(--text-primary)] mb-0.5">{displayName}</h2>
+            <p className="text-[13px] text-[var(--text-tertiary)]">{user?.email}</p>
           </div>
 
           {/* Discipline Stats - clickable to open explanation modal */}
           {(rank || disciplineLevel) && (
-            <div className="border-t border-[var(--border-subtle)] px-5 py-3.5">
+            <div className="border-t border-[var(--border-subtle)] px-4 py-3">
               <DisciplineScoreModule
                 rank={rank}
                 score={profile?.discipline_score}
@@ -262,7 +262,7 @@ export default function ProfilePage() {
         {/* Edit Profile Section */}
         <div className="section-card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[14px] font-semibold text-[var(--text-secondary)]">Profile Details</h3>
+            <h3 className="text-[14px] font-medium text-[var(--text-secondary)]">Profile Details</h3>
             {editing ? (
               <div className="flex items-center gap-2">
                 <button onClick={handleCancelEdit} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X className="h-4 w-4" /></button>
@@ -301,7 +301,7 @@ export default function ProfilePage() {
 
         {/* Streak Stats - using shared component */}
         <div className="section-card">
-          <h3 className="text-[14px] font-semibold text-[var(--text-secondary)] mb-3">Streaks</h3>
+          <h3 className="text-[14px] font-medium text-[var(--text-secondary)] mb-3">Streaks</h3>
           <StreakCard
             currentStreak={profile?.current_streak || 0}
             bestStreak={profile?.best_streak || 0}
@@ -425,18 +425,22 @@ export default function ProfilePage() {
 
         {/* Statistics */}
         <div className="section-card">
-          <h3 className="text-[14px] font-semibold text-[var(--text-secondary)] mb-3">Statistics</h3>
+          <h3 className="text-[14px] font-medium text-[var(--text-secondary)] mb-3">Statistics</h3>
           <div className="flex items-center justify-between py-2.5 border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2.5">
-              <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
-              <span className="text-[13px] text-[var(--text-secondary)]">Member since</span>
+              <div className="h-7 w-7 rounded-[var(--radius-chip)] bg-[rgba(255,255,255,0.04)] flex items-center justify-center flex-shrink-0">
+                <Calendar className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              </div>
+              <span className="text-[13px] text-[var(--text-tertiary)]">Member since</span>
             </div>
             <span className="text-[14px] text-[var(--text-primary)]">{profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</span>
           </div>
           <div className="flex items-center justify-between py-2.5">
             <div className="flex items-center gap-2.5">
-              <Dumbbell className="h-4 w-4 text-[var(--text-muted)]" />
-              <span className="text-[13px] text-[var(--text-secondary)]">Total Points</span>
+              <div className="h-7 w-7 rounded-[var(--radius-chip)] bg-[rgba(255,255,255,0.04)] flex items-center justify-center flex-shrink-0">
+                <Dumbbell className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              </div>
+              <span className="text-[13px] text-[var(--text-tertiary)]">Total Points</span>
             </div>
             <span className="text-[14px] font-medium text-[var(--text-primary)]">{profile?.discipline_score || 0}</span>
           </div>
@@ -456,8 +460,10 @@ function ProfileRow({ icon: Icon, label, value, isLast }: { icon: typeof UserIco
   return (
     <div className={`flex items-center justify-between py-2.5 ${isLast ? '' : 'border-b border-[var(--border-subtle)]'}`}>
       <div className="flex items-center gap-2.5">
-        <Icon className="h-4 w-4 text-[var(--text-muted)]" />
-        <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
+        <div className="h-7 w-7 rounded-[var(--radius-chip)] bg-[rgba(255,255,255,0.04)] flex items-center justify-center flex-shrink-0">
+          <Icon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+        </div>
+        <span className="text-[13px] text-[var(--text-tertiary)]">{label}</span>
       </div>
       <span className="text-[14px] text-[var(--text-primary)]">{value}</span>
     </div>
