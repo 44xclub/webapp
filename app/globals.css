@@ -46,9 +46,9 @@
   --radius-chip: 6px;             /* Small elements */
 
   /* ---- SPACING ---- */
-  --space-section: 24px;          /* Gap between sections */
-  --space-card: 16px;             /* Padding inside cards */
-  --space-item: 12px;             /* Gap between list items */
+  --space-section: 20px;          /* Gap between sections */
+  --space-card: 14px;             /* Padding inside cards */
+  --space-item: 10px;             /* Gap between list items */
   --space-inline: 8px;            /* Inline element spacing */
 
   /* ---- TYPOGRAPHY (4 roles only) ---- */
@@ -139,6 +139,7 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  overscroll-behavior-y: none; /* Prevent scroll-to-top bounce/chain */
 }
 
 body {
@@ -152,6 +153,7 @@ body {
   text-rendering: geometricPrecision;
   min-height: 100dvh; /* Dynamic viewport height - Safari safe */
   overflow-x: hidden;
+  overscroll-behavior-y: none; /* Prevent overscroll bounce resetting position */
 }
 
 ::selection {

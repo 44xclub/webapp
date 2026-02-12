@@ -221,8 +221,8 @@ export default function CommunityPage() {
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Tab Navigation */}
-      <div className="px-4 pt-3 pb-2">
+      {/* Tab Navigation - sticky under header */}
+      <div className="sticky top-0 z-40 bg-[#07090d] px-4 pt-3 pb-2">
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import {
   getWeekDays,
@@ -12,7 +12,7 @@ import {
   getPreviousWeek,
 } from '@/lib/date'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { isToday } from 'date-fns'
+import { isToday, addDays, subDays } from 'date-fns'
 import type { Block } from '@/lib/types'
 import type { ViewMode } from './ViewModeToggle'
 
@@ -30,83 +30,98 @@ export function WeekStrip({
   onSelectDate,
   onWeekChange,
   blocksByDate,
-  viewMode,
+  viewMode = 'day',
   onViewModeChange,
 }: WeekStripProps) {
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
   const today = useMemo(() => new Date(), [])
 
-  const goToPreviousWeek = () => {
-    onWeekChange(getPreviousWeek(selectedDate))
-  }
+  // Navigate based on active mode: day = ±1 day, week = ±1 week
+  const goBack = useCallback(() => {
+    if (viewMode === 'day') {
+      const prev = subDays(selectedDate, 1)
+      onSelectDate(prev)
+      // If the prev day falls outside current week, shift week too
+      const weekStart = weekDays[0]
+      if (prev < weekStart) onWeekChange(prev)
+    } else {
+      onWeekChange(getPreviousWeek(selectedDate))
+    }
+  }, [viewMode, selectedDate, onSelectDate, onWeekChange, weekDays])
 
-  const goToNextWeek = () => {
-    onWeekChange(getNextWeek(selectedDate))
-  }
+  const goForward = useCallback(() => {
+    if (viewMode === 'day') {
+      const next = addDays(selectedDate, 1)
+      onSelectDate(next)
+      // If the next day falls outside current week, shift week too
+      const weekEnd = weekDays[6]
+      if (next > weekEnd) onWeekChange(next)
+    } else {
+      onWeekChange(getNextWeek(selectedDate))
+    }
+  }, [viewMode, selectedDate, onSelectDate, onWeekChange, weekDays])
 
-  const goToToday = () => {
-    onSelectDate(today)
-    onWeekChange(today)
-  }
+  // Clicking the active mode button resets to today
+  const handleModeClick = useCallback((mode: ViewMode) => {
+    if (viewMode === mode) {
+      // Already active: reset to today
+      onSelectDate(today)
+      onWeekChange(today)
+    } else {
+      onViewModeChange?.(mode)
+    }
+  }, [viewMode, onSelectDate, onWeekChange, onViewModeChange, today])
 
   return (
-    <div className="bg-[#07090d] border-b border-[rgba(255,255,255,0.07)] sticky top-0 z-30 safe-top">
-      {/* Compact navigation row with Today + View Toggle */}
-      <div className="flex items-center justify-between px-3 py-1.5">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={goToPreviousWeek}
-            className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
-            aria-label="Previous week"
-          >
-            <ChevronLeft className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
-          </button>
-          <button
-            onClick={goToToday}
-            className="px-2.5 py-1 text-[11px] font-semibold bg-[rgba(59,130,246,0.10)] text-[#3b82f6] hover:bg-[rgba(59,130,246,0.16)] rounded-md transition-colors"
-          >
-            Today
-          </button>
-          <button
-            onClick={goToNextWeek}
-            className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
-            aria-label="Next week"
-          >
-            <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
-          </button>
-        </div>
+    <div className="bg-[#07090d] border-b border-[rgba(255,255,255,0.07)]">
+      {/* Centered navigation: ← [DAY | WEEK] → */}
+      <div className="flex items-center justify-center gap-1 px-4 py-1.5">
+        <button
+          onClick={goBack}
+          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          aria-label={viewMode === 'day' ? 'Previous day' : 'Previous week'}
+        >
+          <ChevronLeft className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
+        </button>
 
-        {/* Integrated compact view toggle */}
-        {viewMode && onViewModeChange && (
-          <div className="flex bg-[rgba(255,255,255,0.04)] rounded-md p-0.5">
+        {onViewModeChange && (
+          <div className="flex bg-[rgba(255,255,255,0.05)] rounded-[var(--radius-button)] p-0.5 h-[40px]">
             <button
-              onClick={() => onViewModeChange('day')}
+              onClick={() => handleModeClick('day')}
               className={cn(
-                'px-2.5 py-1 text-[11px] font-medium rounded transition-all',
+                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[13px] font-semibold transition-all duration-150',
                 viewMode === 'day'
-                  ? 'bg-[#3b82f6] text-white'
-                  : 'text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.72)]'
+                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                  : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
               )}
             >
               Day
             </button>
             <button
-              onClick={() => onViewModeChange('week')}
+              onClick={() => handleModeClick('week')}
               className={cn(
-                'px-2.5 py-1 text-[11px] font-medium rounded transition-all',
+                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[13px] font-semibold transition-all duration-150',
                 viewMode === 'week'
-                  ? 'bg-[#3b82f6] text-white'
-                  : 'text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.72)]'
+                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(59,130,246,0.25)]'
+                  : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
               )}
             >
               Week
             </button>
           </div>
         )}
+
+        <button
+          onClick={goForward}
+          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          aria-label={viewMode === 'day' ? 'Next day' : 'Next week'}
+        >
+          <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
+        </button>
       </div>
 
-      {/* Compact week days - tighter spacing, smaller pills */}
-      <div className="flex justify-around px-1.5 pb-2">
+      {/* 7 Day Cards - compact, 8px spacing between */}
+      <div className="flex justify-around px-1.5 pb-2 gap-[8px]">
         {weekDays.map((day) => {
           const isSelected = isSameDayDate(day, selectedDate)
           const isTodayDate = isToday(day)
@@ -122,7 +137,7 @@ export function WeekStrip({
               className={cn(
                 'flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg min-w-[40px] min-h-[44px] transition-all',
                 isSelected
-                  ? 'bg-[#3b82f6] text-white'
+                  ? 'bg-[var(--accent-primary)] text-white'
                   : 'hover:bg-[rgba(255,255,255,0.04)]'
               )}
             >
@@ -138,7 +153,7 @@ export function WeekStrip({
                 className={cn(
                   'text-[15px] font-semibold leading-tight',
                   isSelected ? 'text-white' : 'text-[#eef2ff]',
-                  isTodayDate && !isSelected && 'text-[#3b82f6]'
+                  isTodayDate && !isSelected && 'text-[var(--accent-primary)]'
                 )}
               >
                 {getDayNumber(day)}
@@ -153,12 +168,12 @@ export function WeekStrip({
                         ? 'bg-white/80'
                         : allCompleted
                         ? 'bg-[#22c55e]'
-                        : 'bg-[#3b82f6]'
+                        : 'bg-[var(--accent-primary)]'
                     )}
                   />
                 )}
                 {isTodayDate && !isSelected && !hasBlocks && (
-                  <span className="w-1 h-1 bg-[#3b82f6]/60 rounded-full" />
+                  <span className="w-1 h-1 bg-[var(--accent-primary)]/60 rounded-full" />
                 )}
               </div>
             </button>

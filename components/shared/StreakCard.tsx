@@ -10,22 +10,33 @@ interface StreakCardProps {
 
 export function StreakCard({ currentStreak, bestStreak, variant = 'compact' }: StreakCardProps) {
   if (variant === 'full') {
-    // Full variant for Profile page - matches the two-column grid style
+    // Full variant for Profile page - single compact horizontal row, 64-72px max
     return (
-      <div className="grid grid-cols-2 gap-3">
-        <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
-          <div className="h-8 w-8 rounded-[8px] bg-gradient-to-b from-[rgba(245,158,11,0.14)] to-[rgba(245,158,11,0.04)] flex items-center justify-center border border-[rgba(245,158,11,0.22)] mx-auto mb-1.5">
+      <div className="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.025)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] h-[68px]">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-[8px] bg-gradient-to-b from-[rgba(245,158,11,0.14)] to-[rgba(245,158,11,0.04)] flex items-center justify-center border border-[rgba(245,158,11,0.22)]">
             <Flame className="h-4 w-4 text-[#f59e0b]" />
           </div>
-          <p className="text-[18px] font-bold text-[#eef2ff]">{currentStreak}</p>
-          <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Current Streak</p>
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-bold text-[#eef2ff]">{currentStreak}</span>
+              <span className="text-[11px] text-[rgba(238,242,255,0.50)]">days</span>
+            </div>
+            <p className="text-[10px] text-[rgba(238,242,255,0.40)] font-medium uppercase tracking-wider">Current</p>
+          </div>
         </div>
-        <div className="text-center p-3.5 bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
-          <div className="h-8 w-8 rounded-[8px] bg-gradient-to-b from-[rgba(34,197,94,0.14)] to-[rgba(34,197,94,0.04)] flex items-center justify-center border border-[rgba(34,197,94,0.22)] mx-auto mb-1.5">
+        <div className="w-px h-8 bg-[rgba(255,255,255,0.07)]" />
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-[8px] bg-gradient-to-b from-[rgba(34,197,94,0.14)] to-[rgba(34,197,94,0.04)] flex items-center justify-center border border-[rgba(34,197,94,0.22)]">
             <Trophy className="h-4 w-4 text-[#22c55e]" />
           </div>
-          <p className="text-[18px] font-bold text-[#eef2ff]">{bestStreak}</p>
-          <p className="text-[11px] text-[rgba(238,242,255,0.40)]">Best Streak</p>
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-bold text-[#eef2ff]">{bestStreak}</span>
+              <span className="text-[11px] text-[rgba(238,242,255,0.50)]">days</span>
+            </div>
+            <p className="text-[10px] text-[rgba(238,242,255,0.40)] font-medium uppercase tracking-wider">Best</p>
+          </div>
         </div>
       </div>
     )

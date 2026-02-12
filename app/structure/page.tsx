@@ -81,8 +81,8 @@ export default function StructurePage() {
     <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} loading={profileLoading} />
 
-      {/* Tab Navigation */}
-      <div className="px-4 pt-3 pb-2">
+      {/* Tab Navigation - sticky under header */}
+      <div className="sticky top-0 z-40 bg-[#07090d] px-4 pt-3 pb-2">
         <SegmentedControl
           tabs={TABS}
           activeTab={activeTab}
@@ -91,7 +91,7 @@ export default function StructurePage() {
       </div>
 
       {/* Content */}
-      <main className="px-4 pt-2 space-y-5">
+      <main className="px-4 pt-2 pb-6 space-y-5">
         {activeTab === 'discipline' ? (
           <>
             {/* Community Challenge */}
