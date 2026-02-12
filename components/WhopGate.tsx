@@ -26,22 +26,30 @@ export function WhopGate({ children, whopToken }: { children: React.ReactNode; w
   const router = useRouter()
 
   const bootstrap = useCallback(async () => {
-    console.log('[WhopGate] ▶ bootstrap start')
-    console.log('[WhopGate] whopToken received:', whopToken ? `yes (${whopToken.slice(0, 12)}…)` : 'NO — Whop did not inject the header')
-
-    const supabase = createClient()
-
-    // ── Fast path: already have a valid Supabase session ──────────
-    const { data: { user }, error: getUserError } = await supabase.auth.getUser()
-    console.log('[WhopGate] existing session check:', user ? `user ${user.id}` : 'no user', getUserError ? `(err: ${getUserError.message})` : '')
-    if (user) {
-      console.log('[WhopGate] ✓ fast path — already authenticated')
-      setState('ready')
-      return
-    }
-
-    // ── Slow path: call bootstrap to verify Whop token ────────────
     try {
+      console.log('[WhopGate] ▶ bootstrap start')
+      console.log('[WhopGate] whopToken received:', whopToken ? `yes (${whopToken.slice(0, 12)}…)` : 'NO — Whop did not inject the header')
+
+      let supabase: ReturnType<typeof createClient>
+      try {
+        supabase = createClient()
+      } catch (clientErr) {
+        console.error('[WhopGate] ✗ createClient() crashed:', clientErr)
+        setErrorMsg('Failed to initialise — check Supabase env vars')
+        setState('error')
+        return
+      }
+
+      // ── Fast path: already have a valid Supabase session ──────────
+      const { data: { user }, error: getUserError } = await supabase.auth.getUser()
+      console.log('[WhopGate] existing session check:', user ? `user ${user.id}` : 'no user', getUserError ? `(err: ${getUserError.message})` : '')
+      if (user) {
+        console.log('[WhopGate] ✓ fast path — already authenticated')
+        setState('ready')
+        return
+      }
+
+      // ── Slow path: call bootstrap to verify Whop token ────────────
       const headers: Record<string, string> = {}
       if (whopToken) {
         headers['x-whop-user-token'] = whopToken
@@ -96,7 +104,7 @@ export function WhopGate({ children, whopToken }: { children: React.ReactNode; w
       router.refresh()
     } catch (err) {
       console.error('[WhopGate] ✗ bootstrap error:', err)
-      setErrorMsg('Connection error')
+      setErrorMsg('Connection error — see console for details')
       setState('error')
     }
   }, [router, whopToken])
