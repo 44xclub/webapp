@@ -12,14 +12,12 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    setMessage(null)
 
     const supabase = createClient()
 
@@ -27,9 +25,6 @@ export default function LoginPage() {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
       })
 
       if (signUpError) {
@@ -45,8 +40,19 @@ export default function LoginPage() {
         return
       }
 
-      setMessage('Check your email for a confirmation link.')
-      setLoading(false)
+      // Sign in immediately after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError(signInError.message)
+        setLoading(false)
+        return
+      }
+
+      router.replace('/app')
     } else {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -95,13 +101,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Success message */}
-        {message && (
-          <div className="mb-4 rounded-[10px] bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.2)] px-4 py-3">
-            <p className="text-[13px] text-[#3b82f6]">{message}</p>
-          </div>
-        )}
-
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -142,7 +141,6 @@ export default function LoginPage() {
           onClick={() => {
             setIsSignUp(!isSignUp)
             setError(null)
-            setMessage(null)
           }}
           className="inline-block mt-4 text-[13px] font-medium text-[rgba(238,242,255,0.40)] hover:text-[rgba(238,242,255,0.60)] transition-colors"
         >
