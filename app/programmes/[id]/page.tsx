@@ -44,13 +44,13 @@ export default function ProgrammeEditorPage() {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
         if (error || !user) {
-          router.push('/')
+          router.push('/login')
           return
         }
         setUser(user)
         setAuthLoading(false)
       } catch {
-        if (isMounted) router.push('/')
+        if (isMounted) { setAuthLoading(false); router.push('/login') }
       }
     }
     checkAuth()
