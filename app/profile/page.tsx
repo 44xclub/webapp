@@ -64,6 +64,11 @@ const badgeColors: Record<DisciplineBadge, string> = {
   '44 Pro': 'text-purple-400',
 }
 
+function isWhopEmbedded(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim().startsWith('whop_embedded='))
+}
+
 export default function ProfilePage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -71,6 +76,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [checkinBlocks, setCheckinBlocks] = useState<BlockWithMedia[]>([])
   const [checkinsLoading, setCheckinsLoading] = useState(true)
+  const [whopEmbedded, setWhopEmbedded] = useState(false)
 
   const [formData, setFormData] = useState({
     display_name: '',
@@ -104,6 +110,10 @@ export default function ProfilePage() {
 
     return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
+
+  useEffect(() => {
+    setWhopEmbedded(isWhopEmbedded())
+  }, [])
 
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
@@ -221,9 +231,11 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] safe-top">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-title">Profile</h1>
-          <button onClick={handleSignOut} className="p-2 rounded-[var(--radius-button)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
-            <LogOut className="h-5 w-5" />
-          </button>
+          {!whopEmbedded && (
+            <button onClick={handleSignOut} className="p-2 rounded-[var(--radius-button)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+              <LogOut className="h-5 w-5" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -292,7 +304,7 @@ export default function ProfilePage() {
                 <ProfileRow icon={Cake} label="Birth Date" value={profile?.birth_date ? `${profile.birth_date} (${age} years)` : 'Not set'} />
                 <ProfileRow icon={Ruler} label="Height" value={profile?.height_cm ? `${profile.height_cm} cm` : 'Not set'} />
                 <ProfileRow icon={Scale} label="Weight" value={profile?.weight_kg ? `${profile.weight_kg} kg` : 'Not set'} />
-                <ProfileRow icon={Settings} label="Email" value={user?.email || 'Not set'} />
+                {!whopEmbedded && <ProfileRow icon={Settings} label="Email" value={user?.email || 'Not set'} />}
                 <ProfileRow icon={Clock} label="Timezone" value={profile?.timezone || 'Europe/London'} isLast />
               </>
             )}
@@ -446,9 +458,11 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <Button onClick={handleSignOut} variant="secondary" className="w-full">
-          <LogOut className="h-4 w-4" /> Sign Out
-        </Button>
+        {!whopEmbedded && (
+          <Button onClick={handleSignOut} variant="secondary" className="w-full">
+            <LogOut className="h-4 w-4" /> Sign Out
+          </Button>
+        )}
       </main>
 
       <BottomNav />
