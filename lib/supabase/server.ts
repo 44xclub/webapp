@@ -24,14 +24,14 @@ export async function createClient() {
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value, ...options, sameSite: 'none', secure: true })
+            cookieStore.set({ name, value, ...options })
           } catch {
             // Handle cookies in middleware
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
-            cookieStore.set({ name, value: '', ...options, sameSite: 'none', secure: true })
+            cookieStore.set({ name, value: '', ...options })
           } catch {
             // Handle cookies in middleware
           }

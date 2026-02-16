@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 let browserClient: SupabaseClient | null = null
@@ -17,17 +17,12 @@ export function createClient(): SupabaseClient {
         'Missing Supabase environment variables. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your .env.local file.'
       )
     }
-    return createBrowserClient(
+    return createSupabaseClient(
       'https://placeholder.supabase.co',
       'placeholder-key'
     )
   }
 
-  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    cookieOptions: {
-      sameSite: 'none',
-      secure: true,
-    },
-  })
+  browserClient = createSupabaseClient(supabaseUrl, supabaseAnonKey)
   return browserClient
 }

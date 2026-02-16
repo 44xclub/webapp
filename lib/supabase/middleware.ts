@@ -20,20 +20,18 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.get(name)?.value
       },
       set(name: string, value: string, options: CookieOptions) {
-        const cookieOpts = { ...options, sameSite: 'none' as const, secure: true }
-        request.cookies.set({ name, value, ...cookieOpts })
+        request.cookies.set({ name, value, ...options })
         response = NextResponse.next({
           request: { headers: request.headers },
         })
-        response.cookies.set({ name, value, ...cookieOpts })
+        response.cookies.set({ name, value, ...options })
       },
       remove(name: string, options: CookieOptions) {
-        const cookieOpts = { ...options, sameSite: 'none' as const, secure: true }
-        request.cookies.set({ name, value: '', ...cookieOpts })
+        request.cookies.set({ name, value: '', ...options })
         response = NextResponse.next({
           request: { headers: request.headers },
         })
-        response.cookies.set({ name, value: '', ...cookieOpts })
+        response.cookies.set({ name, value: '', ...options })
       },
     },
   })
