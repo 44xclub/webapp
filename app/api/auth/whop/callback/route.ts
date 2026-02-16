@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyWhopToken, checkWhopAccess } from '@/lib/whop/verify'
+import { verifyWhopToken } from '@/lib/whop/verify'
 import { provisionWhopUser } from '@/lib/whop/provision'
 import { createSessionValue, COOKIE_NAME, COOKIE_TTL_S } from '@/lib/whop/session'
 
@@ -79,15 +79,6 @@ export async function GET(request: NextRequest) {
   if (!whopUser) {
     console.error('[whop-oauth] Failed to verify Whop user with OAuth token')
     return redirectTo(request, '/login?error=verification')
-  }
-
-  // ── Check paid membership ──────────────────────────────────────
-  const experienceId = process.env.WHOP_EXPERIENCE_ID || ''
-  console.log('[whop-oauth] Checking access for user:', whopUser.id)
-  const hasAccess = await checkWhopAccess(whopUser.id, experienceId)
-  if (!hasAccess) {
-    console.warn('[whop-oauth] Access DENIED for user:', whopUser.id)
-    return redirectTo(request, '/blocked')
   }
 
   // ── Provision Supabase user ────────────────────────────────────

@@ -33,7 +33,6 @@ export default function LoginPage() {
         {/* Subtitle */}
         <p className="text-[14px] text-[rgba(238,242,255,0.52)] leading-relaxed mb-8">
           Sign in with your Whop account to access the app.
-          Active membership required.
         </p>
 
         {/* Sign in button */}
