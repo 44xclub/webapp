@@ -24,15 +24,6 @@ const nextConfig = {
         },
       ],
     },
-    {
-      source: '/:path*',
-      headers: [
-        {
-          key: 'Link',
-          value: '</manifest.json>; rel="payment-method-manifest"',
-        },
-      ],
-    },
   ],
 }
 
