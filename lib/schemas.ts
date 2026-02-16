@@ -80,14 +80,10 @@ export const checkinSchema = baseBlockSchema.extend({
   block_type: z.literal('checkin'),
   title: z.string().optional().nullable(),
   payload: z.object({
-    weight: z.number({
-      required_error: 'Weight is required',
-      invalid_type_error: 'Weight is required',
-    }).positive('Weight must be greater than 0'),
+    weight: z.number().positive('Weight is required'),
     height: z.number().positive().optional(),
     body_fat_percent: z.number().min(0).max(100).optional(),
   }),
-  shared_to_feed: z.boolean().optional(),
 })
 
 // Personal schema
