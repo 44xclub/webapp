@@ -27,9 +27,12 @@ function isApiRoute(pathname: string): boolean {
 }
 
 function addSecurityHeaders(response: NextResponse): void {
+  // CSP wildcard *.whop.com only matches one subdomain level.
+  // Whop's embed proxy uses multi-level subdomains (e.g. webapp.apps.whop.com)
+  // so we need explicit patterns for those.
   response.headers.set(
     'Content-Security-Policy',
-    "frame-ancestors 'self' https://*.whop.com https://whop.com;",
+    "frame-ancestors 'self' https://*.whop.com https://whop.com https://*.apps.whop.com;",
   )
   response.headers.set('X-Robots-Tag', 'noindex, nofollow')
   // X-Frame-Options intentionally omitted — CSP frame-ancestors handles
@@ -79,14 +82,20 @@ export async function updateSession(request: NextRequest) {
   if (!shouldBypassWhopGate(pathname) && !whopUserId) {
     // No valid signed session cookie.
     // Two paths exist:
-    //  a) Whop iframe: allow root `/` through so WhopGate can call bootstrap
+    //  a) Whop iframe/proxy: allow root `/` through so WhopGate can call bootstrap
     //  b) Standalone: redirect to /login so the user can sign in via OAuth
     if (pathname === '/') {
+      // Whop embeds the app via a server-side proxy (webapp.apps.whop.com)
+      // which injects x-whop-user-token on every request. Since the proxy
+      // makes server-to-server requests, sec-fetch-dest is absent — so we
+      // detect the Whop context by the presence of the token header instead.
+      const whopToken = request.headers.get('x-whop-user-token')
       const fetchDest = request.headers.get('sec-fetch-dest')
-      if (fetchDest === 'iframe') {
-        // Loaded inside Whop iframe — allow through for WhopGate bootstrap
+      if (whopToken || fetchDest === 'iframe') {
+        // Whop proxy request (has token) or direct iframe — allow through
+        // for WhopGate bootstrap which will verify the token server-side
       } else {
-        // Direct browser visit (document), client nav (empty), or unknown — redirect to login
+        // Direct browser visit — redirect to login for OAuth sign-in
         return denyAccess(request)
       }
     } else {
