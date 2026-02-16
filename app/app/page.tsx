@@ -53,16 +53,16 @@ export default function AppPage() {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
         if (!isMounted) return
-        if (error || !user) { router.push('/'); return }
+        if (error || !user) { router.push('/login'); return }
         setUser(user)
         setAuthLoading(false)
-      } catch { if (isMounted) router.push('/') }
+      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
     }
     checkAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return
-      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) router.push('/')
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) router.push('/login')
       else if (session?.user) { setUser(session.user); setAuthLoading(false) }
     })
 
