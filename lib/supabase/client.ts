@@ -23,6 +23,11 @@ export function createClient(): SupabaseClient {
     )
   }
 
-  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey)
+  browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      sameSite: 'none',
+      secure: true,
+    },
+  })
   return browserClient
 }
