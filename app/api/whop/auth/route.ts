@@ -18,40 +18,56 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   const redirectTo = request.nextUrl.searchParams.get('redirect') || '/app'
-  const redirectUrl = new URL(redirectTo, request.url)
+  const loginUrl = new URL('/login', request.url)
 
-  // Verify the Whop user token from the header
-  let whopUserId: string
   try {
-    const result = await getWhopSdk().verifyUserToken(request.headers)
-    whopUserId = result.userId
-  } catch (err) {
-    console.error('Whop token verification failed:', err)
-    // Fall back to regular login if Whop verification fails
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+    // ── 1. Check required env vars ──────────────────────────────────────
+    const whopUserSecret = process.env.WHOP_USER_SECRET
+    if (!whopUserSecret) {
+      console.error('[whop/auth] Missing WHOP_USER_SECRET env var')
+      return NextResponse.redirect(loginUrl)
+    }
 
-  if (!whopUserId) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[whop/auth] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY')
+      return NextResponse.redirect(loginUrl)
+    }
+    if (!serviceRoleKey) {
+      console.error('[whop/auth] Missing SUPABASE_SERVICE_ROLE_KEY env var')
+      return NextResponse.redirect(loginUrl)
+    }
 
-  const supabaseAdmin = createAdminClient()
+    // ── 2. Verify the Whop user token ───────────────────────────────────
+    let whopUserId: string
+    try {
+      const result = await getWhopSdk().verifyUserToken(request.headers)
+      whopUserId = result.userId
+    } catch (err) {
+      console.error('[whop/auth] Whop token verification failed:', err)
+      return NextResponse.redirect(loginUrl)
+    }
 
-  // Deterministic email and password for this Whop user
-  const email = `${whopUserId}@whop.44club.app`
-  const password = createHmac('sha256', process.env.WHOP_USER_SECRET!)
-    .update(whopUserId)
-    .digest('hex')
+    if (!whopUserId) {
+      console.error('[whop/auth] No whopUserId returned from token verification')
+      return NextResponse.redirect(loginUrl)
+    }
 
-  // Check if this Whop user already has a Supabase mapping
-  const { data: existingMapping } = await supabaseAdmin
-    .from('whop_users')
-    .select('supabase_user_id')
-    .eq('whop_user_id', whopUserId)
-    .single()
+    console.log('[whop/auth] Verified Whop user:', whopUserId)
 
-  if (!existingMapping) {
-    // First visit: create a Supabase auth user for this Whop user
+    // ── 3. Create or look up the Supabase user ─────────────────────────
+    const supabaseAdmin = createAdminClient()
+
+    // Deterministic email and password for this Whop user
+    const email = `${whopUserId}@whop.44club.app`
+    const password = createHmac('sha256', whopUserSecret)
+      .update(whopUserId)
+      .digest('hex')
+
+    // Try to create the Supabase auth user.
+    // If they already exist, createUser returns an error — that's fine, we just sign in.
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -59,31 +75,30 @@ export async function GET(request: NextRequest) {
       user_metadata: { whop_user_id: whopUserId },
     })
 
-    if (createError) {
-      console.error('Failed to create Supabase user for Whop user:', createError)
-      return NextResponse.redirect(new URL('/login', request.url))
+    if (newUser?.user) {
+      console.log('[whop/auth] Created new Supabase user:', newUser.user.id)
+
+      // Try to store the mapping in whop_users (non-fatal if table doesn't exist)
+      try {
+        await supabaseAdmin
+          .from('whop_users')
+          .upsert({
+            whop_user_id: whopUserId,
+            supabase_user_id: newUser.user.id,
+          }, { onConflict: 'whop_user_id' })
+      } catch (e) {
+        console.warn('[whop/auth] whop_users upsert failed (table may not exist):', e)
+      }
+    } else if (createError) {
+      // User likely already exists — this is expected for returning users
+      console.log('[whop/auth] User already exists, proceeding to sign in:', createError.message)
     }
 
-    // Store the mapping
-    const { error: mappingError } = await supabaseAdmin
-      .from('whop_users')
-      .insert({
-        whop_user_id: whopUserId,
-        supabase_user_id: newUser.user.id,
-      })
+    // ── 4. Sign in and set session cookies ──────────────────────────────
+    const redirectUrl = new URL(redirectTo, request.url)
+    const response = NextResponse.redirect(redirectUrl)
 
-    if (mappingError) {
-      console.error('Failed to create whop_users mapping:', mappingError)
-    }
-  }
-
-  // Sign in as the Supabase user and set session cookies
-  const response = NextResponse.redirect(redirectUrl)
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value
@@ -95,27 +110,33 @@ export async function GET(request: NextRequest) {
           response.cookies.set({ name, value: '', ...options })
         },
       },
+    })
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (signInError) {
+      console.error('[whop/auth] Failed to sign in Whop user:', signInError)
+      return NextResponse.redirect(loginUrl)
     }
-  )
 
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    console.log('[whop/auth] Signed in successfully, redirecting to:', redirectTo)
 
-  if (signInError) {
-    console.error('Failed to sign in Whop user:', signInError)
-    return NextResponse.redirect(new URL('/login', request.url))
+    // Set a cookie to indicate this is a Whop-embedded session
+    response.cookies.set('whop_embedded', '1', {
+      path: '/',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+      maxAge: 60 * 60 * 24, // 24 hours
+    })
+
+    return response
+  } catch (err) {
+    // Catch-all: any unhandled error returns a redirect instead of a 500
+    console.error('[whop/auth] Unhandled error:', err)
+    return NextResponse.redirect(loginUrl)
   }
-
-  // Set a cookie to indicate this is a Whop-embedded session
-  response.cookies.set('whop_embedded', '1', {
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'none',
-    maxAge: 60 * 60 * 24, // 24 hours
-  })
-
-  return response
 }
