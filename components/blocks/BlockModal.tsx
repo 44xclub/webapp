@@ -94,6 +94,8 @@ function getDefaultPayload(type: BlockType) {
       return {}
     case 'challenge':
       return {}
+    case 'personal':
+      return { tasks: [] }
     default:
       return {}
   }
