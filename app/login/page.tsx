@@ -1,10 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
+
+function isWhopEmbedded(): boolean {
+  if (typeof document === 'undefined') return false
+  return document.cookie.split(';').some(c => c.trim().startsWith('whop_embedded='))
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -13,6 +18,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  // If running inside Whop iframe, skip login UI entirely
+  useEffect(() => {
+    if (isWhopEmbedded()) {
+      router.replace('/app')
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

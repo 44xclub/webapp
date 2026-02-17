@@ -8,6 +8,7 @@ interface ActiveFrameworkCardProps {
   todaySubmission: DailyFrameworkSubmission | null
   completionCount: { completed: number; total: number }
   onOpenChecklist: () => void
+  onChooseFramework?: () => void
   compact?: boolean
 }
 
@@ -16,6 +17,7 @@ export function ActiveFrameworkCard({
   todaySubmission,
   completionCount,
   onOpenChecklist,
+  onChooseFramework,
   compact = false,
 }: ActiveFrameworkCardProps) {
   if (!activeFramework?.framework_template) {
@@ -23,9 +25,12 @@ export function ActiveFrameworkCard({
       <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[var(--radius-section)] p-3">
         <div className="flex items-center justify-between">
           <p className="text-[13px] text-[rgba(238,242,255,0.55)]">No framework activated</p>
-          <a href="#available-frameworks" className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline">
+          <button
+            onClick={onChooseFramework}
+            className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline"
+          >
             Choose one
-          </a>
+          </button>
         </div>
       </div>
     )

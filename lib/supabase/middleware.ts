@@ -14,6 +14,10 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
+  // Check if this request comes from the Whop iframe proxy
+  const whopUserToken = request.headers.get('x-whop-user-token')
+  const isWhopRequest = !!whopUserToken
+
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
@@ -36,7 +40,22 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // If this is a Whop iframe request and the user has no Supabase session,
+  // redirect to the Whop auth endpoint to create/sign in the user
+  if (isWhopRequest && !user) {
+    const pathname = request.nextUrl.pathname
+
+    // Don't redirect if already going to the auth endpoint (prevent loops)
+    if (pathname.startsWith('/api/whop/auth')) {
+      return response
+    }
+
+    const authUrl = new URL('/api/whop/auth', request.url)
+    authUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(authUrl)
+  }
 
   return response
 }
