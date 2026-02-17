@@ -29,8 +29,7 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
 
   const repeatPattern = watch('repeat_rule.pattern') || 'none'
   const selectedWeekdays = watch('repeat_rule.weekdays') || []
-  const watchedPayload = watch('payload') as { tasks?: PersonalTask[] } | undefined
-  const payloadTasks = watchedPayload?.tasks
+  const payloadTasks = watch('payload.tasks') as PersonalTask[] | undefined
 
   const [newTaskText, setNewTaskText] = useState('')
   const [showAddInput, setShowAddInput] = useState(false)
@@ -47,9 +46,7 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
   }, [])
 
   const updateTasks = useCallback(async (newTasks: PersonalTask[]) => {
-    // Set the full payload object to avoid nested path issues
-    const currentPayload = (getValues('payload') as Record<string, unknown>) || {}
-    setValue('payload', { ...currentPayload, tasks: newTasks } as any, { shouldDirty: true })
+    setValue('payload.tasks', newTasks, { shouldDirty: true })
 
     // Autosave for existing blocks
     if (blockId && onTaskToggle) {
@@ -59,11 +56,10 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
         showToast("Couldn't save")
       }
     }
-  }, [blockId, onTaskToggle, setValue, getValues, showToast])
+  }, [blockId, onTaskToggle, setValue, showToast])
 
   const handleToggleTask = useCallback(async (taskId: string) => {
-    const rawPayload = getValues('payload') as { tasks?: PersonalTask[] } | undefined
-    const currentTasks = rawPayload?.tasks || []
+    const currentTasks = (getValues('payload.tasks') as PersonalTask[] | undefined) || []
     const newTasks = currentTasks.map(t => {
       if (t.id !== taskId) return t
       const newDone = !t.done
@@ -81,8 +77,7 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
     if (!trimmed) return
     if (trimmed.length > 120) return
 
-    const rawPayload = getValues('payload') as { tasks?: PersonalTask[] } | undefined
-    const currentTasks = rawPayload?.tasks || []
+    const currentTasks = (getValues('payload.tasks') as PersonalTask[] | undefined) || []
     if (currentTasks.length >= 30) {
       showToast('Maximum 30 tasks')
       return
@@ -107,8 +102,7 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
   }, [newTaskText, getValues, updateTasks, showToast])
 
   const handleDeleteTask = useCallback(async (taskId: string) => {
-    const rawPayload = getValues('payload') as { tasks?: PersonalTask[] } | undefined
-    const currentTasks = rawPayload?.tasks || []
+    const currentTasks = (getValues('payload.tasks') as PersonalTask[] | undefined) || []
     const newTasks = currentTasks.filter(t => t.id !== taskId)
     await updateTasks(newTasks)
   }, [getValues, updateTasks])
@@ -242,7 +236,7 @@ export function PersonalForm({ form, blockId, onTaskToggle }: PersonalFormProps)
                 <button
                   type="button"
                   onClick={() => handleDeleteTask(task.id)}
-                  className="flex-shrink-0 p-1.5 text-[rgba(238,242,255,0.25)] hover:text-[rgba(239,68,68,0.8)] active:text-[rgba(239,68,68,0.8)] transition-colors"
+                  className="flex-shrink-0 p-1 opacity-0 group-hover:opacity-100 text-[rgba(238,242,255,0.3)] hover:text-[rgba(239,68,68,0.8)] transition-all"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
