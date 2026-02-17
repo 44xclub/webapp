@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getDateRange, incrementTime, formatDateForApi } from '@/lib/date'
-import type { Block, BlockMedia } from '@/lib/types'
+import type { Block, BlockMedia, PersonalTask } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 
 export function useBlocks(selectedDate: Date, userId: string | undefined) {
@@ -141,6 +141,34 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     [userId, supabase]
   )
 
+  // Update only payload.tasks without clobbering other payload keys
+  const updateBlockTasks = useCallback(
+    async (blockId: string, tasks: PersonalTask[]) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      // Fetch current block to get existing payload
+      const currentBlock = blocks.find(b => b.id === blockId)
+      const existingPayload = (currentBlock?.payload as Record<string, unknown>) || {}
+      const mergedPayload = { ...existingPayload, tasks }
+
+      const { data: updatedBlock, error } = await supabase
+        .from('blocks')
+        .update({ payload: mergedPayload })
+        .eq('id', blockId)
+        .eq('user_id', userId)
+        .select('*, block_media(*)')
+        .single()
+
+      if (error) throw error
+
+      setBlocks((prev) =>
+        prev.map((b) => (b.id === blockId ? (updatedBlock as Block) : b))
+      )
+      return updatedBlock as Block
+    },
+    [userId, blocks, supabase]
+  )
+
   // Toggle completion (optimistic update) + create feed post if shared
   const toggleComplete = useCallback(
     async (block: Block) => {
@@ -258,6 +286,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     error,
     createBlock,
     updateBlock,
+    updateBlockTasks,
     toggleComplete,
     duplicateBlock,
     deleteBlock,

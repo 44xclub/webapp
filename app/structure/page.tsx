@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
@@ -26,14 +26,24 @@ const TABS = [
   { value: 'training', label: 'Training' },
 ]
 
-export default function StructurePage() {
+export default function StructurePageWrapper() {
+  return (
+    <Suspense>
+      <StructurePage />
+    </Suspense>
+  )
+}
+
+function StructurePage() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
+  const frameworksRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -63,6 +73,22 @@ export default function StructurePage() {
   const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
+
+  // Handle deep link to frameworks section via ?section=frameworks
+  useEffect(() => {
+    if (searchParams.get('section') === 'frameworks' && !frameworksLoading) {
+      setActiveTab('discipline')
+      // Scroll to frameworks section after render
+      setTimeout(() => {
+        frameworksRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [searchParams, frameworksLoading])
+
+  const handleChooseFramework = () => {
+    // Already on Structure page - just scroll to frameworks
+    frameworksRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   const handleChallengeLogSuccess = () => {
     refetchChallenge()
@@ -119,11 +145,13 @@ export default function StructurePage() {
                   todaySubmission={todaySubmission}
                   completionCount={completionCount}
                   onOpenChecklist={() => setFrameworkModalOpen(true)}
+                  onChooseFramework={handleChooseFramework}
                 />
               </div>
             )}
 
             {/* Available Frameworks */}
+            <div ref={frameworksRef}>
             {frameworksLoading ? (
               <SectionCard>
                 <div className="flex justify-center py-6">
@@ -133,6 +161,7 @@ export default function StructurePage() {
             ) : (
               <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
+            </div>
 
             {/* Personal Discipline Framework Link */}
             <ListRow

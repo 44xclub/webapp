@@ -272,7 +272,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="section-card">
+        <div className="section-card overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[14px] font-medium text-[var(--text-secondary)]">Profile Details</h3>
             {editing ? (
@@ -291,7 +291,7 @@ export default function ProfilePage() {
             {editing ? (
               <>
                 <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
-                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} />
+                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} className="w-full box-border" />
                 <div className="grid grid-cols-2 gap-3">
                   <Input label="Height (cm)" type="number" value={formData.height_cm} onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })} placeholder="180" />
                   <Input label="Weight (kg)" type="number" step="0.1" value={formData.weight_kg} onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })} placeholder="75.0" />
@@ -473,13 +473,13 @@ export default function ProfilePage() {
 function ProfileRow({ icon: Icon, label, value, isLast }: { icon: typeof UserIcon; label: string; value: string; isLast?: boolean }) {
   return (
     <div className={`flex items-center justify-between py-2.5 ${isLast ? '' : 'border-b border-[var(--border-subtle)]'}`}>
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 min-w-0 flex-shrink-0">
         <div className="h-7 w-7 rounded-[var(--radius-chip)] bg-[rgba(255,255,255,0.04)] flex items-center justify-center flex-shrink-0">
           <Icon className="h-3.5 w-3.5 text-[var(--text-muted)]" />
         </div>
         <span className="text-[13px] text-[var(--text-tertiary)]">{label}</span>
       </div>
-      <span className="text-[14px] text-[var(--text-primary)]">{value}</span>
+      <span className="text-[14px] text-[var(--text-primary)] truncate ml-3 text-right">{value}</span>
     </div>
   )
 }

@@ -858,8 +858,17 @@ export interface CheckinPayload {
   body_fat_percent?: number
 }
 
+export interface PersonalTask {
+  id: string
+  text: string
+  done: boolean
+  sort_order: number
+  created_at: string
+  completed_at: string | null
+}
+
 export interface PersonalPayload {
-  // No additional required fields
+  tasks?: PersonalTask[]
 }
 
 export interface ChallengePayload {
