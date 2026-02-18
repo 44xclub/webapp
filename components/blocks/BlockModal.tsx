@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Modal, Button, Input } from '@/components/ui'
@@ -210,6 +210,19 @@ export function BlockModal({
   }, [entryMode])
 
   const schema = useMemo(() => getSchemaForType(blockType), [blockType])
+  const schemaRef = useRef(schema)
+  schemaRef.current = schema
+
+  // Dynamic resolver that always validates against the current blockType's schema.
+  // useForm captures the resolver at mount, so we use a stable wrapper that
+  // delegates to the latest schema via ref.
+  const dynamicResolver = useCallback(
+    async (values: any, context: any, options: any) => {
+      const resolver = zodResolver(schemaRef.current)
+      return resolver(values, context, options)
+    },
+    []
+  )
 
   const defaultValues = useMemo(() => {
     if (editingBlock) {
@@ -238,7 +251,7 @@ export function BlockModal({
   }, [editingBlock, initialDate, blockType])
 
   const form = useForm<BlockFormData>({
-    resolver: zodResolver(schema),
+    resolver: dynamicResolver,
     defaultValues: defaultValues as BlockFormData,
   })
 
