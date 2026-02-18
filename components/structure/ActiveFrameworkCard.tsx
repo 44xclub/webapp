@@ -47,7 +47,7 @@ export function ActiveFrameworkCard({
     return (
       <button
         onClick={onOpenChecklist}
-        className="w-full text-left relative overflow-hidden rounded-[12px] h-[64px] transition-all hover:brightness-105 group"
+        className="w-full text-left relative overflow-hidden rounded-[12px] h-[64px] border border-[rgba(255,255,255,0.08)] transition-all active:border-[rgba(255,255,255,0.16)] hover:border-[rgba(255,255,255,0.12)] group"
       >
         {imageUrl ? (
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -55,23 +55,26 @@ export function ActiveFrameworkCard({
           <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/30" />
-        <div className="absolute inset-0 p-3 flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-[10px] text-white/60 mb-0.5">Active Framework</p>
-            <p className="text-[12px] font-semibold text-white">{activeFramework.framework_template.title}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 max-w-[90px] h-1 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ${isComplete ? 'bg-[var(--accent-success)]' : 'bg-[var(--accent-primary)]'}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className={`text-[10px] font-medium ${isComplete ? 'text-[var(--accent-success-light)]' : 'text-white/70'}`}>
-                {completed}/{total}
+        <div className="absolute inset-0 p-3 flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <p className="text-[12px] font-semibold text-white leading-tight truncate flex-1">{activeFramework.framework_template.title}</p>
+            {isComplete && (
+              <span className="pill pill--sm pill--success flex-shrink-0 ml-1.5">
+                <CheckSquare className="h-2.5 w-2.5" />
               </span>
-            </div>
+            )}
           </div>
-          <ChevronRight className="h-4 w-4 text-white/50" />
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 bg-white/15 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${isComplete ? 'bg-[var(--accent-success)]' : 'bg-[var(--accent-primary)]'}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className={`text-[10px] font-medium ${isComplete ? 'text-[var(--accent-success-light)]' : 'text-white/60'}`}>
+              {completed}/{total}
+            </span>
+          </div>
         </div>
       </button>
     )
