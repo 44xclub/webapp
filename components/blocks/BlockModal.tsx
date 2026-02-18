@@ -42,6 +42,8 @@ interface BlockModalProps {
   activeProgramme?: UserProgramme | null
   programmeSessions?: ProgrammeSession[]
   userTimezone?: string
+  /** Callback for autosaving task toggle on personal blocks without full form save */
+  onTaskToggle?: (blockId: string, tasks: import('@/lib/types').TaskItem[]) => void
 }
 
 // Challenge is handled by ChallengeLogModal (requires media + preview)
@@ -128,6 +130,15 @@ function formatDisplayTime(time: string): string {
   return `${h}:${String(mins).padStart(2, '0')} ${ampm}`
 }
 
+function formatDurationHuman(minutes: number): string {
+  if (minutes <= 0) return '0m'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
 function isToday(dateStr: string): boolean {
   return dateStr === formatDateForApi(new Date())
 }
@@ -165,6 +176,7 @@ export function BlockModal({
   activeProgramme,
   programmeSessions = [],
   userTimezone = 'Europe/London',
+  onTaskToggle,
 }: BlockModalProps) {
   const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
@@ -432,7 +444,13 @@ export function BlockModal({
           />
         )
       case 'personal':
-        return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
+        return (
+          <PersonalForm
+            form={form as ReturnType<typeof useForm<typeof personalSchema._type>>}
+            isEditing={!!editingBlock}
+            onTaskToggle={editingBlock && onTaskToggle ? (tasks) => onTaskToggle(editingBlock.id, tasks) : undefined}
+          />
+        )
       case 'challenge':
         return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
     }
@@ -745,11 +763,11 @@ export function BlockModal({
           {editingBlock && (
             <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
               {/* Date Row */}
-              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[rgba(255,255,255,0.06)]">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
                 <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
                   <Calendar className="h-4 w-4 text-[#60a5fa]" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Date</label>
                   <Input
                     type="date"
@@ -759,12 +777,12 @@ export function BlockModal({
                 </div>
               </div>
 
-              {/* Time Row */}
-              <div className="flex items-center gap-3 px-4 py-3.5">
+              {/* Start / End Row */}
+              <div className="flex items-center gap-3 px-4 py-3">
                 <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
                   <Clock className="h-4 w-4 text-[#60a5fa]" />
                 </div>
-                <div className="flex-1 grid grid-cols-2 gap-3">
+                <div className="flex-1 min-w-0 grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Start</label>
                     <Input
@@ -784,14 +802,26 @@ export function BlockModal({
                 </div>
               </div>
 
-              {/* Duration display */}
-              {endTime && (
-                <div className="px-4 pb-3 text-right">
-                  <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
-                    Duration: {calculateMinutesBetween(startTime, endTime) || 0} min
-                  </span>
-                </div>
-              )}
+              {/* Duration display - only when both start and end exist */}
+              {startTime && endTime && (() => {
+                const mins = calculateMinutesBetween(startTime, endTime)
+                if (mins === null || mins <= 0) return null
+                const isOvernight = (() => {
+                  const [sH, sM] = startTime.split(':').map(Number)
+                  const [eH, eM] = endTime.split(':').map(Number)
+                  return (eH * 60 + eM) < (sH * 60 + sM)
+                })()
+                return (
+                  <div className="px-4 pb-3 flex items-center justify-end gap-2">
+                    {isOvernight && (
+                      <span className="text-[10px] text-amber-400/70 font-medium">Overnight</span>
+                    )}
+                    <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
+                      {formatDurationHuman(mins)}
+                    </span>
+                  </div>
+                )
+              })()}
             </div>
           )}
 

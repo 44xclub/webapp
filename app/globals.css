@@ -251,6 +251,14 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Ensure date/time inputs fit within containers on all devices */
+input[type="date"],
+input[type="time"] {
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
@@ -512,6 +520,7 @@ button, a, [role="button"] {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-section);
     padding: var(--space-card);
+    overflow: hidden;
   }
 
   /* ---- INTERACTIVE CARD (Level 2, inside sections) ---- */

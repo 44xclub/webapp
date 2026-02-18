@@ -108,10 +108,16 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     [userId, supabase]
   )
 
-  // Update an existing block
+  // Update an existing block (merges payload to prevent clobbering)
   const updateBlock = useCallback(
     async (blockId: string, data: Partial<BlockFormData>) => {
       if (!userId) throw new Error('Not authenticated')
+
+      // Merge incoming payload with existing to prevent clobbering other payload keys
+      const currentBlock = blocks.find(b => b.id === blockId)
+      const existingPayload = (currentBlock?.payload as Record<string, unknown>) || {}
+      const incomingPayload = (data.payload as Record<string, unknown>) || {}
+      const mergedPayload = { ...existingPayload, ...incomingPayload }
 
       const updateData = {
         date: data.date,
@@ -119,7 +125,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         end_time: data.end_time || null,
         title: data.title || null,
         notes: data.notes || null,
-        payload: data.payload || {},
+        payload: mergedPayload,
         repeat_rule: data.repeat_rule || null,
       }
 
@@ -138,7 +144,35 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
       )
       return updatedBlock as Block
     },
-    [userId, supabase]
+    [userId, blocks, supabase]
+  )
+
+  // Merge-update only specific payload keys (e.g. tasks) without clobbering other payload content
+  const updateBlockPayload = useCallback(
+    async (blockId: string, payloadPatch: Record<string, unknown>) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      // Find current block to merge payload
+      const currentBlock = blocks.find(b => b.id === blockId)
+      const currentPayload = (currentBlock?.payload as Record<string, unknown>) || {}
+      const mergedPayload = { ...currentPayload, ...payloadPatch }
+
+      const { data: updatedBlock, error } = await supabase
+        .from('blocks')
+        .update({ payload: mergedPayload })
+        .eq('id', blockId)
+        .eq('user_id', userId)
+        .select('*, block_media(*)')
+        .single()
+
+      if (error) throw error
+
+      setBlocks((prev) =>
+        prev.map((b) => (b.id === blockId ? (updatedBlock as Block) : b))
+      )
+      return updatedBlock as Block
+    },
+    [userId, blocks, supabase]
   )
 
   // Toggle completion (optimistic update) + create feed post if shared
@@ -258,6 +292,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     error,
     createBlock,
     updateBlock,
+    updateBlockPayload,
     toggleComplete,
     duplicateBlock,
     deleteBlock,
