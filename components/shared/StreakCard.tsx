@@ -5,10 +5,28 @@ import { Flame, Trophy } from 'lucide-react'
 interface StreakCardProps {
   currentStreak: number
   bestStreak: number
-  variant?: 'compact' | 'full'
+  variant?: 'compact' | 'full' | 'strip'
 }
 
 export function StreakCard({ currentStreak, bestStreak, variant = 'compact' }: StreakCardProps) {
+  if (variant === 'strip') {
+    // Ultra-compact single-row strip for Home page (~44px)
+    return (
+      <div className="flex items-center justify-between px-3 h-[44px] bg-[rgba(255,255,255,0.025)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
+        <div className="flex items-center gap-2">
+          <Flame className="h-3.5 w-3.5 text-[#f59e0b]" />
+          <span className="text-[14px] font-semibold text-[#eef2ff]">{currentStreak}</span>
+          <span className="text-[11px] text-[rgba(238,242,255,0.45)]">days</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Trophy className="h-3 w-3 text-[rgba(238,242,255,0.30)]" />
+          <span className="text-[11px] text-[rgba(238,242,255,0.45)]">Best:</span>
+          <span className="text-[13px] font-semibold text-[#22d3ee]">{bestStreak}</span>
+        </div>
+      </div>
+    )
+  }
+
   if (variant === 'full') {
     // Full variant for Profile page - single compact horizontal row, 64-72px max
     return (

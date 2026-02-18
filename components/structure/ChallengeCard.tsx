@@ -28,7 +28,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
 
   if (!challenge) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[var(--radius-section)] p-3">
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-3 h-[64px] flex items-center">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 rounded-[var(--radius-button)] bg-[rgba(255,255,255,0.04)]">
             <Target className="h-4 w-4 text-[rgba(238,242,255,0.30)]" />
@@ -49,7 +49,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
     return (
       <button
         onClick={isCompleted ? onViewPost : onLogToday}
-        className="w-full relative overflow-hidden rounded-[var(--radius-section)] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
+        className="w-full relative overflow-hidden rounded-[12px] h-[64px] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
       >
         {/* Background */}
         {imageUrl ? (
