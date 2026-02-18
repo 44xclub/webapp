@@ -260,7 +260,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Edit Profile Section */}
-        <div className="section-card">
+        <div className="section-card overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-[14px] font-medium text-[var(--text-secondary)]">Profile Details</h3>
             {editing ? (
@@ -279,7 +279,7 @@ export default function ProfilePage() {
             {editing ? (
               <>
                 <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
-                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} />
+                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} className="w-full max-w-full" />
                 <div className="grid grid-cols-2 gap-3">
                   <Input label="Height (cm)" type="number" value={formData.height_cm} onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })} placeholder="180" />
                   <Input label="Weight (kg)" type="number" step="0.1" value={formData.weight_kg} onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })} placeholder="75.0" />

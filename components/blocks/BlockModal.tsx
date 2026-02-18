@@ -21,6 +21,7 @@ import {
   personalSchema,
   challengeSchema,
   type BlockFormData,
+  type TaskItem,
 } from '@/lib/schemas'
 import { blockTypeLabels, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
@@ -42,6 +43,7 @@ interface BlockModalProps {
   activeProgramme?: UserProgramme | null
   programmeSessions?: ProgrammeSession[]
   userTimezone?: string
+  onPatchTasks?: (blockId: string, tasks: TaskItem[]) => Promise<unknown>
 }
 
 // Challenge is handled by ChallengeLogModal (requires media + preview)
@@ -132,6 +134,15 @@ function isToday(dateStr: string): boolean {
   return dateStr === formatDateForApi(new Date())
 }
 
+function formatDurationHuman(minutes: number): string {
+  if (minutes <= 0) return '0m'
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h > 0 && m > 0) return `${h}h ${m}m`
+  if (h > 0) return `${h}h 0m`
+  return `${m}m`
+}
+
 // Check if a block is scheduled for the future (vs log-now/past)
 function isFutureScheduled(dateStr: string, startTime: string, timezone: string = 'Europe/London'): boolean {
   try {
@@ -165,6 +176,7 @@ export function BlockModal({
   activeProgramme,
   programmeSessions = [],
   userTimezone = 'Europe/London',
+  onPatchTasks,
 }: BlockModalProps) {
   const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
@@ -432,7 +444,13 @@ export function BlockModal({
           />
         )
       case 'personal':
-        return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
+        return (
+          <PersonalForm
+            form={form as ReturnType<typeof useForm<typeof personalSchema._type>>}
+            editingBlockId={editingBlock?.id}
+            onPatchTasks={onPatchTasks}
+          />
+        )
       case 'challenge':
         return <PersonalForm form={form as ReturnType<typeof useForm<typeof personalSchema._type>>} />
     }
@@ -708,7 +726,7 @@ export function BlockModal({
                   <p className="text-[12px] text-[rgba(238,242,255,0.5)] font-medium">
                     {(blockType === 'checkin' || blockType === 'nutrition')
                       ? formatDisplayTime(startTime)
-                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${actualDuration} min`
+                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${formatDurationHuman(actualDuration)}`
                     }
                   </p>
                   <p className="text-[15px] font-semibold text-[#eef2ff]">
@@ -743,55 +761,51 @@ export function BlockModal({
 
           {/* Date/Time edit section for existing blocks */}
           {editingBlock && (
-            <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-              {/* Date Row */}
-              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[rgba(255,255,255,0.06)]">
-                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
-                  <Calendar className="h-4 w-4 text-[#60a5fa]" />
+            <div className="bg-[rgba(255,255,255,0.03)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-3 space-y-2.5">
+              {/* Row 1: Date (full width) */}
+              <div>
+                <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">Date</p>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-[18px] w-[18px] text-[#60a5fa] flex-shrink-0" />
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      {...form.register('date')}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Row 2: Start + End (equal widths) */}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">Start</p>
+                  <Input
+                    type="time"
+                    {...form.register('start_time')}
+                    className="w-full text-[14px]"
+                  />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Date</label>
+                  <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">End</p>
                   <Input
-                    type="date"
-                    {...form.register('date')}
-                    className="w-full"
+                    type="time"
+                    {...form.register('end_time')}
+                    className="w-full text-[14px]"
                   />
                 </div>
               </div>
-
-              {/* Time Row */}
-              <div className="flex items-center gap-3 px-4 py-3.5">
-                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-4 w-4 text-[#60a5fa]" />
-                </div>
-                <div className="flex-1 grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Start</label>
-                    <Input
-                      type="time"
-                      {...form.register('start_time')}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">End</label>
-                    <Input
-                      type="time"
-                      {...form.register('end_time')}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Duration display */}
-              {endTime && (
-                <div className="px-4 pb-3 text-right">
-                  <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
-                    Duration: {calculateMinutesBetween(startTime, endTime) || 0} min
-                  </span>
-                </div>
-              )}
+              {startTime && endTimeWatched && (() => {
+                const dur = calculateMinutesBetween(startTime, endTimeWatched)
+                return dur !== null && dur > 0 ? (
+                  <div className="text-right">
+                    <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
+                      Duration: {formatDurationHuman(dur)}
+                    </span>
+                  </div>
+                ) : null
+              })()}
             </div>
           )}
 

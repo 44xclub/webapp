@@ -252,6 +252,47 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     [userId, supabase]
   )
 
+  // Patch only payload.tasks without overwriting other payload keys
+  const patchBlockTasks = useCallback(
+    async (blockId: string, tasks: Record<string, unknown>[]) => {
+      if (!userId) throw new Error('Not authenticated')
+
+      // Read current payload from local state
+      const currentBlock = blocks.find(b => b.id === blockId)
+      const currentPayload = currentBlock?.payload ?? {}
+      const mergedPayload = { ...(currentPayload as Record<string, unknown>), tasks } as Block['payload']
+
+      // Optimistic update
+      setBlocks(prev =>
+        prev.map(b => b.id === blockId ? { ...b, payload: mergedPayload } : b)
+      )
+
+      try {
+        const { data: updatedBlock, error } = await supabase
+          .from('blocks')
+          .update({ payload: mergedPayload })
+          .eq('id', blockId)
+          .eq('user_id', userId)
+          .select('*, block_media(*)')
+          .single()
+
+        if (error) throw error
+
+        setBlocks(prev =>
+          prev.map(b => b.id === blockId ? (updatedBlock as Block) : b)
+        )
+        return updatedBlock as Block
+      } catch (err) {
+        // Revert on error
+        setBlocks(prev =>
+          prev.map(b => b.id === blockId ? { ...b, payload: currentPayload } : b)
+        )
+        throw err
+      }
+    },
+    [userId, blocks, supabase]
+  )
+
   return {
     blocks,
     loading,
@@ -261,6 +302,7 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     toggleComplete,
     duplicateBlock,
     deleteBlock,
+    patchBlockTasks,
     refetch: fetchBlocks,
   }
 }

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
@@ -26,7 +26,7 @@ const TABS = [
   { value: 'training', label: 'Training' },
 ]
 
-export default function StructurePage() {
+function StructurePageContent() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
@@ -34,6 +34,8 @@ export default function StructurePage() {
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const frameworksRef = useRef<HTMLDivElement>(null)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -63,6 +65,17 @@ export default function StructurePage() {
   const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
+
+  // Deep-link: ?section=frameworks scrolls to frameworks list
+  useEffect(() => {
+    if (searchParams.get('section') === 'frameworks' && !frameworksLoading) {
+      setActiveTab('discipline')
+      // Small delay to ensure DOM is rendered
+      setTimeout(() => {
+        frameworksRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [searchParams, frameworksLoading])
 
   const handleChallengeLogSuccess = () => {
     refetchChallenge()
@@ -124,15 +137,17 @@ export default function StructurePage() {
             )}
 
             {/* Available Frameworks */}
-            {frameworksLoading ? (
-              <SectionCard>
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
-                </div>
-              </SectionCard>
-            ) : (
-              <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
-            )}
+            <div ref={frameworksRef}>
+              {frameworksLoading ? (
+                <SectionCard>
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
+                  </div>
+                </SectionCard>
+              ) : (
+                <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
+              )}
+            </div>
 
             {/* Personal Discipline Framework Link */}
             <ListRow
@@ -192,5 +207,17 @@ export default function StructurePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function StructurePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
+      </div>
+    }>
+      <StructurePageContent />
+    </Suspense>
   )
 }

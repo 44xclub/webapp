@@ -90,11 +90,25 @@ export const checkinSchema = baseBlockSchema.extend({
   shared_to_feed: z.boolean().optional(),
 })
 
+// Task item schema for personal blocks
+export const taskItemSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1).max(120),
+  done: z.boolean(),
+  sort_order: z.number(),
+  created_at: z.string(),
+  completed_at: z.string().nullable(),
+})
+
+export type TaskItem = z.infer<typeof taskItemSchema>
+
 // Personal schema
 export const personalSchema = baseBlockSchema.extend({
   block_type: z.literal('personal'),
   title: z.string().min(1, 'Title is required'),
-  payload: z.object({}).optional(),
+  payload: z.object({
+    tasks: z.array(taskItemSchema).max(30).optional(),
+  }).optional(),
 })
 
 // Challenge schema (share forced ON)

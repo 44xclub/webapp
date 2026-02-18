@@ -69,7 +69,7 @@ export default function AppPage() {
     return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
+  const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock, patchBlockTasks } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
@@ -264,6 +264,7 @@ export default function AppPage() {
         activeProgramme={activeProgramme}
         programmeSessions={programmeSessions}
         userTimezone={profile?.timezone}
+        onPatchTasks={patchBlockTasks}
       />
 
       <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
