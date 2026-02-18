@@ -21,8 +21,8 @@ export function ActiveFrameworkCard({
 }: ActiveFrameworkCardProps) {
   if (!activeFramework?.framework_template) {
     return (
-      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[var(--radius-section)] p-3">
-        <div className="flex items-center justify-between">
+      <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-3 h-[64px] flex items-center">
+        <div className="flex items-center justify-between w-full">
           <p className="text-[13px] text-[rgba(238,242,255,0.55)]">No framework activated</p>
           <Link href="/structure?section=frameworks" className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline">
             Choose one

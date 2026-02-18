@@ -73,56 +73,54 @@ export function WeekStrip({
 
   return (
     <div className="bg-[#07090d] border-b border-[rgba(255,255,255,0.07)]">
-      {/* Row 1: ← Week of Feb 9–15 → */}
-      <div className="flex items-center justify-between px-4 py-1.5">
+      {/* Single row: ← Week of Feb 9–15  [Day|Week]  → */}
+      <div className="flex items-center px-2 py-1.5">
         <button
           onClick={goBack}
-          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
           aria-label="Previous week"
         >
           <ChevronLeft className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
         </button>
-        <span className="text-[13px] font-semibold text-[rgba(238,242,255,0.72)]">
-          {weekLabel}
-        </span>
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <span className="text-[13px] font-semibold text-[rgba(238,242,255,0.72)]">
+            {weekLabel}
+          </span>
+          {onViewModeChange && (
+            <div className="flex bg-[rgba(255,255,255,0.05)] rounded-[var(--radius-button)] p-0.5 h-[28px]">
+              <button
+                onClick={() => handleModeClick('day')}
+                className={cn(
+                  'px-3.5 rounded-[calc(var(--radius-button)-2px)] text-[11px] font-semibold transition-all duration-150',
+                  viewMode === 'day'
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
+                )}
+              >
+                Day
+              </button>
+              <button
+                onClick={() => handleModeClick('week')}
+                className={cn(
+                  'px-3.5 rounded-[calc(var(--radius-button)-2px)] text-[11px] font-semibold transition-all duration-150',
+                  viewMode === 'week'
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
+                )}
+              >
+                Week
+              </button>
+            </div>
+          )}
+        </div>
         <button
           onClick={goForward}
-          className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors"
           aria-label="Next week"
         >
           <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
         </button>
       </div>
-
-      {/* Row 2: [Day | Week] toggle centered */}
-      {onViewModeChange && (
-        <div className="flex justify-center pb-1.5">
-          <div className="flex bg-[rgba(255,255,255,0.05)] rounded-[var(--radius-button)] p-0.5 h-[32px]">
-            <button
-              onClick={() => handleModeClick('day')}
-              className={cn(
-                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[12px] font-semibold transition-all duration-150',
-                viewMode === 'day'
-                  ? 'bg-[var(--accent-primary)] text-white'
-                  : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
-              )}
-            >
-              Day
-            </button>
-            <button
-              onClick={() => handleModeClick('week')}
-              className={cn(
-                'px-5 rounded-[calc(var(--radius-button)-2px)] text-[12px] font-semibold transition-all duration-150',
-                viewMode === 'week'
-                  ? 'bg-[var(--accent-primary)] text-white'
-                  : 'text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.65)]'
-              )}
-            >
-              Week
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 7 Day Cards - compact, 8px spacing between */}
       <div className="flex justify-around px-1.5 pb-2 gap-[8px]">

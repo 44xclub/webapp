@@ -179,13 +179,13 @@ export default function AppPage() {
     <div className="min-h-[100dvh] flex flex-col" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
-      {/* Streak Module - using shared component */}
+      {/* Streak Strip - ultra-compact */}
       {profile && (
-        <div className="px-4 pt-3">
+        <div className="px-4 pt-2">
           <StreakCard
             currentStreak={profile.current_streak || 0}
             bestStreak={profile.best_streak || 0}
-            variant="compact"
+            variant="strip"
           />
         </div>
       )}
@@ -199,27 +199,55 @@ export default function AppPage() {
         onViewModeChange={handleViewModeChange}
       />
 
-      {/* Active Framework Card - same as Structure page */}
-      {viewMode === 'day' && !frameworkLoading && (
-        <div className="px-4 pt-3">
-          <ActiveFrameworkCard
-            activeFramework={activeFramework}
-            todaySubmission={null}
-            completionCount={completionCount}
-            onOpenChecklist={() => setFrameworkModalOpen(true)}
-          />
-        </div>
-      )}
-
-      {/* Challenge Card - compact variant for Home */}
-      {viewMode === 'day' && challenge && !challengeTodayBlock?.completed_at && (
-        <div className="px-4 pt-3">
-          <ChallengeCard
-            challenge={challenge}
-            todayBlock={challengeTodayBlock}
-            onLogToday={() => setChallengeModalOpen(true)}
-            variant="compact"
-          />
+      {/* Framework + Challenge cards side-by-side */}
+      {viewMode === 'day' && (
+        <div className="px-4 pt-2">
+          {/* Show side-by-side when both are visible, full-width when only one */}
+          {!frameworkLoading && challenge && !challengeTodayBlock?.completed_at ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Framework</span>
+                <ActiveFrameworkCard
+                  activeFramework={activeFramework}
+                  todaySubmission={null}
+                  completionCount={completionCount}
+                  onOpenChecklist={() => setFrameworkModalOpen(true)}
+                  compact
+                />
+              </div>
+              <div>
+                <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Challenge</span>
+                <ChallengeCard
+                  challenge={challenge}
+                  todayBlock={challengeTodayBlock}
+                  onLogToday={() => setChallengeModalOpen(true)}
+                  variant="compact"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              {!frameworkLoading && (
+                <ActiveFrameworkCard
+                  activeFramework={activeFramework}
+                  todaySubmission={null}
+                  completionCount={completionCount}
+                  onOpenChecklist={() => setFrameworkModalOpen(true)}
+                  compact
+                />
+              )}
+              {challenge && !challengeTodayBlock?.completed_at && (
+                <div className="mt-2">
+                  <ChallengeCard
+                    challenge={challenge}
+                    todayBlock={challengeTodayBlock}
+                    onLogToday={() => setChallengeModalOpen(true)}
+                    variant="compact"
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -229,11 +257,11 @@ export default function AppPage() {
             <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
           </div>
         ) : viewMode === 'day' ? (
-          <div className="pt-3">
+          <div className="pt-2">
             <DayView date={selectedDate} blocks={selectedDateBlocks} onAddBlock={handleAddBlock} onToggleComplete={handleToggleComplete} onEdit={handleEditBlock} onDuplicate={handleDuplicate} onDelete={handleDelete} />
           </div>
         ) : (
-          <div className="pt-3">
+          <div className="pt-2">
             <WeekOverview weekDays={weekDays} blocksByDate={blocksByDate} selectedDate={selectedDate} onSelectDay={handleSelectDate} onEditBlock={handleEditBlock} />
           </div>
         )}
