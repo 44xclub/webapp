@@ -49,7 +49,7 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
     return (
       <button
         onClick={isCompleted ? onViewPost : onLogToday}
-        className="w-full relative overflow-hidden rounded-[12px] h-[64px] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] transition-colors"
+        className="w-full relative overflow-hidden rounded-[12px] h-[64px] border border-[rgba(255,255,255,0.08)] text-left hover:border-[rgba(255,255,255,0.12)] active:border-[rgba(255,255,255,0.16)] transition-colors"
       >
         {/* Background */}
         {imageUrl ? (
@@ -63,23 +63,23 @@ export function ChallengeCard({ challenge, todayBlock, onLogToday, onViewPost, v
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
 
         {/* Content */}
-        <div className="relative z-10 p-3 flex items-center gap-3">
-          <div className="p-2 rounded-[10px] bg-[var(--accent-primary-bg-to)] border border-[var(--accent-primary-border)]">
-            <Target className="h-4 w-4 text-[var(--accent-primary)]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-semibold text-white truncate">
+        <div className="relative z-10 p-3 flex flex-col justify-between h-full">
+          <div className="flex items-start justify-between">
+            <p className="text-[12px] font-semibold text-white leading-tight truncate flex-1">
               {challenge.title}
             </p>
-            <p className="text-[11px] text-[var(--accent-primary)] font-medium">
-              {isCompleted ? 'View your post' : 'Tap to log today\'s challenge'}
-            </p>
+            {isCompleted && (
+              <span className="pill pill--sm pill--success flex-shrink-0 ml-1.5">
+                <Check className="h-2.5 w-2.5" />
+              </span>
+            )}
           </div>
-          {isCompleted && (
-            <span className="pill pill--success flex-shrink-0">
-              <Check className="h-3 w-3" />
+          <div className="flex items-center gap-1.5 mt-auto">
+            <Target className="h-3 w-3 text-white/40" />
+            <span className="text-[10px] font-medium text-white/50">
+              {isCompleted ? 'Done today' : 'Log today'}
             </span>
-          )}
+          </div>
         </div>
       </button>
     )
