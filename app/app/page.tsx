@@ -69,7 +69,7 @@ export default function AppPage() {
     return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  const { blocks, loading: blocksLoading, createBlock, updateBlock, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
+  const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
@@ -157,6 +157,13 @@ export default function AppPage() {
     }
     setSharePromptBlock(null)
   }, [sharePromptBlock, user?.id, updateBlock])
+  const handleTaskToggle = useCallback(async (blockId: string, tasks: import('@/lib/types').TaskItem[]) => {
+    try {
+      await updateBlockPayload(blockId, { tasks })
+    } catch (err) {
+      console.error('Failed to autosave tasks:', err)
+    }
+  }, [updateBlockPayload])
   const handleDuplicate = useCallback(async (block: Block) => await duplicateBlock(block), [duplicateBlock])
   const handleDelete = useCallback(async (block: Block) => await deleteBlock(block.id), [deleteBlock])
 
@@ -264,6 +271,7 @@ export default function AppPage() {
         activeProgramme={activeProgramme}
         programmeSessions={programmeSessions}
         userTimezone={profile?.timezone}
+        onTaskToggle={handleTaskToggle}
       />
 
       <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />

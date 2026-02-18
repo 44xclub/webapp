@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { CheckSquare, ChevronRight, Lock } from 'lucide-react'
 import type { UserFramework, DailyFrameworkSubmission } from '@/lib/types'
 
@@ -23,9 +24,9 @@ export function ActiveFrameworkCard({
       <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[var(--radius-section)] p-3">
         <div className="flex items-center justify-between">
           <p className="text-[13px] text-[rgba(238,242,255,0.55)]">No framework activated</p>
-          <a href="#available-frameworks" className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline">
+          <Link href="/structure?section=frameworks" className="text-[12px] text-[var(--accent-primary)] font-medium hover:underline">
             Choose one
-          </a>
+          </Link>
         </div>
       </div>
     )

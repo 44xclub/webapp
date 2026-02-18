@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
@@ -27,6 +27,18 @@ const TABS = [
 ]
 
 export default function StructurePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
+      </div>
+    }>
+      <StructurePageContent />
+    </Suspense>
+  )
+}
+
+function StructurePageContent() {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
@@ -34,7 +46,9 @@ export default function StructurePage() {
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
+  const frameworksSectionRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -63,6 +77,19 @@ export default function StructurePage() {
   const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
+
+  // Handle deep-link to frameworks section via ?section=frameworks
+  useEffect(() => {
+    const section = searchParams.get('section')
+    if (section === 'frameworks') {
+      setActiveTab('discipline')
+      // Wait for content to render before scrolling
+      const timer = setTimeout(() => {
+        frameworksSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, frameworksLoading])
 
   const handleChallengeLogSuccess = () => {
     refetchChallenge()
@@ -124,6 +151,7 @@ export default function StructurePage() {
             )}
 
             {/* Available Frameworks */}
+            <div ref={frameworksSectionRef} />
             {frameworksLoading ? (
               <SectionCard>
                 <div className="flex justify-center py-6">

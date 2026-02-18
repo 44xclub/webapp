@@ -2,14 +2,20 @@
 
 import { type UseFormReturn } from 'react-hook-form'
 import { Input, Textarea, Select } from '@/components/ui'
+import { TasksSection } from './TasksSection'
 import { repeatPatternLabels, weekdayLabels } from '@/lib/utils'
 import type { PersonalFormData } from '@/lib/schemas'
+import type { TaskItem } from '@/lib/types'
 
 interface PersonalFormProps {
   form: UseFormReturn<PersonalFormData>
+  /** Callback for autosaving task toggle on existing blocks */
+  onTaskToggle?: (tasks: TaskItem[]) => void
+  /** Whether we're editing an existing block */
+  isEditing?: boolean
 }
 
-export function PersonalForm({ form }: PersonalFormProps) {
+export function PersonalForm({ form, onTaskToggle, isEditing = false }: PersonalFormProps) {
   const {
     register,
     watch,
@@ -19,6 +25,7 @@ export function PersonalForm({ form }: PersonalFormProps) {
 
   const repeatPattern = watch('repeat_rule.pattern') || 'none'
   const selectedWeekdays = watch('repeat_rule.weekdays') || []
+  const tasks = (watch('payload.tasks') as TaskItem[] | undefined) || []
 
   const toggleWeekday = (day: number) => {
     const current = selectedWeekdays || []
@@ -26,6 +33,21 @@ export function PersonalForm({ form }: PersonalFormProps) {
       ? current.filter((d) => d !== day)
       : [...current, day]
     setValue('repeat_rule.weekdays', updated)
+  }
+
+  const handleTasksChange = (updatedTasks: TaskItem[]) => {
+    setValue('payload.tasks', updatedTasks, { shouldDirty: true })
+  }
+
+  const handleToggleTask = (_taskId: string, _done: boolean) => {
+    // After local state update via handleTasksChange, trigger autosave
+    if (onTaskToggle) {
+      // Get the latest tasks from form (already updated by handleTasksChange)
+      const currentTasks = form.getValues('payload.tasks') as TaskItem[] | undefined
+      if (currentTasks) {
+        onTaskToggle(currentTasks)
+      }
+    }
   }
 
   return (
@@ -85,6 +107,14 @@ export function PersonalForm({ form }: PersonalFormProps) {
           })}
         />
       )}
+
+      {/* Tasks (optional) */}
+      <TasksSection
+        tasks={tasks}
+        onChange={handleTasksChange}
+        onToggleTask={handleToggleTask}
+        isEditing={isEditing}
+      />
 
       {/* Notes */}
       <Textarea
