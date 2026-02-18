@@ -181,6 +181,7 @@ export function BlockModal({
   const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [selectedDuration, setSelectedDuration] = useState<number | 'custom'>(30)
   const [customDurationValue, setCustomDurationValue] = useState<string>('')
   const [customDurationUnit, setCustomDurationUnit] = useState<'min' | 'hr'>('min')
@@ -352,6 +353,7 @@ export function BlockModal({
   const handleBlockTypeChange = (newType: BlockType) => {
     if (editingBlock) return
     setBlockType(newType)
+    setSubmitError(null)
     // Check-in and Challenge blocks can only be logged, not scheduled
     if (newType === 'challenge' || newType === 'checkin') {
       setEntryMode('log')
@@ -374,11 +376,13 @@ export function BlockModal({
 
   const handleClose = () => {
     setStep(1)
+    setSubmitError(null)
     onClose()
   }
 
   const handleSubmit = async (data: BlockFormData) => {
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
       // Check-in blocks are point-in-time - no duration
       const isCheckin = blockType === 'checkin'
@@ -426,10 +430,23 @@ export function BlockModal({
         // Small delay to let modal close animation complete
         setTimeout(() => onShowSharePreview(createdBlock), 150)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save block:', error)
+      setSubmitError(error?.message || 'Failed to save block. Please try again.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Called when form validation fails (Zod rejects the data)
+  const handleValidationError = (errors: any) => {
+    console.error('Form validation failed:', errors)
+    // Build a user-visible message from the first error
+    const firstError = Object.values(errors).find((e: any) => e?.message) as any
+    if (firstError?.message) {
+      setSubmitError(firstError.message)
+    } else {
+      setSubmitError('Please fill in all required fields.')
     }
   }
 
@@ -727,7 +744,7 @@ export function BlockModal({
 
       {/* Step 2: Details - Premium UI */}
       {(step === 2 || editingBlock) && (
-        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit)} className="p-4 space-y-4">
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit, handleValidationError)} className="p-4 space-y-4">
           {/* Summary Header for new blocks */}
           {!editingBlock && (
             <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[14px] border border-[rgba(59,130,246,0.15)] p-4">
@@ -898,6 +915,13 @@ export function BlockModal({
               <p className="text-[12px] text-[rgba(238,242,255,0.7)] font-medium">
                 📸 You can add photos and share to the feed when you complete this block.
               </p>
+            </div>
+          )}
+
+          {/* Submit error message */}
+          {submitError && (
+            <div className="p-3 bg-[rgba(239,68,68,0.1)] rounded-[10px] border border-[rgba(239,68,68,0.2)]">
+              <p className="text-[12px] text-red-400 font-medium">{submitError}</p>
             </div>
           )}
         </form>
