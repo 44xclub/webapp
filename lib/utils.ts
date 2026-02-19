@@ -57,17 +57,24 @@ export const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 // Calculate duration between two time strings (HH:MM format)
 export function calculateDuration(startTime: string, endTime: string | null): number | null {
   if (!endTime || !startTime) return null
-  
+
   const [startHour, startMin] = startTime.split(':').map(Number)
   const [endHour, endMin] = endTime.split(':').map(Number)
-  
+
   const startMinutes = startHour * 60 + startMin
   const endMinutes = endHour * 60 + endMin
-  
+
   // Handle cases where end time is before start time (crossed midnight)
   if (endMinutes < startMinutes) {
     return (24 * 60 - startMinutes) + endMinutes
   }
-  
+
   return endMinutes - startMinutes
+}
+
+// Get public URL for an avatar stored in the Supabase 'avatars' bucket
+export function getAvatarUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http')) return path
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${path}`
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
+import { getAvatarUrl } from '@/lib/utils'
 import type { DisciplineBadge } from '@/lib/types'
 
 // Helper to get storage URL from path - constructs URL directly to avoid Supabase client issues
@@ -149,6 +150,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
 
   const displayName = post.user_profile?.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
+  const avatarUrl = getAvatarUrl(post.user_profile?.avatar_path)
   const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
   const BadgeIcon = badgeIcons[level.badge]
   const badgeColor = badgeColors[level.badge]
@@ -163,10 +165,14 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
       {/* Header */}
       <div className="px-3 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
-            <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
-              {initials}
-            </span>
+          <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center overflow-hidden flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
+                {initials}
+              </span>
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">

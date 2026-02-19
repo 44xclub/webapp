@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
+import { getAvatarUrl } from '@/lib/utils'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -445,14 +446,19 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
               const badgeDisplay = `${level.badge} ${romanNumerals[level.badgeLevel - 1] || 'I'}`
               const displayName = member.profiles?.display_name || 'Member'
               const initials = displayName.slice(0, 2).toUpperCase()
+              const memberAvatarUrl = getAvatarUrl(member.profiles?.avatar_path)
 
               return (
                 <div key={member.user_id} className="px-[var(--space-card)] py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center">
-                      <span className="text-meta">
-                        {initials}
-                      </span>
+                    <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {memberAvatarUrl ? (
+                        <img src={memberAvatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-meta">
+                          {initials}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <p className="text-meta text-[var(--text-primary)]">

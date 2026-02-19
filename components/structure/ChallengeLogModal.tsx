@@ -5,6 +5,7 @@ import { Modal, Button, Textarea } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateForApi } from '@/lib/date'
 import { ImagePlus, X, Loader2, Lock, ArrowLeft, Check, Share2 } from 'lucide-react'
+import { getAvatarUrl } from '@/lib/utils'
 import type { CommunityChallenge, Block, Profile, ProfileRank } from '@/lib/types'
 
 interface MediaItem {
@@ -195,12 +196,6 @@ export function ChallengeLogModal({
     }
   }
 
-  const getAvatarUrl = (path: string | null) => {
-    if (!path) return null
-    return path.startsWith('http')
-      ? path
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path}`
-  }
 
   // Form step
   if (step === 'form') {
