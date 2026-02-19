@@ -516,7 +516,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-meta font-bold text-[var(--text-primary)]">
+                    <p className="text-meta text-[var(--text-primary)]">
                       {member.profiles?.discipline_score || 0}
                     </p>
                     <p className="text-micro">pts</p>
