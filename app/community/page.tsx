@@ -302,11 +302,16 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         .eq('user_id', userId)
         .is('left_at', null)
 
+      // Query error (e.g. RLS 500) — show error/retry, not "No Team Yet"
+      if (membershipError) {
+        console.error('[Team] Membership query error:', membershipError)
+        setTeamData(null)
+        setTeamState('error')
+        return
+      }
+
       // No membership = truly unassigned
       if (!memberships || memberships.length === 0) {
-        if (membershipError) {
-          console.error('[Team] Membership query error:', membershipError)
-        }
         setTeamData(null)
         setTeamState('unassigned')
         return
@@ -484,38 +489,35 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
               const memberAvatarUrl = member.profiles?.avatar_url || null
 
               return (
-                <div key={member.user_id} className="px-[var(--space-card)] py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--surface-2)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div key={member.user_id} className="px-[var(--space-card)] py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center overflow-hidden flex-shrink-0">
                       {memberAvatarUrl ? (
                         <img src={memberAvatarUrl} alt={displayName} className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-meta">
+                        <span className="text-[11px] text-[var(--text-muted)]">
                           {initials}
                         </span>
                       )}
                     </div>
                     <div>
-                      <p className="text-meta text-[var(--text-primary)]">
+                      <p className="text-[13px] text-[var(--text-primary)] leading-tight">
                         {displayName}
                         {member.role === 'captain' && (
-                          <span className="ml-2 text-micro normal-case text-[var(--accent-blue)]">(Captain)</span>
+                          <span className="ml-1.5 text-[10px] text-[var(--accent-blue)]">Capt</span>
                         )}
                       </p>
                       <div className="flex items-center gap-1">
-                        <BadgeIcon className={`h-3 w-3 ${badgeColor}`} />
-                        <span className={`text-micro normal-case ${badgeColor}`}>
+                        <BadgeIcon className={`h-2.5 w-2.5 ${badgeColor}`} />
+                        <span className={`text-[10px] ${badgeColor}`}>
                           {badgeDisplay}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-meta font-bold text-[var(--text-primary)]">
-                      {member.profiles?.discipline_score || 0}
-                    </p>
-                    <p className="text-micro">pts</p>
-                  </div>
+                  <p className="text-[13px] text-[var(--text-secondary)]">
+                    {member.profiles?.discipline_score || 0} <span className="text-[10px] text-[var(--text-muted)]">pts</span>
+                  </p>
                 </div>
               )
             })}
