@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { parseDateOnly } from '@/lib/date'
 import {
   Loader2,
   LogOut,
@@ -395,7 +396,7 @@ export default function ProfilePage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-meta w-12">
-                        {new Date(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {parseDateOnly(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-label">

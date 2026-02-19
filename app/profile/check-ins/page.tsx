@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { parseDateOnly } from '@/lib/date'
 import {
   Loader2,
   ChevronLeft,
@@ -279,10 +280,10 @@ function CheckInsPageContent() {
                           {/* Date */}
                           <div className="w-14">
                             <p className="text-[13px] font-medium text-[rgba(238,242,255,0.85)]">
-                              {new Date(checkin.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {parseDateOnly(checkin.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </p>
                             <p className="text-[10px] text-[rgba(238,242,255,0.40)]">
-                              {new Date(checkin.date).getFullYear()}
+                              {parseDateOnly(checkin.date).getFullYear()}
                             </p>
                           </div>
 

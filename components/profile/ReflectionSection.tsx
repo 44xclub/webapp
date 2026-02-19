@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Textarea, Button } from '@/components/ui'
+import { parseDateOnly } from '@/lib/date'
 import { ChevronDown, ChevronUp, Loader2, Check, FileText, Send } from 'lucide-react'
 import type { ReflectionCycleWithEntry, ReflectionAnswers, ReflectionStatus } from '@/lib/types'
 
@@ -113,9 +114,9 @@ function CycleRow({
           {/* Date range header */}
           <div className="flex items-center justify-between py-2">
             <p className="text-[11px] text-[rgba(238,242,255,0.45)]">
-              {new Date(cycle.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+              {parseDateOnly(cycle.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
               {' — '}
-              {new Date(cycle.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {parseDateOnly(cycle.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
 
