@@ -105,7 +105,7 @@ export default function ProfilePage() {
     return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id)
+  const { profile, loading: profileLoading, updateProfile, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
   const { cycles, currentCycle } = useReflection(user?.id)
 
@@ -238,6 +238,7 @@ export default function ProfilePage() {
                   currentPath={profile?.avatar_path || null}
                   displayName={displayName}
                   onUploadComplete={handleAvatarUpload}
+                  resolvedAvatarUrl={avatarUrl}
                 />
               )}
             </div>

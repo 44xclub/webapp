@@ -81,7 +81,7 @@ export default function PersonalProgrammesPage() {
     }
   }, [router, supabase])
 
-  const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { showToast } = useToast()
   const {
     programmes,
@@ -119,7 +119,7 @@ export default function PersonalProgrammesPage() {
   return (
     <div className="app-shell">
       <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
-        <HeaderStrip profile={profile} loading={profileLoading} />
+        <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">
           <div className="flex items-center justify-between">

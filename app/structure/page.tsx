@@ -72,7 +72,7 @@ function StructurePageContent() {
     return () => { isMounted = false; subscription.unsubscribe() }
   }, [router, supabase])
 
-  const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
@@ -106,7 +106,7 @@ function StructurePageContent() {
 
   return (
     <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
-      <HeaderStrip profile={profile} rank={rank} loading={profileLoading} />
+      <HeaderStrip profile={profile} rank={rank} loading={profileLoading} avatarUrl={avatarUrl} />
 
       {/* Tab Navigation - sticky under header */}
       <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-1.5 pb-1">
@@ -214,6 +214,7 @@ function StructurePageContent() {
           userId={user.id}
           userProfile={profile}
           userRank={rank}
+          avatarUrl={avatarUrl}
           onSuccess={handleChallengeLogSuccess}
         />
       )}

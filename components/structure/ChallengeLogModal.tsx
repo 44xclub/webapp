@@ -5,7 +5,6 @@ import { Modal, Button, Textarea } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { formatDateForApi } from '@/lib/date'
 import { ImagePlus, X, Loader2, Lock, ArrowLeft, Check, Share2 } from 'lucide-react'
-import { getAvatarUrl } from '@/lib/utils'
 import type { CommunityChallenge, Block, Profile, ProfileRank } from '@/lib/types'
 
 interface MediaItem {
@@ -22,6 +21,7 @@ interface ChallengeLogModalProps {
   userId: string
   userProfile?: Profile | null
   userRank?: ProfileRank | null
+  avatarUrl?: string | null
   onSuccess: (block: Block) => void
 }
 
@@ -34,6 +34,7 @@ export function ChallengeLogModal({
   userId,
   userProfile,
   userRank,
+  avatarUrl,
   onSuccess,
 }: ChallengeLogModalProps) {
   const [step, setStep] = useState<Step>('form')
@@ -362,9 +363,9 @@ export function ChallengeLogModal({
           {/* User header */}
           <div className="flex items-center gap-3 p-3 border-b border-[rgba(255,255,255,0.06)]">
             <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden">
-              {userProfile?.avatar_path ? (
+              {avatarUrl ? (
                 <img
-                  src={getAvatarUrl(userProfile.avatar_path) || ''}
+                  src={avatarUrl}
                   alt=""
                   className="w-full h-full object-cover"
                 />

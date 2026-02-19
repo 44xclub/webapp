@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
-import { getAvatarUrl } from '@/lib/utils'
 import type { Profile, DisciplineBadge, ProfileRank } from '@/lib/types'
 import { badgeIcons, badgeColors, badgeBgColors, romanNumerals } from './DisciplineScoreModule'
 import { DisciplineSystemModal } from './DisciplineSystemModal'
@@ -14,9 +13,10 @@ interface HeaderStripProps {
   profile: Profile | null
   rank?: ProfileRank | null
   loading?: boolean
+  avatarUrl?: string | null
 }
 
-export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
+export function HeaderStrip({ profile, rank, loading, avatarUrl: avatarUrlProp }: HeaderStripProps) {
   const [scoreModalOpen, setScoreModalOpen] = useState(false)
 
   // Use rank data if available (from v_profiles_rank view), otherwise calculate from profile
@@ -65,7 +65,7 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
   const displayName = profile.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
-  const avatarUrl = getAvatarUrl(profile.avatar_path)
+  const avatarUrl = avatarUrlProp
   const BadgeIcon = badgeIcons[disciplineData.badge]
   const badgeColor = badgeColors[disciplineData.badge]
   const badgeBgColor = badgeBgColors[disciplineData.badge]

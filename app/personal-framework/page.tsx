@@ -69,7 +69,7 @@ export default function PersonalFrameworkPage() {
     return () => { isMounted = false }
   }, [router, supabase])
 
-  const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { showToast } = useToast()
   const {
     personalFramework,
@@ -125,7 +125,7 @@ export default function PersonalFrameworkPage() {
   return (
     <div className="app-shell">
       <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
-        <HeaderStrip profile={profile} loading={profileLoading} />
+        <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">
           <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Discipline Framework</h1>

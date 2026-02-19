@@ -7,7 +7,26 @@ import type { Profile } from '@/lib/types'
 export function useProfile(userId: string | undefined) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
+
+  // Resolve avatar signed URL whenever profile.avatar_path changes
+  useEffect(() => {
+    if (!profile?.avatar_path) {
+      setAvatarUrl(null)
+      return
+    }
+    supabase.storage
+      .from('avatars')
+      .createSignedUrl(profile.avatar_path, 3600)
+      .then(({ data, error }) => {
+        if (error || !data?.signedUrl) {
+          setAvatarUrl(null)
+        } else {
+          setAvatarUrl(data.signedUrl)
+        }
+      })
+  }, [profile?.avatar_path, supabase])
 
   const fetchProfile = useCallback(async () => {
     if (!userId) {
@@ -66,5 +85,6 @@ export function useProfile(userId: string | undefined) {
     loading,
     updateProfile,
     hasHeight: !!profile?.height_cm,
+    avatarUrl,
   }
 }
