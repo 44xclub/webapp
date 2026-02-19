@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { parseDateOnly } from '@/lib/date'
 import { Loader2, ChevronLeft, Check, FileText, Send } from 'lucide-react'
 import { useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -92,9 +93,9 @@ function ReflectionModal({
         {/* Date range and status */}
         <div className="flex items-center justify-between">
           <p className="text-[12px] text-[rgba(238,242,255,0.45)]">
-            {new Date(cycle.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+            {parseDateOnly(cycle.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
             {' — '}
-            {new Date(cycle.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {parseDateOnly(cycle.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
           <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${status.className} ${status.bgClassName}`}>
             {status.label}
@@ -302,9 +303,9 @@ export default function ReflectionPage() {
                     </span>
                   </div>
                   <p className="text-[12px] text-[rgba(238,242,255,0.50)]">
-                    {new Date(currentCycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {parseDateOnly(currentCycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {' — '}
-                    {new Date(currentCycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {parseDateOnly(currentCycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                   {currentCycle.displayStatus === 'not_started' && (
                     <p className="text-[12px] text-[#3b82f6] mt-2">Tap to start your reflection</p>
@@ -331,9 +332,9 @@ export default function ReflectionPage() {
                           {cycle.label.replace('Reflection — ', '')}
                         </p>
                         <p className="text-[11px] text-[rgba(238,242,255,0.40)] mt-0.5">
-                          {new Date(cycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {parseDateOnly(cycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {' — '}
-                          {new Date(cycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {parseDateOnly(cycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusConfig[cycle.displayStatus].className} ${statusConfig[cycle.displayStatus].bgClassName}`}>
@@ -362,9 +363,9 @@ export default function ReflectionPage() {
                           {cycle.label.replace('Reflection — ', '')}
                         </p>
                         <p className="text-[11px] text-[rgba(238,242,255,0.40)] mt-0.5">
-                          {new Date(cycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {parseDateOnly(cycle.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {' — '}
-                          {new Date(cycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {parseDateOnly(cycle.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                       <span className="text-[11px] text-[rgba(238,242,255,0.40)]">

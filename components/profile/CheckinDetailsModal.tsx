@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { parseDateOnly } from '@/lib/date'
 import { Modal } from '@/components/ui'
 import { Scale, Percent, Calendar, Clock, FileText, Image as ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Block, BlockMedia } from '@/lib/types'
@@ -26,7 +27,7 @@ export function CheckinDetailsModal({ isOpen, onClose, checkin }: CheckinDetails
   const media = checkin.block_media || []
 
   // Format date
-  const dateStr = new Date(checkin.date).toLocaleDateString('en-US', {
+  const dateStr = parseDateOnly(checkin.date).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',

@@ -62,6 +62,15 @@ export function parseDate(dateString: string): Date {
   return parseISO(dateString)
 }
 
+// Parse a date-only string (e.g. "2024-02-19") into a local-timezone Date.
+// new Date("2024-02-19") treats it as UTC midnight, which shifts backward
+// one day in western timezones. This function avoids that by constructing
+// the date with local year/month/day components.
+export function parseDateOnly(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 // Round time to nearest 5 minutes
 export function roundToNearest5Minutes(date: Date = new Date()): string {
   const minutes = date.getMinutes()

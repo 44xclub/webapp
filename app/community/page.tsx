@@ -10,6 +10,7 @@ import { BottomNav } from '@/components/shared/BottomNav'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FeedPostCard, FeedPost } from '@/components/feed/FeedPostCard'
 import { calculateDisciplineLevel } from '@/lib/types'
+import { parseDateOnly } from '@/lib/date'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { DisciplineBadge, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
 
@@ -558,7 +559,7 @@ function DailyOverviewCard({
   members: TeamMemberData[]
 }) {
   const payload = overview.payload as TeamSnapshot
-  const date = new Date(overview.date)
+  const date = parseDateOnly(overview.date)
   const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
