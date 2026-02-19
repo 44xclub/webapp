@@ -302,11 +302,16 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         .eq('user_id', userId)
         .is('left_at', null)
 
+      // Query error (e.g. RLS 500) — show error/retry, not "No Team Yet"
+      if (membershipError) {
+        console.error('[Team] Membership query error:', membershipError)
+        setTeamData(null)
+        setTeamState('error')
+        return
+      }
+
       // No membership = truly unassigned
       if (!memberships || memberships.length === 0) {
-        if (membershipError) {
-          console.error('[Team] Membership query error:', membershipError)
-        }
         setTeamData(null)
         setTeamState('unassigned')
         return
