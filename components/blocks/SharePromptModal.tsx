@@ -15,6 +15,7 @@ interface SharePromptModalProps {
   block: Block | null
   userId?: string
   userProfile?: Profile | null
+  avatarUrl?: string | null
   onMediaUpload?: (blockId: string, file: File, meta?: Record<string, unknown>) => Promise<BlockMedia | void>
   onMediaDelete?: (mediaId: string) => Promise<void>
   onConfirm: (shareToFeed: boolean) => Promise<void>
@@ -29,6 +30,7 @@ export function SharePromptModal({
   block,
   userId,
   userProfile,
+  avatarUrl,
   onMediaUpload,
   onMediaDelete,
   onConfirm,
@@ -159,11 +161,13 @@ export function SharePromptModal({
         ? {
             display_name: userProfile.display_name,
             avatar_path: userProfile.avatar_path,
+            avatar_url: avatarUrl || null,
             discipline_score: userProfile.discipline_score,
           }
         : {
             display_name: 'You',
             avatar_path: null,
+            avatar_url: null,
             discipline_score: 29,
           },
       respect_count: 0,

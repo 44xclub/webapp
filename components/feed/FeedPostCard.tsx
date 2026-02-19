@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
-import { getAvatarUrl } from '@/lib/utils'
 import type { DisciplineBadge } from '@/lib/types'
 
 // Helper to get storage URL from path - constructs URL directly to avoid Supabase client issues
@@ -85,6 +84,7 @@ export interface FeedPost {
   user_profile?: {
     display_name: string | null
     avatar_path: string | null
+    avatar_url?: string | null
     discipline_score: number
   }
   respect_count?: number
@@ -150,7 +150,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
 
   const displayName = post.user_profile?.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
-  const avatarUrl = getAvatarUrl(post.user_profile?.avatar_path)
+  const avatarUrl = post.user_profile?.avatar_url || null
   const level = calculateDisciplineLevel(post.user_profile?.discipline_score || 0)
   const BadgeIcon = badgeIcons[level.badge]
   const badgeColor = badgeColors[level.badge]

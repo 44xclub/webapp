@@ -71,7 +71,7 @@ export default function AppPage() {
 
   const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
-  const { profile, loading: profileLoading, hasHeight } = useProfile(user?.id)
+  const { profile, loading: profileLoading, hasHeight, avatarUrl } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
   const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
@@ -177,7 +177,7 @@ export default function AppPage() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
-      <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
+      <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} avatarUrl={avatarUrl} />
 
       {/* Streak Strip - ultra-compact */}
       {profile && (
@@ -310,6 +310,7 @@ export default function AppPage() {
         block={sharePromptBlock}
         userId={user?.id}
         userProfile={profile}
+        avatarUrl={avatarUrl}
         onMediaUpload={uploadMedia}
         onMediaDelete={deleteMedia}
         onConfirm={handleSharePromptConfirm}
@@ -323,6 +324,7 @@ export default function AppPage() {
           userId={user.id}
           userProfile={profile}
           userRank={rank}
+          avatarUrl={avatarUrl}
           onSuccess={handleChallengeLogSuccess}
         />
       )}

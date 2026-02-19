@@ -71,10 +71,3 @@ export function calculateDuration(startTime: string, endTime: string | null): nu
 
   return endMinutes - startMinutes
 }
-
-// Get public URL for an avatar stored in the Supabase 'avatars' bucket
-export function getAvatarUrl(path: string | null | undefined): string | null {
-  if (!path) return null
-  if (path.startsWith('http')) return path
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${path}`
-}

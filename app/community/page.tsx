@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
-import { getAvatarUrl } from '@/lib/utils'
 import { useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -23,6 +22,7 @@ interface TeamMemberData {
   profiles: {
     display_name: string | null
     avatar_path: string | null
+    avatar_url: string | null
     discipline_score: number
   } | null
 }
@@ -150,7 +150,24 @@ export default function CommunityPage() {
         console.log('[Feed] Profiles for posts:', { profiles, profilesError })
 
         if (profiles) {
-          const profileMap = new Map(profiles.map((p: any) => [p.id, p]))
+          // Resolve signed avatar URLs for all profiles with avatar_path
+          const avatarPaths = profiles.filter((p: any) => p.avatar_path).map((p: any) => p.avatar_path)
+          const avatarUrlMap = new Map<string, string>()
+          if (avatarPaths.length > 0) {
+            const { data: signedData } = await supabase.storage.from('avatars').createSignedUrls(avatarPaths, 3600)
+            if (signedData) {
+              signedData.forEach((item: any) => {
+                if (item.signedUrl && item.path) {
+                  avatarUrlMap.set(item.path, item.signedUrl)
+                }
+              })
+            }
+          }
+
+          const profileMap = new Map(profiles.map((p: any) => [p.id, {
+            ...p,
+            avatar_url: p.avatar_path ? (avatarUrlMap.get(p.avatar_path) || null) : null,
+          }]))
           postsWithProfiles = postsData.map((post: any) => ({
             ...post,
             profiles: profileMap.get(post.user_id) || null
@@ -206,7 +223,7 @@ export default function CommunityPage() {
   }
 
   // Data hooks
-  const { profile, loading: profileLoading } = useProfile(user?.id)
+  const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
 
   if (authLoading) {
     return (
@@ -221,7 +238,7 @@ export default function CommunityPage() {
   return (
     <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header Strip */}
-      <HeaderStrip profile={profile} loading={profileLoading} />
+      <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
       {/* Tab Navigation - sticky under header */}
       <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-1.5 pb-1">
@@ -327,7 +344,24 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
           .select('id, display_name, avatar_path, discipline_score')
           .in('id', userIds)
 
-        const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
+        // Resolve signed avatar URLs for team members
+        const memberAvatarPaths = (profiles || []).filter((p: any) => p.avatar_path).map((p: any) => p.avatar_path)
+        const memberAvatarUrlMap = new Map<string, string>()
+        if (memberAvatarPaths.length > 0) {
+          const { data: signedData } = await supabase.storage.from('avatars').createSignedUrls(memberAvatarPaths, 3600)
+          if (signedData) {
+            signedData.forEach((item: any) => {
+              if (item.signedUrl && item.path) {
+                memberAvatarUrlMap.set(item.path, item.signedUrl)
+              }
+            })
+          }
+        }
+
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, {
+          ...p,
+          avatar_url: p.avatar_path ? (memberAvatarUrlMap.get(p.avatar_path) || null) : null,
+        }]))
         membersWithProfiles = members.map((m: any) => ({
           ...m,
           profiles: profileMap.get(m.user_id) || null
@@ -446,7 +480,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
               const badgeDisplay = `${level.badge} ${romanNumerals[level.badgeLevel - 1] || 'I'}`
               const displayName = member.profiles?.display_name || 'Member'
               const initials = displayName.slice(0, 2).toUpperCase()
-              const memberAvatarUrl = getAvatarUrl(member.profiles?.avatar_path)
+              const memberAvatarUrl = member.profiles?.avatar_url || null
 
               return (
                 <div key={member.user_id} className="px-[var(--space-card)] py-3 flex items-center justify-between">

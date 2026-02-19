@@ -10,9 +10,11 @@ interface AvatarUploadProps {
   currentPath: string | null
   displayName: string
   onUploadComplete: (path: string) => void
+  /** Pre-resolved signed URL for the current avatar */
+  resolvedAvatarUrl?: string | null
 }
 
-export function AvatarUpload({ userId, currentPath, displayName, onUploadComplete }: AvatarUploadProps) {
+export function AvatarUpload({ userId, currentPath, displayName, onUploadComplete, resolvedAvatarUrl }: AvatarUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -21,14 +23,8 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
 
   const initials = displayName.slice(0, 2).toUpperCase()
 
-  // Get public URL for current avatar
-  const avatarUrl = useMemo(() => {
-    if (previewUrl) return previewUrl
-    if (!currentPath) return null
-
-    const { data } = supabase.storage.from('avatars').getPublicUrl(currentPath)
-    return data.publicUrl
-  }, [currentPath, previewUrl, supabase])
+  // Use preview (blob) URL first, then the pre-resolved signed URL from parent
+  const avatarUrl = previewUrl || resolvedAvatarUrl || null
 
   const handleClick = () => {
     if (!uploading) {
