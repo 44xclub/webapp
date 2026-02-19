@@ -218,12 +218,12 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} />
 
       {/* Tab Navigation - sticky under header */}
-      <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-2.5 pb-1.5">
+      <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-1.5 pb-1">
         <SegmentedControl
           tabs={communityTabs}
           activeTab={activeTab}

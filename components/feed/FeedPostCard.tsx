@@ -161,7 +161,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
   return (
     <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between">
+      <div className="px-3 py-2.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center">
             <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
@@ -217,7 +217,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
       </div>
 
       {/* Body */}
-      <div className="px-4 pb-3">
+      <div className="px-3 pb-2.5">
         {/* Title */}
         <h3 className="text-[14px] font-semibold text-[#eef2ff] mb-1">{post.title}</h3>
 
@@ -254,7 +254,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.06)] flex items-center">
+      <div className="px-3 py-2 border-t border-[rgba(255,255,255,0.06)] flex items-center">
         <button
           onClick={() => onRespect(post.id, post.has_respected || false)}
           className={`flex items-center gap-2 text-[13px] transition-colors ${
@@ -347,23 +347,71 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
       <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">
         Session Breakdown
       </p>
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {exercises.map((exercise: any, idx: number) => {
           const name = exercise.name || exercise.exercise || 'Exercise'
           const sets = exercise.sets || []
-          const setsString = formatSetsCompact(sets, exercise)
+          const hasStructuredSets = Array.isArray(sets) && sets.length > 0 && sets.some((s: any) => s.reps || s.weight)
+
+          if (!hasStructuredSets) {
+            // Legacy fallback - single line
+            const legacyStr = formatSetsLegacy(exercise)
+            return (
+              <div key={idx}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-medium text-[#eef2ff] truncate">{name}</span>
+                  {legacyStr && <span className="text-[11px] text-[rgba(238,242,255,0.45)] flex-shrink-0">{legacyStr}</span>}
+                </div>
+              </div>
+            )
+          }
+
+          // Set matrix: columns for each set
+          const validSets = sets.filter((s: any) => s.reps || s.weight)
+          const hasWeight = validSets.some((s: any) => s.weight)
 
           return (
-            <div key={idx} className="flex items-start justify-between text-[13px] gap-3">
-              <span className="text-[#eef2ff] font-medium flex-shrink-0">{name}</span>
-              <span className="text-[rgba(238,242,255,0.52)] text-right">{setsString}</span>
+            <div key={idx}>
+              <span className="text-[12px] font-medium text-[#eef2ff] truncate block mb-1">{name}</span>
+              <div className="overflow-x-auto scrollbar-hide">
+                <table className="text-[11px] w-auto border-collapse">
+                  <thead>
+                    <tr>
+                      <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.30)] font-medium whitespace-nowrap">Set</td>
+                      {validSets.map((_: any, si: number) => (
+                        <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.30)] font-medium min-w-[28px]">{si + 1}</td>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.45)] font-medium whitespace-nowrap">Reps</td>
+                      {validSets.map((s: any, si: number) => (
+                        <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.72)] min-w-[28px]">
+                          {s.reps || '\u2014'}
+                        </td>
+                      ))}
+                    </tr>
+                    {hasWeight && (
+                      <tr>
+                        <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.45)] font-medium whitespace-nowrap">Kg</td>
+                        {validSets.map((s: any, si: number) => (
+                          <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.72)] min-w-[28px]">
+                            {s.weight || '\u2014'}
+                          </td>
+                        ))}
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )
         })}
       </div>
 
       {/* Tags row */}
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
+      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
         {(workout?.duration_min || (payload as any)?.duration) && (
           <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
             {workout?.duration_min || (payload as any)?.duration} min
@@ -389,27 +437,13 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   )
 }
 
-// Format sets to compact string: "10×80 · 8×60 · 6×60"
-function formatSetsCompact(sets: any[], exercise: any): string {
-  if (Array.isArray(sets) && sets.length > 0) {
-    return sets
-      .filter((s: any) => s.reps || s.weight)
-      .map((s: any) => {
-        if (s.reps && s.weight) return `${s.reps}×${s.weight}`
-        if (s.reps) return `${s.reps} reps`
-        if (s.weight) return `${s.weight}kg`
-        return ''
-      })
-      .filter(Boolean)
-      .join(' · ')
-  }
-
-  // Legacy format fallback
+// Legacy format fallback for exercises without structured sets
+function formatSetsLegacy(exercise: any): string {
   const parts = []
-  if (exercise.sets) parts.push(`${exercise.sets} sets`)
-  if (exercise.reps) parts.push(`× ${exercise.reps}`)
-  if (exercise.weight) parts.push(`@ ${exercise.weight}kg`)
-  return parts.join(' ')
+  if (exercise.sets_count || exercise.sets) parts.push(`${exercise.sets_count || exercise.sets} sets`)
+  if (exercise.reps) parts.push(`${exercise.reps} reps`)
+  if (exercise.weight) parts.push(`${exercise.weight}kg`)
+  return parts.join(' \u00B7 ')
 }
 
 // Nutrition Data Panel

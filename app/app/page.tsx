@@ -176,7 +176,7 @@ export default function AppPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-[100dvh] flex flex-col content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} />
 
       {/* Streak Strip - ultra-compact */}
