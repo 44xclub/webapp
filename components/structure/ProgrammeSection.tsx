@@ -94,13 +94,13 @@ export function ProgrammeSection({
   if (!activeProgramme?.programme_template) {
     return (
       <div>
-        <SectionHeader title="Active Programme" subtitle="Your current training plan" />
-        <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-[10px] bg-[rgba(255,255,255,0.04)]">
+        <SectionHeader title="Active Programme" />
+        <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-[14px] p-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-[8px] bg-[rgba(255,255,255,0.04)]">
               <Dumbbell className="h-4 w-4 text-[rgba(238,242,255,0.35)]" />
             </div>
-            <p className="text-[13px] text-[rgba(238,242,255,0.40)]">No programme activated. Browse the catalogue below.</p>
+            <p className="text-[13px] text-[rgba(238,242,255,0.40)]">No programme activated. Browse below.</p>
           </div>
         </div>
       </div>
@@ -117,17 +117,17 @@ export function ProgrammeSection({
   return (
     <>
       <div>
-        <SectionHeader title="Active Programme" subtitle="Your current training plan" />
+        <SectionHeader title="Active Programme" />
 
-        {/* Premium Active Programme Card - 3 region structure */}
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[16px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.15)]">
-          {/* Region 1: Media Header - clickable to open modal */}
+        {/* Compact Active Programme Card */}
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden">
+          {/* Media Header - reduced height */}
           <div
             role="button"
             tabIndex={0}
             onClick={() => setDetailModalOpen(true)}
             onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
-            className="relative h-[100px] md:h-[120px] cursor-pointer group"
+            className="relative h-[72px] cursor-pointer group"
           >
             {imageUrl ? (
               <div
@@ -137,53 +137,47 @@ export function ProgrammeSection({
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
             )}
-            {/* Strong dark scrim overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.85)] via-[rgba(0,0,0,0.5)] to-[rgba(0,0,0,0.3)]" />
-
-            {/* Status Chip - uses unified pill system */}
-            <span className="pill pill--success-solid pill--pulse absolute top-3 left-3 shadow-sm">
+            <span className="pill pill--success-solid pill--pulse absolute top-2.5 left-2.5 shadow-sm">
               Active
             </span>
           </div>
 
-          {/* Region 2: Content Body - clickable to open modal */}
+          {/* Content Body - tighter */}
           <div
             role="button"
             tabIndex={0}
             onClick={() => setDetailModalOpen(true)}
             onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
-            className="px-4 py-3.5 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+            className="px-3 py-2.5 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
           >
-            <h3 className="text-[17px] font-semibold text-[#eef2ff] leading-tight line-clamp-1 mb-1">
+            <h3 className="text-[15px] font-semibold text-[#eef2ff] leading-tight line-clamp-1 mb-0.5">
               {programme.title}
             </h3>
             {programme.overview && (
-              <p className="text-[12px] text-[rgba(238,242,255,0.5)] leading-relaxed line-clamp-2">
+              <p className="text-[12px] text-[rgba(238,242,255,0.5)] leading-snug line-clamp-1">
                 {programme.overview}
               </p>
             )}
           </div>
 
-          {/* Region 3: Action Bar - dedicated area with proper spacing */}
+          {/* Action Bar - compact */}
           <div
-            className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.15)] px-4 py-3.5"
+            className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.15)] px-3 py-2.5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex gap-3">
-              {/* Primary CTA: Schedule Week - unified btn system */}
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={() => setScheduleModalOpen(true)}
-                className="flex-1 h-10"
+                className="flex-1 h-9"
               >
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-3.5 w-3.5" />
                 Schedule Week
               </Button>
-
-              {/* Secondary/Destructive: Deactivate - unified btn system */}
               <button
                 onClick={() => setDeactivateConfirmOpen(true)}
-                className="btn btn--sm btn--danger flex-1 h-10"
+                className="btn btn--sm btn--danger flex-1 h-9"
               >
                 Deactivate
               </button>

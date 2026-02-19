@@ -105,11 +105,11 @@ function StructurePageContent() {
   }
 
   return (
-    <div className="min-h-[100dvh]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading} />
 
       {/* Tab Navigation - sticky under header */}
-      <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-2.5 pb-1.5">
+      <div className="sticky top-0 z-40 bg-[rgba(7,9,13,0.92)] backdrop-blur-[12px] px-4 pt-1.5 pb-1">
         <SegmentedControl
           tabs={TABS}
           activeTab={activeTab}
@@ -118,35 +118,33 @@ function StructurePageContent() {
       </div>
 
       {/* Content */}
-      <main className="px-4 pt-2 pb-6 space-y-5" style={{ overflowAnchor: 'none' }}>
+      <main className="px-4 pt-2 pb-6 space-y-4" style={{ overflowAnchor: 'none' }}>
         {activeTab === 'discipline' ? (
           <>
-            {/* Community Challenge */}
-            <div>
-              <SectionHeader title="Community Challenge" subtitle="This month's challenge for all members" />
-              {challengeLoading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
-                </div>
-              ) : (
-                <ChallengeCard
-                  challenge={challenge}
-                  todayBlock={todayBlock}
-                  onLogToday={() => setChallengeModalOpen(true)}
-                />
-              )}
-            </div>
-
-            {/* Active Framework */}
-            {!frameworksLoading && (
+            {/* Framework + Challenge - compact side-by-side (matching Home) */}
+            {!frameworksLoading && !challengeLoading && (
               <div>
-                <SectionHeader title="Active Framework" subtitle="Your current daily structure" />
-                <ActiveFrameworkCard
-                  activeFramework={activeFramework}
-                  todaySubmission={todaySubmission}
-                  completionCount={completionCount}
-                  onOpenChecklist={() => setFrameworkModalOpen(true)}
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Framework</span>
+                    <ActiveFrameworkCard
+                      activeFramework={activeFramework}
+                      todaySubmission={todaySubmission}
+                      completionCount={completionCount}
+                      onOpenChecklist={() => setFrameworkModalOpen(true)}
+                      compact
+                    />
+                  </div>
+                  <div>
+                    <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Challenge</span>
+                    <ChallengeCard
+                      challenge={challenge}
+                      todayBlock={todayBlock}
+                      onLogToday={() => setChallengeModalOpen(true)}
+                      variant="compact"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 

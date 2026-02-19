@@ -813,7 +813,7 @@ export function BlockModal({
                   <Clock className="h-4 w-4 text-[#60a5fa]" />
                 </div>
                 <div className="flex-1 min-w-0 grid grid-cols-2 gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Start</label>
                     <Input
                       type="time"
@@ -821,7 +821,7 @@ export function BlockModal({
                       className="w-full"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">End</label>
                     <Input
                       type="time"
