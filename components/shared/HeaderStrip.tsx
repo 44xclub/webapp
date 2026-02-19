@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
 import { calculateDisciplineLevel } from '@/lib/types'
+import { getAvatarUrl } from '@/lib/utils'
 import type { Profile, DisciplineBadge, ProfileRank } from '@/lib/types'
 import { badgeIcons, badgeColors, badgeBgColors, romanNumerals } from './DisciplineScoreModule'
 import { DisciplineSystemModal } from './DisciplineSystemModal'
@@ -64,6 +65,7 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
 
   const displayName = profile.display_name || 'Member'
   const initials = displayName.slice(0, 2).toUpperCase()
+  const avatarUrl = getAvatarUrl(profile.avatar_path)
   const BadgeIcon = badgeIcons[disciplineData.badge]
   const badgeColor = badgeColors[disciplineData.badge]
   const badgeBgColor = badgeBgColors[disciplineData.badge]
@@ -74,8 +76,12 @@ export function HeaderStrip({ profile, rank, loading }: HeaderStripProps) {
       {/* Row 1: Avatar + Name/Level (left) | Bell + Points (right) */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
         <Link href="/profile" className="flex items-center gap-2.5 group flex-1 min-w-0">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center flex-shrink-0 group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms]">
-            <span className="text-[14px] text-[#eef2ff] font-bold">{initials}</span>
+          <div className="h-10 w-10 rounded-full bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center flex-shrink-0 group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms] overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[14px] text-[#eef2ff] font-bold">{initials}</span>
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-[14px] font-semibold text-[#eef2ff] truncate group-hover:text-[#60a5fa] transition-colors duration-[140ms]">
