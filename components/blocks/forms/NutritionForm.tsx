@@ -25,7 +25,26 @@ export function NutritionForm({ form }: NutritionFormProps) {
   const selectedWeekdays = watch('repeat_rule.weekdays') || []
 
   // Auto-expand if any macro values are already set (e.g., when editing)
-  const hasMacros = watch('payload.calories') || watch('payload.protein') || watch('payload.carbs') || watch('payload.fat')
+  // Guard against NaN: treat NaN as falsy
+  const rawCalories = watch('payload.calories')
+  const rawProtein = watch('payload.protein')
+  const rawCarbs = watch('payload.carbs')
+  const rawFat = watch('payload.fat')
+  const hasMacros = (typeof rawCalories === 'number' && !isNaN(rawCalories) && rawCalories > 0) ||
+    (typeof rawProtein === 'number' && !isNaN(rawProtein) && rawProtein > 0) ||
+    (typeof rawCarbs === 'number' && !isNaN(rawCarbs) && rawCarbs > 0) ||
+    (typeof rawFat === 'number' && !isNaN(rawFat) && rawFat > 0)
+
+  const handleToggleMacros = () => {
+    if (macrosExpanded) {
+      // Collapsing: clear all macro values to prevent NaN
+      setValue('payload.calories', undefined as any)
+      setValue('payload.protein', undefined as any)
+      setValue('payload.carbs', undefined as any)
+      setValue('payload.fat', undefined as any)
+    }
+    setMacrosExpanded(!macrosExpanded)
+  }
 
   const toggleWeekday = (day: number) => {
     const current = selectedWeekdays || []
@@ -51,7 +70,7 @@ export function NutritionForm({ form }: NutritionFormProps) {
       {/* Meal Name */}
       <Input
         label="Meal Name / Description"
-        placeholder="e.g., Chicken salad, Protein shake"
+        placeholder="Chicken salad, Protein shake"
         {...register('payload.meal_name')}
         error={errors.payload?.meal_name?.message}
       />
@@ -60,7 +79,7 @@ export function NutritionForm({ form }: NutritionFormProps) {
       <div className="border border-[rgba(255,255,255,0.06)] rounded-[10px] overflow-hidden">
         <button
           type="button"
-          onClick={() => setMacrosExpanded(!macrosExpanded)}
+          onClick={handleToggleMacros}
           className="w-full flex items-center justify-between px-3 py-2.5 text-left bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
         >
           <span className="text-[13px] font-medium text-[rgba(238,242,255,0.72)]">
@@ -80,32 +99,44 @@ export function NutritionForm({ form }: NutritionFormProps) {
                 type="number"
                 placeholder="Calories"
                 {...register('payload.calories', {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  setValueAs: (v) => {
+                    if (v === '' || v === null || v === undefined) return undefined
+                    const n = Number(v)
+                    return isNaN(n) ? undefined : n
+                  },
                 })}
               />
               <Input
                 type="number"
                 placeholder="Protein (g)"
                 {...register('payload.protein', {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  setValueAs: (v) => {
+                    if (v === '' || v === null || v === undefined) return undefined
+                    const n = Number(v)
+                    return isNaN(n) ? undefined : n
+                  },
                 })}
               />
               <Input
                 type="number"
                 placeholder="Carbs (g)"
                 {...register('payload.carbs', {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  setValueAs: (v) => {
+                    if (v === '' || v === null || v === undefined) return undefined
+                    const n = Number(v)
+                    return isNaN(n) ? undefined : n
+                  },
                 })}
               />
               <Input
                 type="number"
                 placeholder="Fat (g)"
                 {...register('payload.fat', {
-                  valueAsNumber: true,
-                  setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  setValueAs: (v) => {
+                    if (v === '' || v === null || v === undefined) return undefined
+                    const n = Number(v)
+                    return isNaN(n) ? undefined : n
+                  },
                 })}
               />
             </div>
@@ -153,7 +184,7 @@ export function NutritionForm({ form }: NutritionFormProps) {
         <Input
           type="number"
           label="Every N days"
-          placeholder="e.g., 2 for every other day"
+          placeholder="2 for every other day"
           min={1}
           {...register('repeat_rule.interval', {
             valueAsNumber: true,

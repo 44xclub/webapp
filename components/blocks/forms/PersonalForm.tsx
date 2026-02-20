@@ -55,7 +55,7 @@ export function PersonalForm({ form, onTaskToggle, isEditing = false }: Personal
       {/* Title */}
       <Input
         label="Title"
-        placeholder="e.g., Doctor appointment, Meeting"
+        placeholder="Doctor appointment, Meeting"
         {...register('title')}
         error={errors.title?.message}
       />
@@ -100,7 +100,7 @@ export function PersonalForm({ form, onTaskToggle, isEditing = false }: Personal
         <Input
           type="number"
           label="Every N days"
-          placeholder="e.g., 2 for every other day"
+          placeholder="2 for every other day"
           min={1}
           {...register('repeat_rule.interval', {
             valueAsNumber: true,

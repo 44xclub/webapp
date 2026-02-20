@@ -105,21 +105,21 @@ function ExerciseRow({
 
   return (
     <div className="bg-[var(--surface-2)] rounded-[var(--radius-button)] border border-[rgba(255,255,255,0.08)] overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_1px_3px_rgba(0,0,0,0.2)]">
-      {/* Exercise Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5">
+      {/* Exercise Header — compact */}
+      <div className="flex items-center gap-1.5 px-2.5 py-2">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="p-1 rounded-[6px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.05)] transition-all"
+          className="p-0.5 rounded-[5px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.05)] transition-all"
         >
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
         <input
           {...register(`payload.exercise_matrix.${exerciseIndex}.exercise`)}
           placeholder="Exercise name"
-          className="flex-1 bg-transparent text-[14px] font-semibold text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.30)] outline-none"
+          className="flex-1 bg-transparent text-[13px] font-semibold text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.30)] outline-none"
         />
-        <span className="text-[11px] text-[rgba(238,242,255,0.40)] tabular-nums">
+        <span className="text-[10px] text-[rgba(238,242,255,0.40)] tabular-nums">
           {sets.length} {sets.length === 1 ? 'set' : 'sets'}
         </span>
         {canRemove && (
@@ -143,33 +143,33 @@ function ExerciseRow({
       {expanded && (
         <div className="border-t border-[rgba(255,255,255,0.06)]">
           {/* Table Header */}
-          <div className="grid grid-cols-[36px_1fr_1fr_32px] gap-1.5 px-3 py-2 bg-[rgba(0,0,0,0.15)]">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Set</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Reps</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Weight</span>
+          <div className="grid grid-cols-[30px_1fr_1fr_28px] gap-1 px-2.5 py-1.5 bg-[rgba(0,0,0,0.15)]">
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Set</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Reps</span>
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Weight</span>
             <span></span>
           </div>
 
-          {/* Set Rows - subtle dividers between rows */}
+          {/* Set Rows — compact 40px height */}
           {sets.map((setField, setIndex) => (
             <div
               key={setField.id}
-              className="grid grid-cols-[36px_1fr_1fr_32px] gap-1.5 px-3 h-[48px] items-center border-t border-[rgba(255,255,255,0.04)]"
+              className="grid grid-cols-[30px_1fr_1fr_28px] gap-1 px-2.5 h-[40px] items-center border-t border-[rgba(255,255,255,0.04)]"
             >
-              <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)] tabular-nums text-center">
+              <span className="text-[11px] font-medium text-[rgba(238,242,255,0.52)] tabular-nums text-center">
                 {setIndex + 1}
               </span>
               <input
                 {...register(`payload.exercise_matrix.${exerciseIndex}.sets.${setIndex}.reps`)}
                 placeholder="—"
                 inputMode="numeric"
-                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2.5 py-1.5 text-[13px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
+                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2 py-1 text-[12px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
               />
               <input
                 {...register(`payload.exercise_matrix.${exerciseIndex}.sets.${setIndex}.weight`)}
                 placeholder="—"
                 inputMode="decimal"
-                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2.5 py-1.5 text-[13px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
+                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2 py-1 text-[12px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
               />
               {sets.length > 1 ? (
                 <button
@@ -185,8 +185,8 @@ function ExerciseRow({
             </div>
           ))}
 
-          {/* Add Set + Notes - min 16px vertical padding */}
-          <div className="px-3 py-2.5 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)]">
+          {/* Add Set + Notes */}
+          <div className="px-2.5 py-2 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)]">
             <button
               type="button"
               onClick={addSet}

@@ -367,6 +367,14 @@ export function BlockModal({
   }
 
   const handleContinue = () => {
+    // For nutrition blocks, carry the step-1 title into payload.meal_name
+    if (blockType === 'nutrition') {
+      const currentTitle = form.getValues('title') || ''
+      const currentMealName = form.getValues('payload.meal_name' as any)
+      if (currentTitle && !currentMealName) {
+        form.setValue('payload.meal_name' as any, currentTitle)
+      }
+    }
     setStep(2)
   }
 
@@ -644,42 +652,41 @@ export function BlockModal({
             <Input
               label={blockType === 'workout' ? 'Workout Title' : blockType === 'habit' ? 'Habit Name' : blockType === 'nutrition' ? 'Meal Name' : 'Title'}
               placeholder={
-                blockType === 'workout' ? 'e.g., Push Day, Leg Day' :
-                blockType === 'habit' ? 'e.g., Morning meditation' :
-                blockType === 'nutrition' ? 'e.g., Chicken salad' :
-                'e.g., Doctor appointment'
+                blockType === 'workout' ? 'Push Day, Leg Day' :
+                blockType === 'habit' ? 'Morning meditation' :
+                blockType === 'nutrition' ? 'Chicken salad' :
+                'Doctor appointment'
               }
               {...form.register('title')}
             />
           </div>
 
-          {/* Date & Time - 2-row layout */}
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-3 space-y-2.5">
-            {/* Row 1: Date (100%) */}
-            <div>
-              <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">Date</p>
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-[18px] w-[18px] text-[#60a5fa] flex-shrink-0" />
-                <p className="text-[14px] text-[#eef2ff] font-medium truncate">{formatDisplayDate(dateValue)}</p>
-              </div>
+          {/* Date & Time — compact card */}
+          <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+            {/* Date row */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+              <Calendar className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
+              <span className="text-[13px] text-[#eef2ff] font-medium">{formatDisplayDate(dateValue)}</span>
             </div>
-            {/* Row 2: Start (40%) + End (40%) + Spacer (20%) */}
-            <div className="flex items-end gap-2">
-              <div className="w-[40%]">
-                <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">{(blockType === 'checkin' || blockType === 'nutrition') ? 'Time' : 'Start'}</p>
-                <Input
-                  type="time"
-                  {...form.register('start_time')}
-                  className="w-full text-[14px]"
-                />
-              </div>
-              {blockType !== 'checkin' && blockType !== 'nutrition' && (
-                <div className="w-[40%] text-center">
-                  <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-1">End</p>
-                  <p className="text-[14px] text-[#eef2ff] font-semibold py-[7px]">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
+            {/* Time row */}
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              <Clock className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-0.5">{(blockType === 'checkin' || blockType === 'nutrition') ? 'Time' : 'Start'}</p>
+                  <Input
+                    type="time"
+                    {...form.register('start_time')}
+                    className="w-full text-[13px]"
+                  />
                 </div>
-              )}
-              <div className="w-[20%]" />
+                {blockType !== 'checkin' && blockType !== 'nutrition' && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-0.5">End</p>
+                    <p className="text-[13px] text-[#eef2ff] font-semibold py-[6px]">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -719,7 +726,7 @@ export function BlockModal({
                   <div className="flex-1">
                     <Input
                       type="number"
-                      placeholder="e.g., 75"
+                      placeholder="75"
                       min={1}
                       max={600}
                       value={customDurationValue}
@@ -744,22 +751,22 @@ export function BlockModal({
 
       {/* Step 2: Details - Premium UI */}
       {(step === 2 || editingBlock) && (
-        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit, handleValidationError)} className="p-4 space-y-4">
-          {/* Summary Header for new blocks */}
+        <form id="block-form" onSubmit={form.handleSubmit(handleSubmit, handleValidationError)} className="p-4 space-y-3">
+          {/* Summary Header for new blocks — compact */}
           {!editingBlock && (
-            <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[14px] border border-[rgba(59,130,246,0.15)] p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-[12px] flex items-center justify-center bg-gradient-to-b from-[rgba(59,130,246,0.25)] to-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.2)]">
-                  <Clock className="h-5 w-5 text-[#60a5fa]" />
+            <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[12px] border border-[rgba(59,130,246,0.15)] px-3 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-[10px] flex items-center justify-center bg-gradient-to-b from-[rgba(59,130,246,0.25)] to-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.2)] flex-shrink-0">
+                  <Clock className="h-4 w-4 text-[#60a5fa]" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-[12px] text-[rgba(238,242,255,0.5)] font-medium">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-[rgba(238,242,255,0.5)] font-medium truncate">
                     {(blockType === 'checkin' || blockType === 'nutrition')
                       ? formatDisplayTime(startTime)
                       : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${actualDuration} min`
                     }
                   </p>
-                  <p className="text-[15px] font-semibold text-[#eef2ff]">
+                  <p className="text-[14px] font-semibold text-[#eef2ff] truncate">
                     {titleValue || blockTypeLabels[blockType]}
                   </p>
                 </div>
@@ -789,69 +796,53 @@ export function BlockModal({
             </div>
           )}
 
-          {/* Date/Time edit section for existing blocks */}
+          {/* Date/Time edit section for existing blocks — compact, stable layout */}
           {editingBlock && (
-            <div className="bg-[rgba(255,255,255,0.03)] rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+            <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
               {/* Date Row */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
-                  <Calendar className="h-4 w-4 text-[#60a5fa]" />
-                </div>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+                <Calendar className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Date</label>
                   <Input
                     type="date"
                     {...form.register('date')}
-                    className="w-full"
+                    className="w-full text-[13px]"
                   />
                 </div>
               </div>
 
               {/* Start / End Row */}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="h-8 w-8 rounded-[8px] bg-[rgba(59,130,246,0.12)] flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-4 w-4 text-[#60a5fa]" />
-                </div>
-                <div className="flex-1 min-w-0 grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2.5 px-3 py-2.5">
+                <Clock className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
+                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
                   <div className="min-w-0">
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">Start</label>
+                    <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5">Start</label>
                     <Input
                       type="time"
                       {...form.register('start_time')}
-                      className="w-full"
+                      className="w-full text-[13px]"
                     />
                   </div>
                   <div className="min-w-0">
-                    <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.4)] mb-1">End</label>
+                    <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5">End</label>
                     <Input
                       type="time"
                       {...form.register('end_time')}
-                      className="w-full"
+                      className="w-full text-[13px]"
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Duration display - only when both start and end exist */}
-              {startTime && endTime && (() => {
-                const mins = calculateMinutesBetween(startTime, endTime)
-                if (mins === null || mins <= 0) return null
-                const isOvernight = (() => {
-                  const [sH, sM] = startTime.split(':').map(Number)
-                  const [eH, eM] = endTime.split(':').map(Number)
-                  return (eH * 60 + eM) < (sH * 60 + sM)
-                })()
-                return (
-                  <div className="px-4 pb-3 flex items-center justify-end gap-2">
-                    {isOvernight && (
-                      <span className="text-[10px] text-amber-400/70 font-medium">Overnight</span>
-                    )}
-                    <span className="text-[11px] text-[rgba(238,242,255,0.35)] font-medium">
+                {/* Inline duration badge */}
+                {startTime && endTime && (() => {
+                  const mins = calculateMinutesBetween(startTime, endTime)
+                  if (mins === null || mins <= 0) return null
+                  return (
+                    <span className="text-[10px] text-[rgba(238,242,255,0.35)] font-medium whitespace-nowrap flex-shrink-0">
                       {formatDurationHuman(mins)}
                     </span>
-                  </div>
-                )
-              })()}
+                  )
+                })()}
+              </div>
             </div>
           )}
 

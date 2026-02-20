@@ -41,38 +41,48 @@ export function BlockRow({
   // Check if block is past its end time (overdue)
   const isOverdue = useMemo(() => {
     if (isCompleted) return false
-    
+
     const now = new Date()
     const todayStr = formatDateForApi(now)
     const blockDateStr = block.date
-    
+
     // If block is from a past date, it's overdue
     if (blockDateStr < todayStr) return true
-    
+
     // If block is from today, check the time
     if (blockDateStr === todayStr) {
       const endTime = block.end_time || block.start_time
       const [hours, minutes] = endTime.split(':').map(Number)
       const nowHours = now.getHours()
       const nowMinutes = now.getMinutes()
-      
+
       // Compare times
       if (nowHours > hours) return true
       if (nowHours === hours && nowMinutes > minutes) return true
     }
-    
+
     return false
   }, [block, isCompleted])
 
   const handleToggle = useCallback(
-    async (e: React.MouseEvent) => {
+    async (e: React.MouseEvent | React.PointerEvent) => {
       e.stopPropagation()
+      e.preventDefault()
       if (isToggling) return
       setIsToggling(true)
       await onToggleComplete(block)
       setIsToggling(false)
     },
     [block, onToggleComplete, isToggling]
+  )
+
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Don't open modal if clicking checkbox or menu
+      if ((e.target as HTMLElement).closest('[data-checkbox]') || (e.target as HTMLElement).closest('[data-menu]')) return
+      onEdit(block)
+    },
+    [block, onEdit]
   )
 
   const handleMenuClick = (e: React.MouseEvent) => {
@@ -101,76 +111,35 @@ export function BlockRow({
     return blockTypeLabels[block.block_type]
   }
 
-  // Get secondary metadata based on block type
-  const getSecondaryInfo = (): string[] => {
-    const parts: string[] = []
-
-    // Always show time first
-    parts.push(formatTime(block.start_time))
-
-    // Type-specific metadata
-    if (block.block_type === 'nutrition') {
-      const payload = block.payload as unknown as NutritionPayload
-      if (payload?.calories) {
-        parts.push(`${payload.calories} cal`)
-      }
-      if (payload?.protein) {
-        parts.push(`${payload.protein}g protein`)
-      }
+  // F1: Only show start–end time on home list
+  const getSecondaryInfo = (): string => {
+    const startStr = formatTime(block.start_time)
+    if (block.end_time && block.end_time !== block.start_time) {
+      const endStr = formatTime(block.end_time)
+      return `${startStr} – ${endStr}`
     }
-
-    if (block.block_type === 'checkin') {
-      const payload = block.payload as unknown as CheckinPayload
-      if (payload?.body_fat_percent) {
-        parts.push(`${payload.body_fat_percent}% BF`)
-      }
-    }
-
-    if (block.block_type === 'workout') {
-      const payload = block.payload as unknown as WorkoutPayload
-      // Show exercise count for set-level format
-      if (payload?.exercise_matrix && Array.isArray(payload.exercise_matrix)) {
-        parts.push(`${payload.exercise_matrix.length} exercises`)
-      }
-      if (payload?.duration) {
-        parts.push(`${payload.duration} min`)
-      }
-      if (payload?.rpe) {
-        parts.push(`RPE ${payload.rpe}`)
-      }
-      if (payload?.category) {
-        const categoryLabels: Record<string, string> = {
-          weight_lifting: 'Weights',
-          hyrox: 'Hyrox',
-          hybrid: 'Hybrid',
-          running: 'Running',
-          sport: 'Sport',
-          other: 'Other',
-        }
-        parts.push(categoryLabels[payload.category] || '')
-      }
-    }
-
-    return parts
+    return startStr
   }
 
   const badgeColors = blockTypeBadgeColors[block.block_type] || 'text-[rgba(238,242,255,0.52)] bg-[rgba(255,255,255,0.04)]'
 
   return (
     <div
-      onClick={() => onEdit(block)}
+      onClick={handleCardClick}
       className={cn(
-        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] touch-manipulation',
         isCompleted && 'bg-[rgba(255,255,255,0.02)]',
         isOverdue && !isCompleted && 'bg-[rgba(239,68,68,0.06)] hover:bg-[rgba(239,68,68,0.10)]',
         !isOverdue && !isCompleted && 'hover:bg-[rgba(255,255,255,0.04)]'
       )}
     >
-      {/* Checkbox */}
+      {/* Checkbox — separate touch target with stopPropagation */}
       <button
+        data-checkbox
         onClick={handleToggle}
+        onPointerDown={(e) => e.stopPropagation()}
         className={cn(
-          'flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-[140ms]',
+          'flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-[140ms] touch-manipulation -ml-1',
           isCompleted
             ? 'bg-[#3b82f6] border-[#3b82f6]'
             : isOverdue
@@ -201,7 +170,7 @@ export function BlockRow({
             <span className="text-[10px] font-semibold text-[#ef4444]">Overdue</span>
           )}
         </div>
-        {/* Secondary: Type badge + metadata */}
+        {/* Secondary: Type badge + time only */}
         <div className="flex items-center gap-2 mt-1">
           <span
             className={cn(
@@ -215,17 +184,17 @@ export function BlockRow({
             'text-[12px] text-[rgba(238,242,255,0.52)]',
             isCompleted && 'opacity-60'
           )}>
-            {getSecondaryInfo().join(' · ')}
+            {getSecondaryInfo()}
           </span>
         </div>
       </div>
 
       {/* Menu */}
-      <div className="relative">
+      <div className="relative" data-menu>
         <button
           ref={menuButtonRef}
           onClick={handleMenuClick}
-          className="p-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.05)] opacity-0 group-hover:opacity-100 transition-all duration-[140ms]"
+          className="p-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.05)] sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-[140ms] touch-manipulation"
         >
           <MoreHorizontal className="h-4 w-4 text-[rgba(238,242,255,0.52)]" />
         </button>

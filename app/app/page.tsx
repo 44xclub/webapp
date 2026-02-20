@@ -16,6 +16,7 @@ import { Button } from '@/components/ui'
 import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
+import { BlockListSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -253,8 +254,12 @@ export default function AppPage() {
 
       <main className="flex-1 pb-4">
         {blocksLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
+          <div className="pt-2">
+            <div className="px-4 py-3">
+              <div className="animate-pulse bg-[rgba(255,255,255,0.06)] h-5 w-28 rounded mb-1" />
+              <div className="animate-pulse bg-[rgba(255,255,255,0.06)] h-3 w-20 rounded" />
+            </div>
+            <BlockListSkeleton count={4} />
           </div>
         ) : viewMode === 'day' ? (
           <div className="pt-2">

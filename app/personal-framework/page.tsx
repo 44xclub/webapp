@@ -362,7 +362,7 @@ function FrameworkEditorModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Morning Discipline Protocol"
+              placeholder="Morning Discipline Protocol"
               className="w-full px-3 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
             />
           </div>
@@ -410,7 +410,7 @@ function FrameworkEditorModal({
                         type="text"
                         value={item.label}
                         onChange={(e) => updateCriterion(idx, { label: e.target.value })}
-                        placeholder="e.g., 30 min walk (no phone)"
+                        placeholder="30 min walk (no phone)"
                         className="w-full px-3 py-2 rounded-[8px] bg-[rgba(255,255,255,0.06)] text-[13px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                       />
                       <div className="flex items-center gap-2">

@@ -12,9 +12,9 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, action, onAction, className }: SectionHeaderProps) {
   return (
-    <div className={cn('mb-2.5', className)}>
+    <div className={cn('mb-2', className)}>
       <div className="flex items-center justify-between">
-        <h3 className="text-[16px] font-semibold text-[#eef2ff]">{title}</h3>
+        <h3 className="text-[15px] font-semibold text-[#eef2ff]">{title}</h3>
         {action && onAction && (
           <button
             onClick={onAction}
