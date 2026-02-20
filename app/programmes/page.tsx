@@ -110,7 +110,7 @@ export default function PersonalProgrammesPage() {
   if (authLoading) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <div className="min-h-app flex items-center justify-center bg-[#07090d]">
           <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
         </div>
       </div>
@@ -119,7 +119,7 @@ export default function PersonalProgrammesPage() {
 
   return (
     <div className="app-shell">
-      <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+      <div className="min-h-app bg-[#07090d] pb-20">
         <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">

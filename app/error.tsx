@@ -15,7 +15,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+    <div className="min-h-app flex items-center justify-center px-4 bg-background">
       <div className="text-center">
         <h2 className="text-xl font-semibold text-foreground mb-4">
           Something went wrong

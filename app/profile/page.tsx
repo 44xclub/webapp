@@ -207,7 +207,7 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     )
@@ -217,7 +217,7 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Page Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] safe-top">
         <div className="flex items-center justify-between px-4 py-3">

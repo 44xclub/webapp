@@ -170,14 +170,14 @@ export default function AppPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-blue)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app flex flex-col content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} avatarUrl={avatarUrl} />
 
       {/* Streak Strip - ultra-compact */}

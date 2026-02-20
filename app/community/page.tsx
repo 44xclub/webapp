@@ -219,7 +219,7 @@ export default function CommunityPage() {
   if (authLoading) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-app flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-blue)]" />
         </div>
       </div>
@@ -227,7 +227,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 

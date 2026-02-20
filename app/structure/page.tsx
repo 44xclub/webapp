@@ -30,7 +30,7 @@ const TABS = [
 export default function StructurePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     }>
@@ -99,14 +99,14 @@ function StructurePageContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading} avatarUrl={avatarUrl} />
 
       {/* Tab Navigation - sticky under header */}

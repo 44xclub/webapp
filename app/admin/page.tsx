@@ -96,14 +96,14 @@ export default function AdminPage() {
 
   if (authLoading || !authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#07090d] pb-8">
+    <div className="min-h-app bg-[#07090d] pb-8">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-[#07090d]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)]">
         <div className="px-4 py-4 flex items-center gap-3">

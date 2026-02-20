@@ -10,7 +10,7 @@ export default function GlobalError({
   return (
     <html lang="en" className="dark">
       <body className="antialiased bg-[#121212] text-white">
-        <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="min-h-app flex items-center justify-center px-4">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-4">
               Something went wrong

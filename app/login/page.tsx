@@ -70,7 +70,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center px-6 bg-[#07090d]">
+    <div className="min-h-app flex items-center justify-center px-6 bg-[#07090d]">
       <div className="w-full max-w-sm text-center animate-fadeIn">
         {/* Logo */}
         <div className="flex justify-center mb-8">

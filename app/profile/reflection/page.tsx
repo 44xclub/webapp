@@ -256,14 +256,14 @@ export default function ReflectionPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+    <div className="min-h-app bg-[#07090d] pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
         <div className="flex items-center px-4 py-3">
