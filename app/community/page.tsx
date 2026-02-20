@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
@@ -9,6 +9,7 @@ import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FeedPostCard, FeedPost } from '@/components/feed/FeedPostCard'
+import { FeedSkeleton, TeamCardSkeleton } from '@/components/ui/Skeletons'
 import { calculateDisciplineLevel } from '@/lib/types'
 import { parseDateOnly } from '@/lib/date'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -66,6 +67,7 @@ export default function CommunityPage() {
   const [activeTab, setActiveTab] = useState<TabType>('team')
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
+  const [feedLoaded, setFeedLoaded] = useState(false)
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -114,9 +116,9 @@ export default function CommunityPage() {
     }
   }, [router, supabase])
 
-  // Fetch feed posts when tab changes to feed
+  // Fetch feed posts when tab changes to feed (only once, then use cache)
   useEffect(() => {
-    if (activeTab === 'feed' && user) {
+    if (activeTab === 'feed' && user && !feedLoaded) {
       fetchFeedPosts()
     }
   }, [activeTab, user])
@@ -125,7 +127,6 @@ export default function CommunityPage() {
     if (!user) return
     setFeedLoading(true)
     try {
-      // Fetch posts first (without join - join doesn't work with auth.users FK)
       const { data: postsData, error: postsError } = await supabase
         .from('feed_posts')
         .select('*')
@@ -133,25 +134,17 @@ export default function CommunityPage() {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      console.log('[Feed] Posts data:', postsData)
-      if (postsError) {
-        console.error('[Feed] Posts error:', postsError)
-        throw postsError
-      }
+      if (postsError) throw postsError
 
-      // Fetch profiles separately for all post authors
       let postsWithProfiles = postsData || []
       if (postsData && postsData.length > 0) {
         const userIds = Array.from(new Set(postsData.map((p: any) => p.user_id)))
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles } = await supabase
           .from('profiles')
           .select('id, display_name, avatar_path, discipline_score')
           .in('id', userIds)
 
-        console.log('[Feed] Profiles for posts:', { profiles, profilesError })
-
         if (profiles) {
-          // Resolve signed avatar URLs for all profiles with avatar_path
           const avatarPaths = profiles.filter((p: any) => p.avatar_path).map((p: any) => p.avatar_path)
           const avatarUrlMap = new Map<string, string>()
           if (avatarPaths.length > 0) {
@@ -176,14 +169,12 @@ export default function CommunityPage() {
         }
       }
 
-      // Fetch respect counts and user's respects
       const postIds = postsData?.map((p: any) => p.id) || []
 
       let respectCounts: Record<string, number> = {}
       let userRespects: Set<string> = new Set()
 
       if (postIds.length > 0) {
-        // Get respect counts
         const { data: countsData } = await supabase
           .from('feed_respects')
           .select('post_id')
@@ -195,7 +186,6 @@ export default function CommunityPage() {
           })
         }
 
-        // Get user's respects
         const { data: userRespectsData } = await supabase
           .from('feed_respects')
           .select('post_id')
@@ -207,7 +197,6 @@ export default function CommunityPage() {
         }
       }
 
-      // Map posts with profile, counts, and user respect status
       const mappedPosts = postsWithProfiles.map((post: any) => ({
         ...post,
         user_profile: post.profiles,
@@ -216,6 +205,7 @@ export default function CommunityPage() {
       }))
 
       setFeedPosts(mappedPosts)
+      setFeedLoaded(true)
     } catch (err) {
       console.error('Failed to fetch feed:', err)
     } finally {
@@ -261,6 +251,7 @@ export default function CommunityPage() {
             userId={user?.id}
             supabase={supabase}
             onRefresh={fetchFeedPosts}
+            setFeedPosts={setFeedPosts}
           />
         )}
       </main>
@@ -396,30 +387,25 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
     }
   }
 
-  // State 1: Loading skeleton with message
+  // State 1: Loading skeleton
   if (teamState === 'loading') {
-    return (
-      <div className="section-card flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-[var(--text-muted)] mb-3" />
-        <p className="text-[13px] text-[var(--text-tertiary)]">Checking your team...</p>
-      </div>
-    )
+    return <TeamCardSkeleton />
   }
 
   // State 2: Error - user IS assigned but team data unavailable (RLS / network)
   if (teamState === 'error') {
     return (
-      <div className="section-card text-center py-10">
-        <Users className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-40" />
-        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">Team Data Unavailable</h3>
-        <p className="text-[13px] text-[var(--text-tertiary)] mb-4 max-w-[240px] mx-auto">
-          We couldn&apos;t load your team right now. This may be temporary.
+      <div className="section-card text-center py-8">
+        <Users className="h-6 w-6 text-[var(--text-muted)] mx-auto mb-2 opacity-40" />
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-1">Team Data Unavailable</h3>
+        <p className="text-[12px] text-[var(--text-tertiary)] mb-3 max-w-[220px] mx-auto">
+          We couldn&apos;t load your team right now.
         </p>
         <button
           onClick={fetchTeamData}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[var(--text-primary)] bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-button)] hover:border-[var(--border-emphasis)] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-[var(--text-primary)] bg-[var(--surface-2)] border border-[var(--border-default)] rounded-[var(--radius-button)] hover:border-[var(--border-emphasis)] transition-colors"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className="h-3.5 w-3.5" />
           Retry
         </button>
       </div>
@@ -429,10 +415,10 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   // State 3: Truly unassigned - no team_members row exists
   if (teamState === 'unassigned' || !teamData?.team) {
     return (
-      <div className="section-card text-center py-10">
-        <Users className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-40" />
-        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">No Team Yet</h3>
-        <p className="text-[13px] text-[var(--text-tertiary)] max-w-[240px] mx-auto">
+      <div className="section-card text-center py-6">
+        <Users className="h-6 w-6 text-[var(--text-muted)] mx-auto mb-2 opacity-40" />
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-0.5">No Team Yet</h3>
+        <p className="text-[12px] text-[var(--text-tertiary)] max-w-[220px] mx-auto">
           You&apos;ll be assigned to a team of 8 to keep each other accountable.
         </p>
       </div>
@@ -446,37 +432,41 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
 
   return (
     <div className="space-y-3">
-      {/* Team Summary Card */}
-      <div className="section-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-micro">Your Team</p>
-            <p className="text-[22px] font-bold text-[var(--text-primary)]">Team #{teamData.team.team_number}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-micro">Total Score</p>
-            <p className="text-[20px] font-bold text-[var(--text-primary)]">{teamTotalScore}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Collapsible Team Members */}
+      {/* Compact Team Card — single card with team info + members */}
       <div className="section-card p-0 overflow-hidden">
+        {/* Header row — clickable to toggle members */}
         <button
           onClick={() => setMembersExpanded(!membersExpanded)}
-          className="w-full px-[var(--space-card)] py-3 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+          className="w-full px-[var(--space-card)] py-2.5 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
         >
-          <div className="flex items-center gap-2">
-            <h3 className="text-label">Team Members</h3>
-            <span className="text-meta">{teamData.members.length}/8</span>
+          <div className="flex items-center gap-2.5">
+            <div>
+              <p className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight text-left">
+                Team #{teamData.team.team_number}
+              </p>
+              <p className="text-[12px] text-[var(--text-tertiary)] leading-tight mt-0.5">
+                {teamData.members.length}/8 members
+              </p>
+            </div>
           </div>
-          {membersExpanded ? (
-            <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
-          )}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-[16px] font-bold text-[var(--text-primary)] leading-tight tabular-nums">
+                {teamTotalScore}
+              </p>
+              <p className="text-[10px] text-[var(--text-tertiary)] leading-tight mt-0.5 uppercase tracking-wider">
+                Total score
+              </p>
+            </div>
+            {membersExpanded ? (
+              <ChevronDown className="h-4 w-4 text-[var(--text-muted)] flex-shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-[var(--text-muted)] flex-shrink-0" />
+            )}
+          </div>
         </button>
 
+        {/* Expandable member list */}
         {membersExpanded && (
           <div className="border-t border-[var(--border-subtle)] divide-y divide-[var(--border-subtle)]">
             {teamData.members.map((member) => {
@@ -491,17 +481,17 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
               return (
                 <div key={member.user_id} className="px-[var(--space-card)] py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-[var(--surface-2)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-[var(--surface-2)] flex items-center justify-center overflow-hidden flex-shrink-0">
                       {memberAvatarUrl ? (
-                        <img src={memberAvatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                        <img src={memberAvatarUrl} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
                       ) : (
-                        <span className="text-[11px] text-[var(--text-muted)]">
+                        <span className="text-[10px] text-[var(--text-muted)]">
                           {initials}
                         </span>
                       )}
                     </div>
                     <div>
-                      <p className="text-[13px] text-[var(--text-primary)] leading-tight">
+                      <p className="text-[12px] text-[var(--text-primary)] leading-tight">
                         {displayName}
                         {member.role === 'captain' && (
                           <span className="ml-1.5 text-[10px] text-[var(--accent-blue)]">Capt</span>
@@ -515,7 +505,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
                       </div>
                     </div>
                   </div>
-                  <p className="text-[13px] text-[var(--text-secondary)]">
+                  <p className="text-[12px] text-[var(--text-secondary)] tabular-nums">
                     {member.profiles?.discipline_score || 0} <span className="text-[10px] text-[var(--text-muted)]">pts</span>
                   </p>
                 </div>
@@ -530,9 +520,9 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
         <h3 className="text-label px-1">Daily Overviews</h3>
 
         {teamData.dailyOverviews.length === 0 ? (
-          <div className="section-card text-center py-8">
-            <Calendar className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
-            <p className="text-[13px] text-[var(--text-secondary)]">
+          <div className="section-card text-center py-5">
+            <Calendar className="h-5 w-5 text-[var(--text-muted)] mx-auto mb-1.5 opacity-50" />
+            <p className="text-[12px] text-[var(--text-secondary)]">
               No daily overviews yet. Check back after the first day resolves.
             </p>
           </div>
@@ -649,24 +639,38 @@ function DailyOverviewCard({
   )
 }
 
-// Feed View Component
+// Feed View Component with optimistic respects
 function FeedView({
   posts,
   loading,
   userId,
   supabase,
   onRefresh,
+  setFeedPosts,
 }: {
   posts: FeedPost[]
   loading: boolean
   userId: string | undefined
   supabase: any
   onRefresh: () => void
+  setFeedPosts: React.Dispatch<React.SetStateAction<FeedPost[]>>
 }) {
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  const handleRespect = async (postId: string, hasRespected: boolean) => {
+  // Optimistic respect handler — updates UI immediately
+  const handleRespect = useCallback(async (postId: string, hasRespected: boolean) => {
     if (!userId) return
+
+    // Optimistic update
+    setFeedPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p
+      return {
+        ...p,
+        has_respected: !hasRespected,
+        respect_count: (p.respect_count || 0) + (hasRespected ? -1 : 1),
+      }
+    }))
+
     try {
       if (hasRespected) {
         await supabase
@@ -679,11 +683,19 @@ function FeedView({
           .from('feed_respects')
           .insert({ post_id: postId, user_id: userId })
       }
-      onRefresh()
     } catch (err) {
       console.error('Failed to toggle respect:', err)
+      // Rollback on error
+      setFeedPosts(prev => prev.map(p => {
+        if (p.id !== postId) return p
+        return {
+          ...p,
+          has_respected: hasRespected,
+          respect_count: (p.respect_count || 0) + (hasRespected ? 1 : -1),
+        }
+      }))
     }
-  }
+  }, [userId, supabase, setFeedPosts])
 
   const handleDelete = async (postId: string) => {
     if (!userId) return
@@ -703,19 +715,15 @@ function FeedView({
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-secondary)]" />
-      </div>
-    )
+    return <FeedSkeleton count={3} />
   }
 
   if (posts.length === 0) {
     return (
-      <div className="section-card text-center py-10">
-        <Activity className="h-10 w-10 text-[var(--text-muted)] mx-auto mb-3 opacity-50" />
-        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1.5">No Posts Yet</h3>
-        <p className="text-[13px] text-[var(--text-secondary)]">
+      <div className="section-card text-center py-8">
+        <Activity className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-1">No Posts Yet</h3>
+        <p className="text-[12px] text-[var(--text-secondary)]">
           Share your workouts and achievements to inspire others.
         </p>
       </div>
