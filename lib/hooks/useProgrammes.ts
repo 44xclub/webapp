@@ -8,19 +8,93 @@ import type {
   ProgrammeTemplate,
   ProgrammeSession,
   UserProgramme,
+  ProgrammeRun,
+  ProgrammeProgress,
 } from '@/lib/types'
+
+/** Clean programme title by removing "(X Days)" suffix */
+export function cleanProgrammeTitle(title: string): string {
+  return title.replace(/\s*\(\d+\s*Days?\)\s*$/i, '').trim()
+}
+
+/** Compute programme progress from total and completed counts */
+export function computeProgress(
+  totalSessions: number,
+  completedSessions: number
+): ProgrammeProgress {
+  return {
+    totalSessions,
+    completedSessions,
+    percent: totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0,
+  }
+}
 
 export function useProgrammes(userId: string | undefined) {
   const [programmes, setProgrammes] = useState<ProgrammeTemplate[]>([])
   const [activeProgramme, setActiveProgramme] = useState<UserProgramme | null>(null)
   const [sessions, setSessions] = useState<ProgrammeSession[]>([])
+  const [activeRun, setActiveRun] = useState<ProgrammeRun | null>(null)
+  const [progress, setProgress] = useState<ProgrammeProgress | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = useMemo(() => createClient(), [])
+
+  /** Fetch active programme run for the user */
+  const fetchActiveRun = useCallback(
+    async (templateId: string): Promise<ProgrammeRun | null> => {
+      if (!userId) return null
+      try {
+        const { data } = await supabase
+          .from('programme_runs')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('programme_template_id', templateId)
+          .eq('status', 'active')
+          .single()
+        return (data as ProgrammeRun) ?? null
+      } catch {
+        // Table may not exist yet or no active run
+        return null
+      }
+    },
+    [userId, supabase]
+  )
+
+  /** Fetch progress for active programme */
+  const fetchProgress = useCallback(
+    async (templateId: string, run: ProgrammeRun | null): Promise<ProgrammeProgress> => {
+      // Get total sessions count
+      const { count: totalCount } = await supabase
+        .from('programme_sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('programme_template_id', templateId)
+
+      const totalSessions = totalCount ?? 0
+
+      if (!run || totalSessions === 0) {
+        return computeProgress(totalSessions, 0)
+      }
+
+      // Get completed sessions count
+      try {
+        const { count: completedCount } = await supabase
+          .from('programme_session_instances')
+          .select('*', { count: 'exact', head: true })
+          .eq('programme_run_id', run.id)
+          .not('completed_at', 'is', null)
+
+        return computeProgress(totalSessions, completedCount ?? 0)
+      } catch {
+        // Table may not exist yet
+        return computeProgress(totalSessions, 0)
+      }
+    },
+    [supabase]
+  )
 
   const fetchProgrammes = useCallback(async () => {
     setLoading(true)
     try {
-      // Fetch all active programme templates
+      // Fetch all active programme templates (including new columns)
       const { data: templatesData, error: templatesError } = await supabase
         .from('programme_templates')
         .select('*')
@@ -52,6 +126,13 @@ export function useProgrammes(userId: string | undefined) {
             .order('day_index')
 
           setSessions(sessionsData as ProgrammeSession[])
+
+          // Fetch active run and progress
+          const run = await fetchActiveRun(userProgrammeData.programme_template_id)
+          setActiveRun(run)
+
+          const prog = await fetchProgress(userProgrammeData.programme_template_id, run)
+          setProgress(prog)
         }
       }
     } catch (err) {
@@ -59,7 +140,7 @@ export function useProgrammes(userId: string | undefined) {
     } finally {
       setLoading(false)
     }
-  }, [userId, supabase])
+  }, [userId, supabase, fetchActiveRun, fetchProgress])
 
   useEffect(() => {
     fetchProgrammes()
@@ -114,9 +195,15 @@ export function useProgrammes(userId: string | undefined) {
       const sessionsData = await fetchProgrammeSessions(programmeTemplateId)
       setSessions(sessionsData)
 
+      // Fetch active run and progress for the new programme
+      const run = await fetchActiveRun(programmeTemplateId)
+      setActiveRun(run)
+      const prog = await fetchProgress(programmeTemplateId, run)
+      setProgress(prog)
+
       return data as UserProgramme
     },
-    [userId, activeProgramme, supabase, fetchProgrammeSessions]
+    [userId, activeProgramme, supabase, fetchProgrammeSessions, fetchActiveRun, fetchProgress]
   )
 
   const deactivateProgramme = useCallback(async () => {
@@ -142,6 +229,8 @@ export function useProgrammes(userId: string | undefined) {
 
     setActiveProgramme(null)
     setSessions([])
+    setActiveRun(null)
+    setProgress(null)
   }, [userId, activeProgramme, supabase])
 
   const scheduleWeek = useCallback(
@@ -206,6 +295,8 @@ export function useProgrammes(userId: string | undefined) {
     programmes,
     activeProgramme,
     sessions,
+    activeRun,
+    progress,
     loading,
     activateProgramme,
     deactivateProgramme,

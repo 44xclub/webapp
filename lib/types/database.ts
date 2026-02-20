@@ -306,6 +306,10 @@ export interface Database {
           hero_image_path: string | null
           tags: string[]
           is_active: boolean
+          days_per_week: number | null
+          duration_weeks: number | null
+          programme_type: string | null
+          equipment_tags: string[] | null
           created_at: string
           updated_at: string
         }
@@ -318,6 +322,10 @@ export interface Database {
           hero_image_path?: string | null
           tags?: string[]
           is_active?: boolean
+          days_per_week?: number | null
+          duration_weeks?: number | null
+          programme_type?: string | null
+          equipment_tags?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -330,6 +338,10 @@ export interface Database {
           hero_image_path?: string | null
           tags?: string[]
           is_active?: boolean
+          days_per_week?: number | null
+          duration_weeks?: number | null
+          programme_type?: string | null
+          equipment_tags?: string[] | null
           created_at?: string
           updated_at?: string
         }
@@ -381,6 +393,58 @@ export interface Database {
           activated_at?: string
           deactivated_at?: string | null
           updated_at?: string
+        }
+      }
+      programme_runs: {
+        Row: {
+          id: string
+          user_id: string
+          programme_template_id: string
+          status: string
+          started_at: string
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          programme_template_id: string
+          status?: string
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          programme_template_id?: string
+          status?: string
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+        }
+      }
+      programme_session_instances: {
+        Row: {
+          id: string
+          programme_run_id: string
+          programme_session_id: string
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          programme_run_id: string
+          programme_session_id: string
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          programme_run_id?: string
+          programme_session_id?: string
+          completed_at?: string | null
+          created_at?: string
         }
       }
       daily_scores: {
@@ -759,9 +823,40 @@ export interface ProgrammeTemplate {
   hero_image_path: string | null
   tags: string[]
   is_active: boolean
+  days_per_week: number | null
+  duration_weeks: number | null
+  programme_type: string | null
+  equipment_tags: string[] | null
   created_at: string
   updated_at: string
   sessions?: ProgrammeSession[]
+}
+
+// Programme Run
+export interface ProgrammeRun {
+  id: string
+  user_id: string
+  programme_template_id: string
+  status: string
+  started_at: string
+  completed_at: string | null
+  created_at: string
+}
+
+// Programme Session Instance
+export interface ProgrammeSessionInstance {
+  id: string
+  programme_run_id: string
+  programme_session_id: string
+  completed_at: string | null
+  created_at: string
+}
+
+// Programme Progress
+export interface ProgrammeProgress {
+  totalSessions: number
+  completedSessions: number
+  percent: number
 }
 
 // Programme Session

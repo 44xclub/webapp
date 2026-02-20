@@ -12,6 +12,7 @@ import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
+import { PersonalProgrammeCTA } from '@/components/structure/PersonalProgrammeCTA'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
@@ -76,7 +77,7 @@ function StructurePageContent() {
   const { rank } = useRank(user?.id)
   const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
-  const { programmes, activeProgramme, sessions, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
+  const { programmes, activeProgramme, sessions, progress, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
   // Handle deep-link to frameworks section via ?section=frameworks
   useEffect(() => {
@@ -178,18 +179,29 @@ function StructurePageContent() {
               </SectionCard>
             ) : (
               <>
-                <ProgrammeSection activeProgramme={activeProgramme} sessions={sessions} onDeactivate={deactivateProgramme} onScheduleWeek={scheduleWeek} fetchProgrammeSessions={fetchProgrammeSessions} />
-                <ProgrammeCatalogue programmes={programmes} activeProgrammeId={activeProgramme?.programme_template_id} onActivate={activateProgramme} onRefetch={refetchProgrammes} fetchProgrammeSessions={fetchProgrammeSessions} />
+                {/* Active Programme */}
+                <ProgrammeSection
+                  activeProgramme={activeProgramme}
+                  sessions={sessions}
+                  progress={progress}
+                  onDeactivate={deactivateProgramme}
+                  onScheduleWeek={scheduleWeek}
+                  fetchProgrammeSessions={fetchProgrammeSessions}
+                />
+
+                {/* Personal Programme CTA - above Available Programmes */}
+                <PersonalProgrammeCTA />
+
+                {/* Available Programmes Catalogue */}
+                <ProgrammeCatalogue
+                  programmes={programmes}
+                  activeProgrammeId={activeProgramme?.programme_template_id}
+                  onActivate={activateProgramme}
+                  onRefetch={refetchProgrammes}
+                  fetchProgrammeSessions={fetchProgrammeSessions}
+                />
               </>
             )}
-
-            {/* Personal Programmes Link */}
-            <ListRow
-              href="/programmes"
-              icon={<Dumbbell className="h-5 w-5 text-purple-400" />}
-              label="Personal Programmes"
-              meta="Build your own workout programmes"
-            />
           </>
         )}
       </main>
