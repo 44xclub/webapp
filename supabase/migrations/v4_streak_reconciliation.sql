@@ -29,10 +29,12 @@ CREATE INDEX IF NOT EXISTS idx_daily_user_activity_user_date
 -- RLS
 ALTER TABLE public.daily_user_activity ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own activity" ON public.daily_user_activity;
 CREATE POLICY "Users can view own activity"
   ON public.daily_user_activity FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role full access to daily_user_activity" ON public.daily_user_activity;
 CREATE POLICY "Service role full access to daily_user_activity"
   ON public.daily_user_activity FOR ALL
   USING (auth.role() = 'service_role');
@@ -63,10 +65,12 @@ CREATE INDEX IF NOT EXISTS idx_daily_user_metrics_user_date
 -- RLS
 ALTER TABLE public.daily_user_metrics ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own metrics" ON public.daily_user_metrics;
 CREATE POLICY "Users can view own metrics"
   ON public.daily_user_metrics FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role full access to daily_user_metrics" ON public.daily_user_metrics;
 CREATE POLICY "Service role full access to daily_user_metrics"
   ON public.daily_user_metrics FOR ALL
   USING (auth.role() = 'service_role');
