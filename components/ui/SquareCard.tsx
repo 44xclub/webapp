@@ -7,11 +7,12 @@ interface SquareCardProps {
   imageUrl: string | null
   isActive?: boolean
   activeColor?: string
+  daysPerWeek?: number | null
   onClick: () => void
   className?: string
 }
 
-export function SquareCard({ title, imageUrl, isActive, activeColor = 'var(--accent-success)', onClick, className }: SquareCardProps) {
+export function SquareCard({ title, imageUrl, isActive, activeColor = 'var(--accent-success)', daysPerWeek, onClick, className }: SquareCardProps) {
   return (
     <button
       onClick={onClick}
@@ -32,10 +33,19 @@ export function SquareCard({ title, imageUrl, isActive, activeColor = 'var(--acc
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-      <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
-        {isActive && (
-          <span className="pill pill--sm pill--success-solid absolute top-2 left-2 shadow-sm">Active</span>
-        )}
+      <div className="absolute inset-0 p-2.5 flex flex-col justify-between">
+        <div className="flex items-start justify-between gap-1">
+          {isActive ? (
+            <span className="pill pill--sm pill--success-solid shadow-sm">Active</span>
+          ) : (
+            <span />
+          )}
+          {daysPerWeek != null && (
+            <span className="text-[9px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full whitespace-nowrap">
+              {daysPerWeek} Day{daysPerWeek !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
         <p className="text-[12px] font-semibold text-white leading-tight line-clamp-2">{title}</p>
       </div>
     </button>

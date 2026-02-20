@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { Loader2, Calendar, Check } from 'lucide-react'
+import { cleanProgrammeTitle } from '@/lib/hooks/useProgrammes'
 import type { ProgrammeTemplate, ProgrammeSession, UserProgramme } from '@/lib/types'
 
 const DAYS_OF_WEEK = [
@@ -209,17 +210,24 @@ export function ProgrammeDetailModal({
               <span className="text-[16px]">&#x2715;</span>
             </button>
 
-            {/* Active badge */}
-            {isActive && (
-              <span className="pill pill--success-solid pill--pulse absolute bottom-4 left-4">
-                Active
-              </span>
-            )}
+            {/* Active badge + Days pill */}
+            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+              {isActive && (
+                <span className="pill pill--success-solid pill--pulse">
+                  Active
+                </span>
+              )}
+              {programme.days_per_week != null && (
+                <span className="text-[10px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full ml-auto">
+                  {programme.days_per_week} Day{programme.days_per_week !== 1 ? 's' : ''}/week
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Content */}
           <div className="px-4 pb-4 -mt-2">
-            <h2 className="text-[18px] font-bold text-[#eef2ff] mb-1">{programme.title}</h2>
+            <h2 className="text-[18px] font-bold text-[#eef2ff] mb-1">{cleanProgrammeTitle(programme.title)}</h2>
 
             {programme.overview && (
               <p className="text-[13px] text-[rgba(238,242,255,0.55)] leading-relaxed mb-3 line-clamp-3">

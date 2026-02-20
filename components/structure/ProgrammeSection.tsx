@@ -7,7 +7,8 @@ import { ProgrammeDetailModal } from '@/components/structure/ProgrammeDetailModa
 import { Calendar, Dumbbell, Loader2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Check } from 'lucide-react'
-import type { UserProgramme, ProgrammeSession } from '@/lib/types'
+import { cleanProgrammeTitle } from '@/lib/hooks/useProgrammes'
+import type { UserProgramme, ProgrammeSession, ProgrammeProgress } from '@/lib/types'
 
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Mon' },
@@ -22,6 +23,7 @@ const DAYS_OF_WEEK = [
 interface ProgrammeSectionProps {
   activeProgramme: UserProgramme | null
   sessions: ProgrammeSession[]
+  progress: ProgrammeProgress | null
   onDeactivate: () => Promise<void>
   onScheduleWeek: (selectedDays: number[], defaultTime?: string) => Promise<number>
   fetchProgrammeSessions: (programmeId: string) => Promise<ProgrammeSession[]>
@@ -30,6 +32,7 @@ interface ProgrammeSectionProps {
 export function ProgrammeSection({
   activeProgramme,
   sessions,
+  progress,
   onDeactivate,
   onScheduleWeek,
   fetchProgrammeSessions,
@@ -108,6 +111,7 @@ export function ProgrammeSection({
   }
 
   const programme = activeProgramme.programme_template
+  const title = cleanProgrammeTitle(programme.title)
   const imageUrl = programme.hero_image_path
     ? programme.hero_image_path.startsWith('http')
       ? programme.hero_image_path
@@ -138,12 +142,19 @@ export function ProgrammeSection({
               <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.85)] via-[rgba(0,0,0,0.5)] to-[rgba(0,0,0,0.3)]" />
-            <span className="pill pill--success-solid pill--pulse absolute top-2.5 left-2.5 shadow-sm">
-              Active
-            </span>
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-1.5">
+              <span className="pill pill--success-solid pill--pulse shadow-sm">
+                Active
+              </span>
+              {programme.days_per_week != null && (
+                <span className="text-[9px] font-semibold text-white/90 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  {programme.days_per_week} Day{programme.days_per_week !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Content Body - tighter */}
+          {/* Content Body - title + progress */}
           <div
             role="button"
             tabIndex={0}
@@ -151,33 +162,53 @@ export function ProgrammeSection({
             onKeyDown={(e) => e.key === 'Enter' && setDetailModalOpen(true)}
             className="px-3 py-2.5 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] transition-colors"
           >
-            <h3 className="text-[15px] font-semibold text-[#eef2ff] leading-tight line-clamp-1 mb-0.5">
-              {programme.title}
+            <h3 className="text-[15px] font-semibold text-[#eef2ff] leading-tight line-clamp-1 mb-1">
+              {title}
             </h3>
-            {programme.overview && (
-              <p className="text-[12px] text-[rgba(238,242,255,0.5)] leading-snug line-clamp-1">
-                {programme.overview}
-              </p>
+            {/* Progress section */}
+            {progress ? (
+              progress.totalSessions > 0 ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] text-[rgba(238,242,255,0.55)]">
+                      {progress.completedSessions} / {progress.totalSessions} sessions
+                    </span>
+                    <span className="text-[11px] font-medium text-[rgba(238,242,255,0.45)]">
+                      {progress.percent}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500 bg-[var(--accent-primary)]"
+                      style={{ width: `${progress.percent}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[12px] text-[rgba(238,242,255,0.35)]">Progress unavailable</p>
+              )
+            ) : (
+              <p className="text-[12px] text-[rgba(238,242,255,0.35)]">Loading progress...</p>
             )}
           </div>
 
           {/* Action Bar - compact */}
           <div
-            className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.15)] px-3 py-2.5"
+            className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.15)] px-3 py-2"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={() => setScheduleModalOpen(true)}
-                className="flex-1 h-9"
+                className="flex-1 h-8"
               >
                 <Calendar className="h-3.5 w-3.5" />
                 Schedule Week
               </Button>
               <button
                 onClick={() => setDeactivateConfirmOpen(true)}
-                className="btn btn--sm btn--danger flex-1 h-9"
+                className="btn btn--sm btn--danger flex-1 h-8"
               >
                 Deactivate
               </button>
