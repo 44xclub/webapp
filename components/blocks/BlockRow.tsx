@@ -159,7 +159,7 @@ export function BlockRow({
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-semibold text-[15px] truncate',
+              'font-semibold text-[12.5px] truncate',
               isCompleted && 'line-through decoration-[rgba(238,242,255,0.3)] text-[rgba(238,242,255,0.52)]',
               !isCompleted && 'text-[#eef2ff]'
             )}
