@@ -16,7 +16,7 @@ import { PersonalProgrammeCTA } from '@/components/structure/PersonalProgrammeCT
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
-import { SegmentedControl, SectionCard, ListRow } from '@/components/ui'
+import { SegmentedControl, SectionCard } from '@/components/ui'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -149,6 +149,26 @@ function StructurePageContent() {
               </div>
             )}
 
+            {/* Personal Framework CTA — above available frameworks, matching programme CTA style */}
+            <a href="/personal-framework" className="block no-underline">
+              <div className="relative overflow-hidden rounded-[12px] h-[64px] border border-[rgba(255,255,255,0.08)] bg-gradient-to-r from-[rgba(59,130,246,0.12)] to-[rgba(59,130,246,0.04)] hover:border-[rgba(255,255,255,0.14)] active:border-[rgba(255,255,255,0.18)] transition-colors group">
+                <div className="absolute inset-0 p-3 flex items-center gap-3">
+                  <div className="p-2 rounded-[10px] bg-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.20)] flex-shrink-0">
+                    <Target className="h-4 w-4 text-[#60a5fa]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-[#eef2ff] leading-tight">
+                      Personal Framework
+                    </p>
+                    <p className="text-[11px] text-[rgba(238,242,255,0.45)] leading-tight mt-0.5">
+                      Build your own
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.30)] flex-shrink-0 group-hover:text-[rgba(238,242,255,0.50)] transition-colors" />
+                </div>
+              </div>
+            </a>
+
             {/* Available Frameworks */}
             <div ref={frameworksSectionRef} />
             {frameworksLoading ? (
@@ -160,14 +180,6 @@ function StructurePageContent() {
             ) : (
               <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
-
-            {/* Personal Discipline Framework Link */}
-            <ListRow
-              href="/personal-framework"
-              icon={<Target className="h-5 w-5 text-[var(--accent-blue)]" />}
-              label="Personal Discipline Framework"
-              meta="Create your own daily non-negotiables"
-            />
           </>
         ) : (
           <>

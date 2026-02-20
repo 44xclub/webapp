@@ -360,7 +360,7 @@ export function WorkoutForm({
       {subtype === 'custom' && (
         <Input
           label="Workout Title"
-          placeholder="e.g., Push Day, Leg Day"
+          placeholder="Push Day, Leg Day"
           {...register('title')}
           error={errors.title?.message}
         />
@@ -461,7 +461,7 @@ export function WorkoutForm({
                   })}
                 />
                 <Input
-                  placeholder="Pace (e.g., 5:30/km)"
+                  placeholder="Pace (5:30/km)"
                   {...register('payload.pace')}
                 />
               </div>
@@ -470,16 +470,19 @@ export function WorkoutForm({
         </div>
       )}
 
-      {/* RPE field - Duration is set in step 1 */}
+      {/* RPE field — optional, safe NaN handling */}
       <Input
         type="number"
-        label="RPE (1-10)"
+        label="RPE (1-10, optional)"
         placeholder="Rate of perceived exertion"
         min={1}
         max={10}
         {...register('payload.rpe', {
-          valueAsNumber: true,
-          setValueAs: (v: any) => (v === '' ? undefined : Number(v)),
+          setValueAs: (v: any) => {
+            if (v === '' || v === null || v === undefined) return undefined
+            const n = Number(v)
+            return isNaN(n) ? undefined : n
+          },
         })}
       />
 

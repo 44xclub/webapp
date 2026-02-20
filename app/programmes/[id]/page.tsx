@@ -372,7 +372,7 @@ function ExerciseRow({
               type="text"
               value={reps}
               onChange={(e) => setReps(e.target.value)}
-              placeholder="Reps (e.g., 8-12)"
+              placeholder="Reps (8-12)"
               className="flex-1 px-3 py-2 rounded-[8px] bg-[rgba(255,255,255,0.06)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
             />
           </div>
@@ -474,7 +474,7 @@ function AddExerciseRow({
             type="text"
             value={reps}
             onChange={(e) => setReps(e.target.value)}
-            placeholder="Reps (e.g., 8-12)"
+            placeholder="Reps (8-12)"
             className="flex-1 px-3 py-2 rounded-[8px] bg-[rgba(255,255,255,0.06)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
           />
         </div>

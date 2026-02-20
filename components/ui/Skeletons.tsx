@@ -94,3 +94,61 @@ export function FeedSkeleton({ count = 3 }: { count?: number }) {
     </div>
   )
 }
+
+/** Block list skeleton (home page day view) */
+export function BlockListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="px-3">
+      <div className="rounded-[14px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+          {Array.from({ length: count }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <SkeletonPulse className="w-6 h-6 rounded-full flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <SkeletonPulse className="h-4 w-32 rounded" />
+                <div className="flex items-center gap-2">
+                  <SkeletonPulse className="h-3 w-14 rounded-[6px]" />
+                  <SkeletonPulse className="h-3 w-20 rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Header strip skeleton */
+export function HeaderSkeleton() {
+  return (
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-3">
+        <SkeletonPulse className="w-10 h-10 rounded-full" />
+        <div className="space-y-1.5">
+          <SkeletonPulse className="h-4 w-24 rounded" />
+          <SkeletonPulse className="h-3 w-16 rounded" />
+        </div>
+      </div>
+      <SkeletonPulse className="w-8 h-8 rounded-full" />
+    </div>
+  )
+}
+
+/** Structure page section skeleton */
+export function StructureSkeleton() {
+  return (
+    <div className="space-y-4 px-4 pt-2">
+      <div className="grid grid-cols-2 gap-2">
+        <SkeletonPulse className="h-[72px] rounded-[12px]" />
+        <SkeletonPulse className="h-[72px] rounded-[12px]" />
+      </div>
+      <SkeletonPulse className="h-[64px] rounded-[12px]" />
+      <div className="space-y-2">
+        <SkeletonPulse className="h-4 w-40 rounded" />
+        <SkeletonPulse className="h-[100px] rounded-[14px]" />
+        <SkeletonPulse className="h-[100px] rounded-[14px]" />
+      </div>
+    </div>
+  )
+}

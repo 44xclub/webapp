@@ -28,7 +28,7 @@ export function CheckinForm({ form, userHasHeight = false, onMediaChange }: Chec
       <Input
         type="number"
         label="Weight (kg)"
-        placeholder="e.g., 75.5"
+        placeholder="75.5"
         step="0.1"
         {...register('payload.weight', {
           valueAsNumber: true,
@@ -42,7 +42,7 @@ export function CheckinForm({ form, userHasHeight = false, onMediaChange }: Chec
         <Input
           type="number"
           label="Height (cm)"
-          placeholder="e.g., 175"
+          placeholder="175"
           {...register('payload.height', {
             valueAsNumber: true,
             setValueAs: (v) => (v === '' ? undefined : Number(v)),

@@ -33,7 +33,7 @@ export function HabitForm({ form }: HabitFormProps) {
       {/* Title */}
       <Input
         label="Habit Name"
-        placeholder="e.g., Morning meditation, Read 30 mins"
+        placeholder="Morning meditation, Read 30 mins"
         {...register('title')}
         error={errors.title?.message}
       />
@@ -78,7 +78,7 @@ export function HabitForm({ form }: HabitFormProps) {
         <Input
           type="number"
           label="Every N days"
-          placeholder="e.g., 2 for every other day"
+          placeholder="2 for every other day"
           min={1}
           {...register('repeat_rule.interval', {
             valueAsNumber: true,

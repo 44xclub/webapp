@@ -21,6 +21,7 @@ export function lockBodyScroll() {
     document.body.style.top = `-${savedScrollY}px`
     document.body.style.left = '0'
     document.body.style.right = '0'
+    document.body.style.width = '100%'
   }
   lockCount++
 }
@@ -32,6 +33,7 @@ export function unlockBodyScroll() {
     document.body.style.top = ''
     document.body.style.left = ''
     document.body.style.right = ''
+    document.body.style.width = ''
     window.scrollTo(0, savedScrollY)
   }
 }
@@ -65,6 +67,7 @@ export function Modal({
   )
 
   const wasOpen = useRef(false)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
@@ -82,6 +85,24 @@ export function Modal({
     }
   }, [isOpen, handleEscape])
 
+  // iOS Safari: keep modal stable when virtual keyboard opens/closes
+  useEffect(() => {
+    if (!isOpen || !fullScreen) return
+
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const handleResize = () => {
+      if (modalRef.current) {
+        // Adjust modal height to match visual viewport (excludes keyboard)
+        modalRef.current.style.height = `${vv.height}px`
+      }
+    }
+
+    vv.addEventListener('resize', handleResize)
+    return () => vv.removeEventListener('resize', handleResize)
+  }, [isOpen, fullScreen])
+
   if (!isOpen) return null
 
   return createPortal(
@@ -94,6 +115,7 @@ export function Modal({
 
       {/* Modal content - full screen, bottom sheet on mobile, or centered on desktop */}
       <div
+        ref={modalRef}
         className={cn(
           'relative z-10 bg-[#0d1014] overflow-hidden animate-slideUp shadow-lg flex flex-col',
           fullScreen
