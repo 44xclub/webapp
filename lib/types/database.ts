@@ -24,6 +24,10 @@ export interface Database {
           current_streak: number
           best_streak: number
           last_resolved_date: string | null
+          badge_tier: string
+          badge_locked: boolean
+          badge_locked_reasons: Json
+          badge_last_evaluated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -41,6 +45,10 @@ export interface Database {
           current_streak?: number
           best_streak?: number
           last_resolved_date?: string | null
+          badge_tier?: string
+          badge_locked?: boolean
+          badge_locked_reasons?: Json
+          badge_last_evaluated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -58,6 +66,10 @@ export interface Database {
           current_streak?: number
           best_streak?: number
           last_resolved_date?: string | null
+          badge_tier?: string
+          badge_locked?: boolean
+          badge_locked_reasons?: Json
+          badge_last_evaluated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -568,6 +580,76 @@ export interface Database {
           created_at?: string
         }
       }
+      daily_user_activity: {
+        Row: {
+          user_id: string
+          date: string
+          last_activity_at: string
+          activity_types: string[]
+          block_count: number
+        }
+        Insert: {
+          user_id: string
+          date: string
+          last_activity_at?: string
+          activity_types?: string[]
+          block_count?: number
+        }
+        Update: {
+          user_id?: string
+          date?: string
+          last_activity_at?: string
+          activity_types?: string[]
+          block_count?: number
+        }
+      }
+      daily_user_metrics: {
+        Row: {
+          user_id: string
+          date: string
+          timezone: string
+          planned_blocks: number
+          completed_blocks: number
+          execution_rate: number
+          framework_checked: number
+          base_points: number
+          penalties: number
+          multiplier: number
+          gated: boolean
+          delta: number
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          date: string
+          timezone: string
+          planned_blocks?: number
+          completed_blocks?: number
+          execution_rate?: number
+          framework_checked?: number
+          base_points?: number
+          penalties?: number
+          multiplier?: number
+          gated?: boolean
+          delta?: number
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          date?: string
+          timezone?: string
+          planned_blocks?: number
+          completed_blocks?: number
+          execution_rate?: number
+          framework_checked?: number
+          base_points?: number
+          penalties?: number
+          multiplier?: number
+          gated?: boolean
+          delta?: number
+          created_at?: string
+        }
+      }
       feed_posts: {
         Row: {
           id: string
@@ -747,8 +829,38 @@ export interface Profile {
   current_streak: number
   best_streak: number
   last_resolved_date: string | null
+  badge_tier: string
+  badge_locked: boolean
+  badge_locked_reasons: Json
+  badge_last_evaluated_at: string | null
   created_at: string
   updated_at: string
+}
+
+// Daily User Activity (streak source of truth)
+export interface DailyUserActivity {
+  user_id: string
+  date: string
+  last_activity_at: string
+  activity_types: string[]
+  block_count: number
+}
+
+// Daily User Metrics (reconciliation audit row)
+export interface DailyUserMetrics {
+  user_id: string
+  date: string
+  timezone: string
+  planned_blocks: number
+  completed_blocks: number
+  execution_rate: number
+  framework_checked: number
+  base_points: number
+  penalties: number
+  multiplier: number
+  gated: boolean
+  delta: number
+  created_at: string
 }
 
 // Community Challenge
@@ -1013,9 +1125,32 @@ export interface TeamDailyOverview {
 }
 
 export interface TeamSnapshot {
+  date: string
+  team_number: number
+  summary: {
+    executed: string            // e.g. "5/8"
+    avg_execution: number       // 0-1
+    team_delta: number
+  }
+  highlights: TeamSnapshotHighlight[]
+  flags: TeamSnapshotFlag[]
+  // Legacy compat fields
   members: TeamMemberSnapshot[]
   total_score: number
   avg_score: number
+}
+
+export interface TeamSnapshotHighlight {
+  user_id: string
+  name: string
+  delta: number
+  execution: number
+}
+
+export interface TeamSnapshotFlag {
+  user_id: string
+  name: string
+  reason: string
 }
 
 export interface TeamMemberSnapshot {
@@ -1024,6 +1159,9 @@ export interface TeamMemberSnapshot {
   avatar_path: string | null
   discipline_score: number
   daily_delta: number
+  execution_rate: number
+  planned_blocks: number
+  completed_blocks: number
   framework_status: FrameworkSubmissionStatus | null
 }
 

@@ -13,7 +13,7 @@ import { FeedSkeleton, TeamCardSkeleton } from '@/components/ui/Skeletons'
 import { calculateDisciplineLevel } from '@/lib/types'
 import { parseDateOnly } from '@/lib/date'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import type { DisciplineBadge, TeamDailyOverview, TeamSnapshot } from '@/lib/types'
+import type { DisciplineBadge, TeamDailyOverview, TeamSnapshot, TeamSnapshotHighlight, TeamSnapshotFlag } from '@/lib/types'
 
 type TabType = 'team' | 'feed'
 
@@ -542,7 +542,7 @@ function TeamOverview({ userId, supabase }: { userId: string | undefined; supaba
   )
 }
 
-// Daily Overview Card (chat/feed style)
+// Daily Overview Card (compact summary format)
 function DailyOverviewCard({
   overview,
   members,
@@ -557,53 +557,86 @@ function DailyOverviewCard({
     month: 'short',
     day: 'numeric',
   })
-  const resolvedTime = overview.cutoff_at
-    ? new Date(overview.cutoff_at).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    : null
 
-  // Map member snapshots to profiles for display names
+  // New format: summary + highlights + flags
+  const summary = payload?.summary
+  const highlights = payload?.highlights || []
+  const flags = payload?.flags || []
+
+  // Fallback for legacy payloads without summary
+  const hasNewFormat = !!summary
+
+  // Legacy member snapshots (fallback)
   const memberSnapshots = payload?.members || []
 
   return (
     <div className="section-card p-0 overflow-hidden">
-      {/* Header */}
-      <div className="px-[var(--space-card)] py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+      {/* Header row: date + summary stats */}
+      <div className="px-[var(--space-card)] py-2.5 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-[var(--accent-blue)]" />
+          <Calendar className="h-3.5 w-3.5 text-[var(--accent-blue)]" />
           <span className="text-meta text-[var(--text-primary)]">{formattedDate}</span>
         </div>
-        {resolvedTime && (
-          <span className="text-micro">
-            Resolved at {resolvedTime}
+        {hasNewFormat ? (
+          <div className="flex items-center gap-3">
+            <span className="text-meta font-medium text-emerald-400">
+              +{summary.team_delta} pts
+            </span>
+            <span className="text-micro">
+              {summary.executed} executed
+            </span>
+          </div>
+        ) : (
+          <span className="text-meta text-[var(--text-primary)]">
+            {payload?.total_score || 0} pts
           </span>
         )}
       </div>
 
-      {/* Summary Stats */}
-      {payload && (
-        <div className="px-[var(--space-card)] py-2 border-b border-[var(--border-subtle)] flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="text-micro">Avg:</span>
-            <span className="text-meta text-[var(--text-primary)]">
-              {payload.avg_score?.toFixed(0) || 0}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-micro">Total:</span>
-            <span className="text-meta text-[var(--text-primary)]">
-              {payload.total_score || 0}
-            </span>
-          </div>
+      {/* Avg execution subtext */}
+      {hasNewFormat && (
+        <div className="px-[var(--space-card)] py-1.5 border-b border-[var(--border-subtle)]">
+          <span className="text-micro">
+            Avg execution {Math.round((summary.avg_execution || 0) * 100)}%
+          </span>
         </div>
       )}
 
-      {/* Member Summaries */}
-      <div className="px-[var(--space-card)] py-3 space-y-2">
-        {memberSnapshots.length > 0 ? (
-          memberSnapshots.map((snapshot: any, idx: number) => {
+      {/* Two columns: Highlights + Flags (new format) */}
+      {hasNewFormat && (highlights.length > 0 || flags.length > 0) && (
+        <div className="px-[var(--space-card)] py-2.5 flex gap-4">
+          {/* Top performers */}
+          {highlights.length > 0 && (
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-emerald-400/70 mb-1">Top</p>
+              {highlights.map((h: TeamSnapshotHighlight, i: number) => (
+                <div key={i} className="flex items-center justify-between gap-1 mb-0.5">
+                  <span className="text-meta text-[var(--text-primary)] truncate">{h.name}</span>
+                  <span className="text-meta font-medium text-emerald-400 flex-shrink-0">+{h.delta}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Flagged */}
+          {flags.length > 0 && (
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-rose-400/70 mb-1">Flagged</p>
+              {flags.map((f: TeamSnapshotFlag, i: number) => (
+                <div key={i} className="mb-0.5">
+                  <span className="text-meta text-[var(--text-primary)]">{f.name}</span>
+                  <span className="text-micro ml-1">{f.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Legacy fallback: member list (for overviews created before v4) */}
+      {!hasNewFormat && memberSnapshots.length > 0 && (
+        <div className="px-[var(--space-card)] py-3 space-y-2">
+          {memberSnapshots.map((snapshot: any, idx: number) => {
             const memberProfile = members.find((m) => m.user_id === snapshot.user_id)
             const displayName = snapshot.display_name || memberProfile?.profiles?.display_name || 'Member'
             const delta = snapshot.daily_delta || 0
@@ -628,13 +661,18 @@ function DailyOverviewCard({
                 </span>
               </div>
             )
-          })
-        ) : (
+          })}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!hasNewFormat && memberSnapshots.length === 0 && (
+        <div className="px-[var(--space-card)] py-3">
           <p className="text-meta">
             No member data available for this day.
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
