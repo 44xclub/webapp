@@ -12,6 +12,7 @@ import {
   Trash2,
   Edit,
   Play,
+  X,
 } from 'lucide-react'
 import { useProfile } from '@/lib/hooks'
 import { usePersonalProgrammes } from '@/lib/hooks/usePersonalProgrammes'
@@ -124,13 +125,21 @@ export default function PersonalProgrammesPage() {
         <header className="px-4 pt-4 pb-2">
           <div className="flex items-center justify-between">
             <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Programmes</h1>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              Create
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                Create
+              </button>
+              <button
+                onClick={() => router.push('/structure')}
+                className="p-2 -mr-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+              >
+                <X className="h-5 w-5 text-[rgba(238,242,255,0.72)]" />
+              </button>
+            </div>
           </div>
           <p className="text-[13px] text-[rgba(238,242,255,0.52)] mt-1">
             Build your own workout programmes

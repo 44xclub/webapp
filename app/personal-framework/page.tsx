@@ -128,7 +128,15 @@ export default function PersonalFrameworkPage() {
         <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">
-          <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Discipline Framework</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Discipline Framework</h1>
+            <button
+              onClick={() => router.push('/structure')}
+              className="p-2 -mr-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+            >
+              <X className="h-5 w-5 text-[rgba(238,242,255,0.72)]" />
+            </button>
+          </div>
           <p className="text-[13px] text-[rgba(238,242,255,0.52)] mt-1">
             Define up to 5 daily non-negotiables
           </p>
