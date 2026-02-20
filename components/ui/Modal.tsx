@@ -8,23 +8,47 @@ import { X } from 'lucide-react'
 /*
   44CLUB Modal
   Clean. Focused. No decoration.
+
+  Keyboard / scroll stability:
+  ─────────────────────────────
+  Root causes addressed:
+    1) iOS Safari resizes the viewport when the virtual keyboard opens, which
+       causes elements sized to `100dvh` or `100vh` to reflow. We use
+       `window.visualViewport` to pin the modal wrapper to the *visual*
+       viewport height so it never jumps.
+    2) `position: fixed` on <body> for scroll lock can interact badly with
+       iOS in-app browsers (Whop embed). We also set `width: 100%` and
+       prevent touch-move on the backdrop to stop rubber-band scrolling.
+    3) The `overscroll-behavior: contain` on the scroll container prevents
+       scroll-chaining so only the modal (not the background) scrolls.
+    4) `touch-action: none` on the backdrop prevents iOS from interpreting
+       swipe gestures as page scroll.
 */
 
-// Ref-counted body scroll lock to prevent stacking issues
+// ── Ref-counted body scroll lock ────────────────────────────────────────
 let lockCount = 0
 let savedScrollY = 0
+
 export function lockBodyScroll() {
   if (lockCount === 0) {
     savedScrollY = window.scrollY
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
     document.body.style.overflow = 'hidden'
     document.body.style.position = 'fixed'
     document.body.style.top = `-${savedScrollY}px`
     document.body.style.left = '0'
     document.body.style.right = '0'
     document.body.style.width = '100%'
+    // Prevent layout shift from scrollbar disappearing on desktop
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+    // Prevent touch-move on body for iOS rubber-band
+    document.body.style.touchAction = 'none'
   }
   lockCount++
 }
+
 export function unlockBodyScroll() {
   lockCount = Math.max(0, lockCount - 1)
   if (lockCount === 0) {
@@ -34,9 +58,13 @@ export function unlockBodyScroll() {
     document.body.style.left = ''
     document.body.style.right = ''
     document.body.style.width = ''
+    document.body.style.paddingRight = ''
+    document.body.style.touchAction = ''
     window.scrollTo(0, savedScrollY)
   }
 }
+
+// ── Modal ────────────────────────────────────────────────────────────────
 
 interface ModalProps {
   isOpen: boolean
@@ -67,8 +95,10 @@ export function Modal({
   )
 
   const wasOpen = useRef(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
+  // ── Open / close lifecycle ──
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
       document.addEventListener('keydown', handleEscape)
@@ -85,46 +115,86 @@ export function Modal({
     }
   }, [isOpen, handleEscape])
 
-  // iOS Safari: keep modal stable when virtual keyboard opens/closes
+  // ── Visual-viewport pinning (iOS keyboard stability) ──
+  // Runs for ALL modals so bottom-sheet modals also stay stable when the
+  // keyboard opens.  On desktop (no visualViewport resize) this is a no-op.
   useEffect(() => {
-    if (!isOpen || !fullScreen) return
+    if (!isOpen) return
 
     const vv = window.visualViewport
     if (!vv) return
 
-    const handleResize = () => {
-      if (modalRef.current) {
-        // Adjust modal height to match visual viewport (excludes keyboard)
-        modalRef.current.style.height = `${vv.height}px`
+    const sync = () => {
+      // Pin the fixed wrapper to the visual viewport so it doesn't
+      // overflow behind the keyboard or shift when viewport resizes.
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = `${vv.height}px`
+        wrapperRef.current.style.top = `${vv.offsetTop}px`
       }
     }
 
-    vv.addEventListener('resize', handleResize)
-    return () => vv.removeEventListener('resize', handleResize)
-  }, [isOpen, fullScreen])
+    // Initial sync
+    sync()
+
+    vv.addEventListener('resize', sync)
+    vv.addEventListener('scroll', sync)
+    return () => {
+      vv.removeEventListener('resize', sync)
+      vv.removeEventListener('scroll', sync)
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = ''
+        wrapperRef.current.style.top = ''
+      }
+    }
+  }, [isOpen])
+
+  // ── Prevent backdrop touch-move from scrolling body ──
+  useEffect(() => {
+    if (!isOpen) return
+
+    const el = wrapperRef.current
+    if (!el) return
+
+    const preventBodyScroll = (e: TouchEvent) => {
+      // Only prevent if the touch target is the backdrop itself
+      // (not inside the modal panel)
+      if (e.target === el || e.target === el.querySelector('[data-modal-backdrop]')) {
+        e.preventDefault()
+      }
+    }
+
+    el.addEventListener('touchmove', preventBodyScroll, { passive: false })
+    return () => el.removeEventListener('touchmove', preventBodyScroll)
+  }, [isOpen])
 
   if (!isOpen) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
+    <div
+      ref={wrapperRef}
+      className="fixed inset-x-0 top-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ height: '100dvh' }}
+    >
+      {/* Backdrop — touch-action: none prevents iOS rubber-band on this layer */}
       <div
+        data-modal-backdrop
         className="absolute inset-0 bg-[#05070a]/85 backdrop-blur-sm animate-fadeIn"
+        style={{ touchAction: 'none' }}
         onClick={onClose}
       />
 
-      {/* Modal content - full screen, bottom sheet on mobile, or centered on desktop */}
+      {/* Modal panel — uses h-full (of wrapper) for fullscreen, max-h for sheet */}
       <div
         ref={modalRef}
         className={cn(
           'relative z-10 bg-[#0d1014] overflow-hidden animate-slideUp shadow-lg flex flex-col',
           fullScreen
-            ? 'w-full h-[100dvh] safe-top'
-            : 'w-full sm:max-w-lg max-h-[90dvh] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px]',
+            ? 'w-full h-full safe-top'
+            : 'w-full sm:max-w-lg max-h-[90%] border border-[rgba(255,255,255,0.10)] rounded-t-[16px] sm:rounded-[16px]',
           className
         )}
       >
-        {/* Header - fixed */}
+        {/* Header */}
         {(title || showClose) && (
           <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
             <h2 className="text-[15px] font-bold text-[#eef2ff]">
@@ -141,15 +211,15 @@ export function Modal({
           </div>
         )}
 
-        {/* Scrollable Content - body */}
-        <div className={cn(
-          'flex-1 overflow-y-auto overscroll-contain',
-          !fullScreen && (footer ? 'max-h-[calc(90dvh-140px)]' : 'max-h-[calc(90dvh-60px)]')
-        )}>
+        {/* Scrollable content — momentum scrolling on iOS */}
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {children}
         </div>
 
-        {/* Sticky Footer - fixed with safe area + centered padding */}
+        {/* Sticky footer */}
         {footer && (
           <div
             className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 pt-4"
@@ -164,7 +234,8 @@ export function Modal({
   )
 }
 
-// Dropdown menu component for block actions - uses portal to escape overflow:hidden
+// ── DropdownMenu ─────────────────────────────────────────────────────────
+
 interface DropdownMenuProps {
   isOpen: boolean
   onClose: () => void
@@ -188,7 +259,6 @@ export function DropdownMenu({
   useEffect(() => {
     if (isOpen) {
       const handleClickOutside = () => onClose()
-      // Use mousedown to catch clicks before they propagate
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
@@ -196,9 +266,7 @@ export function DropdownMenu({
 
   if (!isOpen) return null
 
-  // If anchorRect is provided, use portal with fixed positioning
   if (anchorRect) {
-    // Position menu below and to the left of anchor (right-aligned)
     const menuWidth = 180
     const top = anchorRect.bottom + 4
     const left = anchorRect.right - menuWidth
@@ -237,7 +305,6 @@ export function DropdownMenu({
     )
   }
 
-  // Fallback: absolute positioning (for backwards compatibility)
   return (
     <div
       className={cn(

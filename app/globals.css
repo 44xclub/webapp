@@ -259,6 +259,31 @@ input[type="time"] {
   max-width: 100%;
 }
 
+/*
+  iOS Safari auto-zooms inputs whose computed font-size < 16px.
+  Force font-size to 16px on focus to prevent zoom, then restore.
+  The visual appearance stays the same because we use transform: scale().
+*/
+@supports (-webkit-touch-callout: none) {
+  input[type="date"],
+  input[type="time"] {
+    font-size: 16px !important;
+  }
+}
+
+/*
+  dvh fallback: define a CSS custom property for browsers that don't
+  support dvh.  Updated via JS in PWARegister.tsx for iOS.
+*/
+:root {
+  --app-dvh: 100dvh;
+}
+@supports not (height: 100dvh) {
+  :root {
+    --app-dvh: 100vh;
+  }
+}
+
 button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }

@@ -26,6 +26,7 @@ import { blockTypeLabels, cn } from '@/lib/utils'
 import { formatDateForApi, roundToNearest5Minutes } from '@/lib/date'
 import type { Block, BlockType, BlockMedia, ProgrammeSession, UserProgramme } from '@/lib/types'
 import { Calendar, Clock, ChevronLeft, ChevronRight, Dumbbell, Sparkles, Utensils, Scale, FileText } from 'lucide-react'
+import { DateTimeCard } from './DateTimeCard'
 
 interface BlockModalProps {
   isOpen: boolean
@@ -661,34 +662,14 @@ export function BlockModal({
             />
           </div>
 
-          {/* Date & Time — compact card */}
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-            {/* Date row */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
-              <Calendar className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
-              <span className="text-[13px] text-[#eef2ff] font-medium">{formatDisplayDate(dateValue)}</span>
-            </div>
-            {/* Time row */}
-            <div className="flex items-center gap-2 px-3 py-2.5">
-              <Clock className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-0.5">{(blockType === 'checkin' || blockType === 'nutrition') ? 'Time' : 'Start'}</p>
-                  <Input
-                    type="time"
-                    {...form.register('start_time')}
-                    className="w-full text-[13px]"
-                  />
-                </div>
-                {blockType !== 'checkin' && blockType !== 'nutrition' && (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-[rgba(238,242,255,0.4)] font-medium mb-0.5">End</p>
-                    <p className="text-[13px] text-[#eef2ff] font-semibold py-[6px]">{endTime ? formatDisplayTime(endTime) : '--:--'}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Date & Time — reusable card */}
+          <DateTimeCard
+            mode="display"
+            dateDisplay={formatDisplayDate(dateValue)}
+            endTimeDisplay={endTime ? formatDisplayTime(endTime) : null}
+            pointInTime={blockType === 'checkin' || blockType === 'nutrition'}
+            register={form.register}
+          />
 
           {/* Duration Quick Select - not for checkin or nutrition */}
           {blockType !== 'checkin' && blockType !== 'nutrition' && (
@@ -796,54 +777,16 @@ export function BlockModal({
             </div>
           )}
 
-          {/* Date/Time edit section for existing blocks — compact, stable layout */}
+          {/* Date/Time edit section for existing blocks — reusable card */}
           {editingBlock && (
-            <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-              {/* Date Row */}
-              <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
-                <Calendar className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <Input
-                    type="date"
-                    {...form.register('date')}
-                    className="w-full text-[13px]"
-                  />
-                </div>
-              </div>
-
-              {/* Start / End Row */}
-              <div className="flex items-center gap-2.5 px-3 py-2.5">
-                <Clock className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
-                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
-                  <div className="min-w-0">
-                    <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5">Start</label>
-                    <Input
-                      type="time"
-                      {...form.register('start_time')}
-                      className="w-full text-[13px]"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5">End</label>
-                    <Input
-                      type="time"
-                      {...form.register('end_time')}
-                      className="w-full text-[13px]"
-                    />
-                  </div>
-                </div>
-                {/* Inline duration badge */}
-                {startTime && endTime && (() => {
-                  const mins = calculateMinutesBetween(startTime, endTime)
-                  if (mins === null || mins <= 0) return null
-                  return (
-                    <span className="text-[10px] text-[rgba(238,242,255,0.35)] font-medium whitespace-nowrap flex-shrink-0">
-                      {formatDurationHuman(mins)}
-                    </span>
-                  )
-                })()}
-              </div>
-            </div>
+            <DateTimeCard
+              mode="edit"
+              durationLabel={startTime && endTime ? (() => {
+                const mins = calculateMinutesBetween(startTime, endTime)
+                return mins && mins > 0 ? formatDurationHuman(mins) : null
+              })() : null}
+              register={form.register}
+            />
           )}
 
           {/* Type-specific Form */}
