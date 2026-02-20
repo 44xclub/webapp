@@ -11,7 +11,7 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge, useWhopLink } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
 import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
@@ -48,6 +48,9 @@ export default function AppPage() {
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
   const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
   const { challenge, todayBlock: challengeTodayBlock, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
+
+  // Auto-link Whop account when loaded inside the Whop iframe
+  useWhopLink(user?.id, !!profile?.whop_user_id)
 
   const handleChallengeLogSuccess = useCallback(() => {
     refetchChallenge()
