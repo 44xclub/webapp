@@ -28,6 +28,7 @@ export interface Database {
           badge_locked: boolean
           badge_locked_reasons: Json
           badge_last_evaluated_at: string | null
+          whop_user_id: string | null
           created_at: string
           updated_at: string
         }
@@ -49,6 +50,7 @@ export interface Database {
           badge_locked?: boolean
           badge_locked_reasons?: Json
           badge_last_evaluated_at?: string | null
+          whop_user_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -70,6 +72,7 @@ export interface Database {
           badge_locked?: boolean
           badge_locked_reasons?: Json
           badge_last_evaluated_at?: string | null
+          whop_user_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -96,6 +99,9 @@ export interface Database {
           programme_template_id: string | null
           programme_session_id: string | null
           shared_to_feed: boolean
+          chat_message_sent_at: string | null
+          chat_dispatch_status: 'pending' | 'sent' | 'failed' | null
+          chat_dispatch_error: string | null
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -121,6 +127,9 @@ export interface Database {
           programme_template_id?: string | null
           programme_session_id?: string | null
           shared_to_feed?: boolean
+          chat_message_sent_at?: string | null
+          chat_dispatch_status?: 'pending' | 'sent' | 'failed' | null
+          chat_dispatch_error?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -146,6 +155,9 @@ export interface Database {
           programme_template_id?: string | null
           programme_session_id?: string | null
           shared_to_feed?: boolean
+          chat_message_sent_at?: string | null
+          chat_dispatch_status?: 'pending' | 'sent' | 'failed' | null
+          chat_dispatch_error?: string | null
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -797,6 +809,9 @@ export interface Block {
   shared_to_feed: boolean
   is_planned: boolean
   performed_at: string | null
+  chat_message_sent_at: string | null
+  chat_dispatch_status: 'pending' | 'sent' | 'failed' | null
+  chat_dispatch_error: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -833,6 +848,7 @@ export interface Profile {
   badge_locked: boolean
   badge_locked_reasons: Json
   badge_last_evaluated_at: string | null
+  whop_user_id: string | null
   created_at: string
   updated_at: string
 }
