@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { X, ImagePlus, Loader2, Trash2, AlertCircle, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { lockBodyScroll, unlockBodyScroll } from '@/components/ui/Modal'
 import type { Block, BlockMedia, Profile } from '@/lib/types'
 import { FeedPostCard, FeedPostPayload } from './FeedPostCard'
 
@@ -45,6 +46,62 @@ export function CreatePostModal({
   const [error, setError] = useState<string | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const wasOpen = useRef(false)
+
+  // ── Scroll lock lifecycle ──
+  useEffect(() => {
+    if (isOpen && !wasOpen.current) {
+      lockBodyScroll()
+      wasOpen.current = true
+    }
+    return () => {
+      if (wasOpen.current) {
+        unlockBodyScroll()
+        wasOpen.current = false
+      }
+    }
+  }, [isOpen])
+
+  // ── Visual-viewport pinning (iOS keyboard stability) ──
+  useEffect(() => {
+    if (!isOpen) return
+    const vv = window.visualViewport
+    if (!vv) return
+    const sync = () => {
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = `${vv.height}px`
+        wrapperRef.current.style.top = `${vv.offsetTop}px`
+      }
+    }
+    sync()
+    vv.addEventListener('resize', sync)
+    vv.addEventListener('scroll', sync)
+    return () => {
+      vv.removeEventListener('resize', sync)
+      vv.removeEventListener('scroll', sync)
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = ''
+        wrapperRef.current.style.top = ''
+      }
+    }
+  }, [isOpen])
+
+  // ── iOS focus handling: prevent root scroll on input focus ──
+  useEffect(() => {
+    if (!isOpen) return
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement
+      if (!target?.matches('input, textarea, select, [contenteditable]')) return
+      requestAnimationFrame(() => {
+        if (window.scrollY !== 0) window.scrollTo(0, 0)
+      })
+    }
+    wrapper.addEventListener('focusin', handleFocusIn)
+    return () => wrapper.removeEventListener('focusin', handleFocusIn)
+  }, [isOpen])
 
   const isChallenge = block?.block_type === 'challenge'
   const isSharableType = block && SHAREABLE_TYPES.includes(block.block_type)
@@ -284,12 +341,20 @@ export function CreatePostModal({
   if (!isOpen || !block) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70" onClick={onClose} />
+    <div
+      ref={wrapperRef}
+      className="fixed inset-x-0 top-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ height: 'var(--app-height, 100dvh)' }}
+    >
+      {/* Backdrop — touch-action: none prevents iOS rubber-band */}
+      <div
+        className="absolute inset-0 bg-black/70"
+        style={{ touchAction: 'none' }}
+        onClick={onClose}
+      />
 
       {/* Modal */}
-      <div className="relative bg-[#0d1017] w-full max-w-lg max-h-[90vh] rounded-t-[20px] sm:rounded-[20px] overflow-hidden flex flex-col">
+      <div className="relative bg-[#0d1017] w-full max-w-lg max-h-[90%] rounded-t-[20px] sm:rounded-[20px] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[16px] font-semibold text-[#eef2ff]">Create Post</h2>
@@ -301,8 +366,8 @@ export function CreatePostModal({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Content — overscroll-contain prevents scroll-chaining to body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {/* Preview Section */}
           <div>
             <p className="text-[12px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">

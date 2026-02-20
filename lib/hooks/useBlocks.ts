@@ -1,72 +1,49 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { getDateRange, incrementTime, formatDateForApi } from '@/lib/date'
 import type { Block, BlockMedia } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 
 export function useBlocks(selectedDate: Date, userId: string | undefined) {
-  const [blocks, setBlocks] = useState<Block[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
+  const dateKey = formatDateForApi(selectedDate)
 
-  // Fetch blocks for the date range
-  const fetchBlocks = useCallback(async () => {
-    if (!userId) {
-      setLoading(false)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
+  const { data: blocks, isLoading: loading, error: swrError, mutate } = useSWR<Block[]>(
+    userId ? ['blocks', userId, dateKey] : null,
+    async () => {
       const { start, end } = getDateRange(selectedDate)
 
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('blocks')
         .select('*, block_media(*)')
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .is('deleted_at', null)
         .gte('date', start)
         .lte('date', end)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
-      if (fetchError) throw fetchError
+      if (error) throw error
+      return (data as Block[]) || []
+    },
+    { revalidateOnFocus: false, dedupingInterval: 10000 }
+  )
 
-      setBlocks((data as Block[]) || [])
-    } catch (err) {
-      console.error('Failed to fetch blocks:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch blocks')
-    } finally {
-      setLoading(false)
-    }
-  }, [selectedDate, userId, supabase])
-
-  // Initial fetch and refetch on date change
-  useEffect(() => {
-    fetchBlocks()
-  }, [fetchBlocks])
+  const error = swrError ? (swrError instanceof Error ? swrError.message : 'Failed to fetch blocks') : null
 
   // Create a new block (with optional share-to-feed)
-  // entryMode: 'schedule' = future planning (is_planned=true), 'log' = past/now logging (is_planned=false, auto-complete)
   const createBlock = useCallback(
     async (data: BlockFormData, entryMode: 'schedule' | 'log' = 'schedule') => {
       if (!userId) throw new Error('Not authenticated')
 
       const sharedToFeed = (data as any).shared_to_feed === true || data.block_type === 'challenge'
-
-      // Schedule mode = planned, Log mode = unplanned (already done)
       const isLogMode = entryMode === 'log'
-      // Challenge blocks are always unplanned (DB enforces this via trigger)
       const isPlanned = !isLogMode && data.block_type !== 'challenge'
-
       const now = new Date().toISOString()
 
-      // Extract programme references from workout payload for top-level columns
       const payload = data.payload || {}
       const programmeTemplateId = (payload as any).programme_template_id || null
       const programmeSessionId = (payload as any).programme_session_id || null
@@ -83,12 +60,10 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
         repeat_rule: data.repeat_rule || null,
         shared_to_feed: sharedToFeed,
         is_planned: isPlanned,
-        // Set programme references as top-level columns for workout blocks
         programme_template_id: programmeTemplateId,
         programme_session_id: programmeSessionId,
       }
 
-      // Auto-set completed_at and performed_at for Log mode (logging something already done)
       if (isLogMode) {
         insertData.completed_at = now
         insertData.performed_at = now
@@ -102,10 +77,10 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       if (error) throw error
 
-      setBlocks((prev) => [...prev, newBlock as Block])
+      mutate((prev) => [...(prev || []), newBlock as Block], false)
       return newBlock as Block
     },
-    [userId, supabase]
+    [userId, supabase, mutate]
   )
 
   // Update an existing block (merges payload to prevent clobbering)
@@ -113,8 +88,8 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     async (blockId: string, data: Partial<BlockFormData>) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Merge incoming payload with existing to prevent clobbering other payload keys
-      const currentBlock = blocks.find(b => b.id === blockId)
+      const currentBlocks = blocks || []
+      const currentBlock = currentBlocks.find(b => b.id === blockId)
       const existingPayload = (currentBlock?.payload as Record<string, unknown>) || {}
       const incomingPayload = (data.payload as Record<string, unknown>) || {}
       const mergedPayload = { ...existingPayload, ...incomingPayload }
@@ -139,21 +114,22 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       if (error) throw error
 
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === blockId ? (updatedBlock as Block) : b))
+      mutate(
+        (prev) => (prev || []).map((b) => (b.id === blockId ? (updatedBlock as Block) : b)),
+        false
       )
       return updatedBlock as Block
     },
-    [userId, blocks, supabase]
+    [userId, blocks, supabase, mutate]
   )
 
-  // Merge-update only specific payload keys (e.g. tasks) without clobbering other payload content
+  // Merge-update only specific payload keys
   const updateBlockPayload = useCallback(
     async (blockId: string, payloadPatch: Record<string, unknown>) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Find current block to merge payload
-      const currentBlock = blocks.find(b => b.id === blockId)
+      const currentBlocks = blocks || []
+      const currentBlock = currentBlocks.find(b => b.id === blockId)
       const currentPayload = (currentBlock?.payload as Record<string, unknown>) || {}
       const mergedPayload = { ...currentPayload, ...payloadPatch }
 
@@ -167,12 +143,13 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       if (error) throw error
 
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === blockId ? (updatedBlock as Block) : b))
+      mutate(
+        (prev) => (prev || []).map((b) => (b.id === blockId ? (updatedBlock as Block) : b)),
+        false
       )
       return updatedBlock as Block
     },
-    [userId, blocks, supabase]
+    [userId, blocks, supabase, mutate]
   )
 
   // Toggle completion (optimistic update) + create feed post if shared
@@ -183,10 +160,12 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
       const newCompletedAt = block.completed_at ? null : new Date().toISOString()
 
       // Optimistic update
-      setBlocks((prev) =>
-        prev.map((b) =>
-          b.id === block.id ? { ...b, completed_at: newCompletedAt } : b
-        )
+      mutate(
+        (prev) =>
+          (prev || []).map((b) =>
+            b.id === block.id ? { ...b, completed_at: newCompletedAt } : b
+          ),
+        false
       )
 
       try {
@@ -198,7 +177,6 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
         if (error) throw error
 
-        // Create feed post when completing a shared block (not when un-completing)
         if (newCompletedAt && block.shared_to_feed && block.block_type !== 'personal') {
           try {
             await supabase
@@ -210,21 +188,22 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
                 payload: block.payload || {},
               }, { onConflict: 'block_id' })
           } catch (feedErr) {
-            // Don't fail the completion if feed post fails
             console.error('Feed post creation failed:', feedErr)
           }
         }
       } catch (err) {
         // Revert on error
-        setBlocks((prev) =>
-          prev.map((b) =>
-            b.id === block.id ? { ...b, completed_at: block.completed_at } : b
-          )
+        mutate(
+          (prev) =>
+            (prev || []).map((b) =>
+              b.id === block.id ? { ...b, completed_at: block.completed_at } : b
+            ),
+          false
         )
         throw err
       }
     },
-    [userId, supabase]
+    [userId, supabase, mutate]
   )
 
   // Duplicate a block
@@ -232,11 +211,10 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     async (block: Block) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Get existing blocks for the same date to check for time conflicts
-      const sameDate = blocks.filter((b) => b.date === block.date)
+      const currentBlocks = blocks || []
+      const sameDate = currentBlocks.filter((b) => b.date === block.date)
       let newStartTime = incrementTime(block.start_time)
 
-      // Keep incrementing if there's a conflict
       while (sameDate.some((b) => b.start_time === newStartTime)) {
         newStartTime = incrementTime(newStartTime)
       }
@@ -261,10 +239,10 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       if (error) throw error
 
-      setBlocks((prev) => [...prev, newBlock as Block])
+      mutate((prev) => [...(prev || []), newBlock as Block], false)
       return newBlock as Block
     },
-    [userId, blocks, supabase]
+    [userId, blocks, supabase, mutate]
   )
 
   // Soft delete a block
@@ -280,14 +258,15 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
 
       if (error) throw error
 
-      // Remove from local state
-      setBlocks((prev) => prev.filter((b) => b.id !== blockId))
+      mutate((prev) => (prev || []).filter((b) => b.id !== blockId), false)
     },
-    [userId, supabase]
+    [userId, supabase, mutate]
   )
 
+  const refetch = useCallback(() => { mutate() }, [mutate])
+
   return {
-    blocks,
+    blocks: blocks || [],
     loading,
     error,
     createBlock,
@@ -296,11 +275,11 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
     toggleComplete,
     duplicateBlock,
     deleteBlock,
-    refetch: fetchBlocks,
+    refetch,
   }
 }
 
-// Hook for block media operations
+// Hook for block media operations (no caching needed - pure mutations)
 export function useBlockMedia(userId: string | undefined) {
   const supabase = useMemo(() => createClient(), [])
 
@@ -308,19 +287,16 @@ export function useBlockMedia(userId: string | undefined) {
     async (blockId: string, file: File, meta?: Record<string, unknown>) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Storage path: block-media/<user_id>/<block_id>/<filename>
       const ext = file.name.split('.').pop() || 'webp'
       const filename = `${Date.now()}.${ext}`
       const storagePath = `${userId}/${blockId}/${filename}`
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('block-media')
         .upload(storagePath, file)
 
       if (uploadError) throw uploadError
 
-      // Create media record with optional metadata
       const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
       const sortOrder = (meta?.sort_order as number) ?? 0
       const { data, error: insertError } = await supabase
@@ -347,7 +323,6 @@ export function useBlockMedia(userId: string | undefined) {
     async (mediaId: string) => {
       if (!userId) throw new Error('Not authenticated')
 
-      // Get media record first
       const { data: media, error: fetchError } = await supabase
         .from('block_media')
         .select('storage_path')
@@ -357,14 +332,12 @@ export function useBlockMedia(userId: string | undefined) {
 
       if (fetchError) throw fetchError
 
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from('block-media')
         .remove([media.storage_path])
 
       if (storageError) console.error('Storage delete failed:', storageError)
 
-      // Delete record
       const { error: deleteError } = await supabase
         .from('block_media')
         .delete()

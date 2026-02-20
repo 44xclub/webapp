@@ -1,11 +1,10 @@
 'use client'
 
-import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
-import { useProfile, useCommunityChallenge, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
+import { useAuth, useProfile, useCommunityChallenge, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
@@ -18,7 +17,7 @@ import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { SegmentedControl, SectionCard } from '@/components/ui'
 import { SectionHeader } from '@/components/ui/SectionHeader'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { StructureSkeleton, ProgrammeCardSkeleton } from '@/components/ui/Skeletons'
 
 type TabType = 'discipline' | 'training'
 
@@ -30,7 +29,7 @@ const TABS = [
 export default function StructurePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     }>
@@ -40,38 +39,13 @@ export default function StructurePage() {
 }
 
 function StructurePageContent() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
 
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = useMemo(() => createClient(), [])
   const frameworksSectionRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
-        setUser(user)
-        setAuthLoading(false)
-      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return
-      if (event === 'SIGNED_OUT') router.push('/login')
-      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
-    })
-
-    return () => { isMounted = false; subscription.unsubscribe() }
-  }, [router, supabase])
 
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
@@ -97,16 +71,16 @@ function StructurePageContent() {
     setChallengeModalOpen(false)
   }
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-[100dvh] content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading} avatarUrl={avatarUrl} />
 
       {/* Tab Navigation - sticky under header */}
@@ -172,11 +146,10 @@ function StructurePageContent() {
             {/* Available Frameworks */}
             <div ref={frameworksSectionRef} />
             {frameworksLoading ? (
-              <SectionCard>
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
-                </div>
-              </SectionCard>
+              <div className="space-y-2">
+                <ProgrammeCardSkeleton />
+                <ProgrammeCardSkeleton />
+              </div>
             ) : (
               <FrameworksSection frameworks={frameworks} activeFramework={activeFramework} todaySubmission={todaySubmission} onActivateFramework={activateFramework} onSubmitStatus={submitDailyStatus} onRefetch={refetchFrameworks} />
             )}
@@ -184,11 +157,10 @@ function StructurePageContent() {
         ) : (
           <>
             {programmesLoading ? (
-              <SectionCard>
-                <div className="flex justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
-                </div>
-              </SectionCard>
+              <div className="space-y-2">
+                <ProgrammeCardSkeleton />
+                <ProgrammeCardSkeleton />
+              </div>
             ) : (
               <>
                 {/* Active Programme */}

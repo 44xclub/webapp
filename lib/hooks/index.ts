@@ -1,3 +1,4 @@
+export { useAuth } from './useAuth'
 export { useBlocks, useBlockMedia } from './useBlocks'
 export { useProfile } from './useProfile'
 export { useCommunityChallenge, useFrameworks, useDailyScores } from './useDiscipline'

@@ -167,13 +167,61 @@ export function Modal({
     return () => el.removeEventListener('touchmove', preventBodyScroll)
   }, [isOpen])
 
+  // ── iOS focus handling: prevent "auto scroll to focused input" from
+  //    moving the root document.  When an input inside the modal receives
+  //    focus, iOS Safari may scroll the *window* to reveal it.  We counteract
+  //    by resetting window.scrollTo and scrolling the modal body instead. ──
+  useEffect(() => {
+    if (!isOpen) return
+
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement
+      if (!target) return
+
+      // Only handle input/textarea/select/contenteditable
+      const isInput = target.matches('input, textarea, select, [contenteditable]')
+      if (!isInput) return
+
+      // Find the modal's scrollable body (flex-1 overflow-y-auto)
+      const scrollBody = wrapper.querySelector('[data-modal-body]') as HTMLElement
+      if (!scrollBody) return
+
+      // Prevent the browser from scrolling the window
+      // (body is position:fixed so scrollY should be ~0)
+      requestAnimationFrame(() => {
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0)
+        }
+
+        // Scroll the modal body to reveal the focused input
+        const bodyRect = scrollBody.getBoundingClientRect()
+        const inputRect = target.getBoundingClientRect()
+
+        // If the input is below the visible area of the modal body
+        if (inputRect.bottom > bodyRect.bottom) {
+          scrollBody.scrollTop += inputRect.bottom - bodyRect.bottom + 20
+        }
+        // If the input is above the visible area
+        else if (inputRect.top < bodyRect.top) {
+          scrollBody.scrollTop -= bodyRect.top - inputRect.top + 20
+        }
+      })
+    }
+
+    wrapper.addEventListener('focusin', handleFocusIn)
+    return () => wrapper.removeEventListener('focusin', handleFocusIn)
+  }, [isOpen])
+
   if (!isOpen) return null
 
   return createPortal(
     <div
       ref={wrapperRef}
       className="fixed inset-x-0 top-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ height: '100dvh' }}
+      style={{ height: 'var(--app-height, 100dvh)' }}
     >
       {/* Backdrop — touch-action: none prevents iOS rubber-band on this layer */}
       <div
@@ -213,6 +261,7 @@ export function Modal({
 
         {/* Scrollable content — momentum scrolling on iOS */}
         <div
+          data-modal-body
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >

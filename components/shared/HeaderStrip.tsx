@@ -78,7 +78,7 @@ export function HeaderStrip({ profile, rank, loading, avatarUrl: avatarUrlProp }
         <Link href="/profile" className="flex items-center gap-2.5 group flex-1 min-w-0">
           <div className="h-10 w-10 rounded-full bg-gradient-to-b from-[rgba(255,255,255,0.06)] to-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] flex items-center justify-center flex-shrink-0 group-hover:border-[rgba(59,130,246,0.34)] transition-all duration-[140ms] overflow-hidden">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" width={40} height={40} fetchPriority="high" />
             ) : (
               <span className="text-[14px] text-[#eef2ff] font-bold">{initials}</span>
             )}

@@ -13,10 +13,10 @@ import {
   Minus,
   Image as ImageIcon,
 } from 'lucide-react'
+import { useAuth } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { CheckinDetailsModal } from '@/components/profile/CheckinDetailsModal'
 import type { Block, BlockMedia } from '@/lib/types'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 interface BlockWithMedia extends Block {
   block_media: BlockMedia[]
@@ -25,7 +25,7 @@ interface BlockWithMedia extends Block {
 export default function CheckInsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
       </div>
     }>
@@ -35,8 +35,7 @@ export default function CheckInsPage() {
 }
 
 function CheckInsPageContent() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [checkins, setCheckins] = useState<BlockWithMedia[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCheckin, setSelectedCheckin] = useState<BlockWithMedia | null>(null)
@@ -44,29 +43,6 @@ function CheckInsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
-        setUser(user)
-        setAuthLoading(false)
-      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return
-      if (event === 'SIGNED_OUT') router.push('/login')
-      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
-    })
-
-    return () => { isMounted = false; subscription.unsubscribe() }
-  }, [router, supabase])
 
   // Fetch all check-ins
   useEffect(() => {
@@ -149,16 +125,16 @@ function CheckInsPageContent() {
     }
   }, [checkins])
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+    <div className="min-h-app bg-[#07090d] pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
         <div className="flex items-center px-4 py-3">

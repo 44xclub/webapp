@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   Plus,
@@ -14,12 +13,11 @@ import {
   Play,
   X,
 } from 'lucide-react'
-import { useProfile } from '@/lib/hooks'
+import { useAuth, useProfile } from '@/lib/hooks'
 import { usePersonalProgrammes } from '@/lib/hooks/usePersonalProgrammes'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { useToast } from '@/components/shared/Toast'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgramme, ProgrammeFocus } from '@/lib/types'
 
 const focusLabels: Record<ProgrammeFocus, string> = {
@@ -37,50 +35,10 @@ const focusColors: Record<ProgrammeFocus, string> = {
 }
 
 export default function PersonalProgrammesPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-        setUser(user)
-        setAuthLoading(false)
-      } catch {
-        if (isMounted) { setAuthLoading(false); router.push('/login') }
-      }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-          setAuthLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [router, supabase])
 
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { showToast } = useToast()
@@ -107,10 +65,10 @@ export default function PersonalProgrammesPage() {
     }
   }
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <div className="min-h-app flex items-center justify-center bg-[#07090d]">
           <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
         </div>
       </div>
@@ -119,7 +77,7 @@ export default function PersonalProgrammesPage() {
 
   return (
     <div className="app-shell">
-      <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-20">
+      <div className="min-h-app bg-[#07090d] pb-20 animate-fadeIn">
         <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">

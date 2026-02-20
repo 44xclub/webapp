@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   ShieldCheck,
@@ -15,9 +14,9 @@ import {
   User,
 } from 'lucide-react'
 import { isAdmin } from '@/lib/utils/admin'
+import { useAuth } from '@/lib/hooks'
 import { useAdminReview, type ReviewItem } from '@/lib/hooks/useAdminReview'
 import { useToast } from '@/components/shared/Toast'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgramme, PersonalFrameworkTemplate, ProgrammeFocus } from '@/lib/types'
 
 const focusLabels: Record<ProgrammeFocus, string> = {
@@ -35,44 +34,16 @@ const focusColors: Record<ProgrammeFocus, string> = {
 }
 
 export default function AdminPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [authorized, setAuthorized] = useState(false)
+  const { user, loading: authLoading } = useAuth()
+  const authorized = useMemo(() => !!user && isAdmin(user.id), [user])
 
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
   const { showToast } = useToast()
 
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-
-        // Check admin status
-        if (!isAdmin(user.id)) {
-          router.push('/app')
-          return
-        }
-
-        setUser(user)
-        setAuthorized(true)
-        setAuthLoading(false)
-      } catch {
-        if (isMounted) { setAuthLoading(false); router.push('/login') }
-      }
-    }
-    checkAuth()
-
-    return () => { isMounted = false }
-  }, [router, supabase])
+  // Redirect non-admins
+  if (user && !authorized) {
+    router.push('/app')
+  }
 
   const { items, loading, error, approveItem, rejectItem } = useAdminReview()
 
@@ -96,14 +67,14 @@ export default function AdminPage() {
 
   if (authLoading || !authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#07090d] pb-8">
+    <div className="min-h-app bg-[#07090d] pb-8">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-[#07090d]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)]">
         <div className="px-4 py-4 flex items-center gap-3">

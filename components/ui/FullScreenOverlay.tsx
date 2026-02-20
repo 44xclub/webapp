@@ -35,6 +35,7 @@ export function FullScreenOverlay({
   )
 
   const wasOpen = useRef(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
@@ -51,10 +52,52 @@ export function FullScreenOverlay({
     }
   }, [isOpen, handleEscape])
 
+  // ── Visual-viewport pinning (iOS keyboard stability) ──
+  useEffect(() => {
+    if (!isOpen) return
+    const vv = window.visualViewport
+    if (!vv) return
+    const sync = () => {
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = `${vv.height}px`
+        wrapperRef.current.style.top = `${vv.offsetTop}px`
+      }
+    }
+    sync()
+    vv.addEventListener('resize', sync)
+    vv.addEventListener('scroll', sync)
+    return () => {
+      vv.removeEventListener('resize', sync)
+      vv.removeEventListener('scroll', sync)
+      if (wrapperRef.current) {
+        wrapperRef.current.style.height = ''
+        wrapperRef.current.style.top = ''
+      }
+    }
+  }, [isOpen])
+
+  // ── iOS focus handling ──
+  useEffect(() => {
+    if (!isOpen) return
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+    const handleFocusIn = () => {
+      requestAnimationFrame(() => {
+        if (window.scrollY !== 0) window.scrollTo(0, 0)
+      })
+    }
+    wrapper.addEventListener('focusin', handleFocusIn)
+    return () => wrapper.removeEventListener('focusin', handleFocusIn)
+  }, [isOpen])
+
   if (!isOpen) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#07090d]">
+    <div
+      ref={wrapperRef}
+      className="fixed inset-x-0 top-0 z-50 flex flex-col bg-[#07090d]"
+      style={{ height: 'var(--app-height, 100dvh)' }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
         <h2 className="text-[17px] font-semibold text-[#eef2ff]">{title}</h2>
@@ -82,8 +125,8 @@ export function FullScreenOverlay({
         </div>
       )}
 
-      {/* Grid content */}
-      <div className={cn('flex-1 overflow-y-auto px-4 pb-6', className)}>
+      {/* Grid content — overscroll-contain prevents scroll-chaining */}
+      <div className={cn('flex-1 overflow-y-auto overscroll-contain px-4 pb-6', className)} style={{ WebkitOverflowScrolling: 'touch' }}>
         {children}
       </div>
     </div>,

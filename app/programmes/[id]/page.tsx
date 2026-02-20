@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   ArrowLeft,
@@ -13,9 +12,9 @@ import {
   GripVertical,
   Save,
 } from 'lucide-react'
+import { useAuth } from '@/lib/hooks'
 import { usePersonalProgrammes, usePersonalProgramme } from '@/lib/hooks/usePersonalProgrammes'
 import { useToast } from '@/components/shared/Toast'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgrammeDay, PersonalProgrammeExercise, ProgrammeFocus } from '@/lib/types'
 
 const focusLabels: Record<ProgrammeFocus, string> = {
@@ -30,32 +29,8 @@ export default function ProgrammeEditorPage() {
   const params = useParams()
   const programmeId = params.id as string
 
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
-
-  const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-        setUser(user)
-        setAuthLoading(false)
-      } catch {
-        if (isMounted) { setAuthLoading(false); router.push('/login') }
-      }
-    }
-    checkAuth()
-    return () => { isMounted = false }
-  }, [router, supabase])
 
   const { programme, loading, refetch } = usePersonalProgramme(programmeId)
   const { showToast } = useToast()
@@ -100,10 +75,10 @@ export default function ProgrammeEditorPage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (authLoading || !user || loading) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen flex items-center justify-center bg-[#07090d]">
+        <div className="min-h-app flex items-center justify-center bg-[#07090d]">
           <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
         </div>
       </div>
@@ -113,7 +88,7 @@ export default function ProgrammeEditorPage() {
   if (!programme) {
     return (
       <div className="app-shell">
-        <div className="min-h-screen bg-[#07090d] p-4">
+        <div className="min-h-app bg-[#07090d] p-4">
           <p className="text-[rgba(238,242,255,0.52)]">Programme not found</p>
         </div>
       </div>
@@ -124,7 +99,7 @@ export default function ProgrammeEditorPage() {
 
   return (
     <div className="app-shell">
-      <div className="min-h-screen min-h-[100dvh] bg-[#07090d] pb-6">
+      <div className="min-h-app bg-[#07090d] pb-6">
         {/* Header */}
         <header className="sticky top-0 z-20 bg-[#07090d]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)]">
           <div className="px-4 py-3 flex items-center justify-between">
