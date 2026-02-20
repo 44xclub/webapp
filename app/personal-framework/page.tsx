@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   Plus,
@@ -14,12 +13,11 @@ import {
   Play,
   X,
 } from 'lucide-react'
-import { useProfile } from '@/lib/hooks'
+import { useAuth, useProfile } from '@/lib/hooks'
 import { usePersonalFramework } from '@/lib/hooks/usePersonalFramework'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { useToast } from '@/components/shared/Toast'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { FrameworkCriteriaItem } from '@/lib/types'
 
 // Criteria type options
@@ -41,33 +39,10 @@ const exampleCriteria = [
 const rejectedPatterns = ['be mindful', 'try harder', 'eat better', 'feel good', 'be happy']
 
 export default function PersonalFrameworkPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [showEditor, setShowEditor] = useState(false)
 
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-        setUser(user)
-        setAuthLoading(false)
-      } catch {
-        if (isMounted) { setAuthLoading(false); router.push('/login') }
-      }
-    }
-    checkAuth()
-    return () => { isMounted = false }
-  }, [router, supabase])
 
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { showToast } = useToast()
@@ -112,7 +87,7 @@ export default function PersonalFrameworkPage() {
 
   const isPersonalFrameworkActive = activeFramework?.framework_template_id === personalFramework?.id
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="app-shell">
         <div className="min-h-app flex items-center justify-center bg-[#07090d]">

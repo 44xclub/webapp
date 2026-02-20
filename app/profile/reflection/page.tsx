@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { parseDateOnly } from '@/lib/date'
 import { Loader2, ChevronLeft, Check, FileText, Send } from 'lucide-react'
-import { useReflection } from '@/lib/hooks'
+import { useAuth, useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { Modal, Button, Textarea } from '@/components/ui'
 import type { ReflectionCycleWithEntry, ReflectionAnswers, ReflectionStatus } from '@/lib/types'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const QUESTIONS = [
   { key: 'q1', label: 'What went well this cycle?', multiline: true },
@@ -191,34 +189,10 @@ function ReflectionModal({
 }
 
 export default function ReflectionPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [selectedCycle, setSelectedCycle] = useState<ReflectionCycleWithEntry | null>(null)
 
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
-        setUser(user)
-        setAuthLoading(false)
-      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return
-      if (event === 'SIGNED_OUT') router.push('/login')
-      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
-    })
-
-    return () => { isMounted = false; subscription.unsubscribe() }
-  }, [router, supabase])
 
   const { cycles, loading, saving, saveEntry, refetch } = useReflection(user?.id)
 
@@ -254,7 +228,7 @@ export default function ReflectionPage() {
     return result
   }, [saveEntry, refetch])
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-app flex items-center justify-center bg-[#07090d]">
         <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
@@ -263,7 +237,7 @@ export default function ReflectionPage() {
   }
 
   return (
-    <div className="min-h-app bg-[#07090d] pb-20">
+    <div className="min-h-app bg-[#07090d] pb-20 animate-fadeIn">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
         <div className="flex items-center px-4 py-3">

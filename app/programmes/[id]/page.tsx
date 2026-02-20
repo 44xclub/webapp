@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Loader2,
   ArrowLeft,
@@ -13,9 +12,9 @@ import {
   GripVertical,
   Save,
 } from 'lucide-react'
+import { useAuth } from '@/lib/hooks'
 import { usePersonalProgrammes, usePersonalProgramme } from '@/lib/hooks/usePersonalProgrammes'
 import { useToast } from '@/components/shared/Toast'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { PersonalProgrammeDay, PersonalProgrammeExercise, ProgrammeFocus } from '@/lib/types'
 
 const focusLabels: Record<ProgrammeFocus, string> = {
@@ -30,32 +29,8 @@ export default function ProgrammeEditorPage() {
   const params = useParams()
   const programmeId = params.id as string
 
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
-
-  const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-        setUser(user)
-        setAuthLoading(false)
-      } catch {
-        if (isMounted) { setAuthLoading(false); router.push('/login') }
-      }
-    }
-    checkAuth()
-    return () => { isMounted = false }
-  }, [router, supabase])
 
   const { programme, loading, refetch } = usePersonalProgramme(programmeId)
   const { showToast } = useToast()
@@ -100,7 +75,7 @@ export default function ProgrammeEditorPage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (authLoading || !user || loading) {
     return (
       <div className="app-shell">
         <div className="min-h-app flex items-center justify-center bg-[#07090d]">

@@ -1,63 +1,40 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
 
 export function useProfile(userId: string | undefined) {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const supabase = useMemo(() => createClient(), [])
 
-  // Resolve avatar signed URL whenever profile.avatar_path changes
-  useEffect(() => {
-    if (!profile?.avatar_path) {
-      setAvatarUrl(null)
-      return
-    }
-    supabase.storage
-      .from('avatars')
-      .createSignedUrl(profile.avatar_path, 3600)
-      .then(({ data, error }) => {
-        if (error || !data?.signedUrl) {
-          setAvatarUrl(null)
-        } else {
-          setAvatarUrl(data.signedUrl)
-        }
-      })
-  }, [profile?.avatar_path, supabase])
-
-  const fetchProfile = useCallback(async () => {
-    if (!userId) {
-      setLoading(false)
-      return
-    }
-
-    setLoading(true)
-    try {
+  const { data: profile, isLoading: loading, mutate } = useSWR<Profile | null>(
+    userId ? ['profile', userId] : null,
+    async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', userId!)
         .single()
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows returned (profile doesn't exist yet)
-        throw error
-      }
+      if (error && error.code !== 'PGRST116') throw error
+      return (data as Profile) ?? null
+    },
+    { revalidateOnFocus: false, dedupingInterval: 30000 }
+  )
 
-      setProfile(data as Profile | null)
-    } catch (err) {
-      console.error('Failed to fetch profile:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [userId, supabase])
-
-  useEffect(() => {
-    fetchProfile()
-  }, [fetchProfile])
+  // Resolve avatar signed URL — cached separately with longer TTL
+  const { data: avatarUrl } = useSWR<string | null>(
+    profile?.avatar_path ? ['avatar-url', profile.avatar_path] : null,
+    async () => {
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .createSignedUrl(profile!.avatar_path!, 3600)
+      if (error || !data?.signedUrl) return null
+      return data.signedUrl
+    },
+    { revalidateOnFocus: false, dedupingInterval: 300000 }
+  )
 
   const updateProfile = useCallback(
     async (data: Partial<Profile>) => {
@@ -65,26 +42,23 @@ export function useProfile(userId: string | undefined) {
 
       const { data: updated, error } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
-          ...data,
-        })
+        .upsert({ id: userId, ...data })
         .select()
         .single()
 
       if (error) throw error
 
-      setProfile(updated as Profile)
+      mutate(updated as Profile, false)
       return updated as Profile
     },
-    [userId, supabase]
+    [userId, supabase, mutate]
   )
 
   return {
-    profile,
+    profile: profile ?? null,
     loading,
     updateProfile,
     hasHeight: !!profile?.height_cm,
-    avatarUrl,
+    avatarUrl: avatarUrl ?? null,
   }
 }

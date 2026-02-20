@@ -24,7 +24,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useProfile, useRank, useReflection } from '@/lib/hooks'
+import { useAuth, useProfile, useRank, useReflection } from '@/lib/hooks'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
@@ -32,7 +32,6 @@ import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Button, Input, Select } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block, BlockMedia } from '@/lib/types'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 // Extended Block type with media
 interface BlockWithMedia extends Block {
@@ -66,8 +65,7 @@ const badgeColors: Record<DisciplineBadge, string> = {
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [checkinBlocks, setCheckinBlocks] = useState<BlockWithMedia[]>([])
@@ -83,28 +81,6 @@ export default function ProfilePage() {
 
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
-
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
-        setUser(user)
-        setAuthLoading(false)
-      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return
-      if (event === 'SIGNED_OUT') router.push('/login')
-      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
-    })
-
-    return () => { isMounted = false; subscription.unsubscribe() }
-  }, [router, supabase])
 
   const { profile, loading: profileLoading, updateProfile, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
@@ -205,7 +181,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
@@ -217,7 +193,7 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-app content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Page Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] safe-top">
         <div className="flex items-center justify-between px-4 py-3">

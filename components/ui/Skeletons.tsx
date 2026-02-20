@@ -135,6 +135,52 @@ export function HeaderSkeleton() {
   )
 }
 
+/** Compact card skeleton (framework/challenge cards on home page) */
+export function CompactCardSkeleton() {
+  return (
+    <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+      <div className="p-3 space-y-2">
+        <SkeletonPulse className="h-3 w-16 rounded" />
+        <SkeletonPulse className="h-4 w-24 rounded" />
+        <SkeletonPulse className="h-2.5 w-20 rounded" />
+      </div>
+    </div>
+  )
+}
+
+/** Profile page skeleton */
+export function ProfileSkeleton() {
+  return (
+    <div className="px-4 pt-3 space-y-3">
+      {/* Profile card */}
+      <div className="section-card p-0 overflow-hidden">
+        <div className="px-4 py-3 flex items-center gap-3">
+          <SkeletonPulse className="w-14 h-14 rounded-full flex-shrink-0" />
+          <div className="space-y-1.5">
+            <SkeletonPulse className="h-4 w-28 rounded" />
+            <SkeletonPulse className="h-3 w-36 rounded" />
+          </div>
+        </div>
+        <div className="border-t border-[var(--border-subtle)] px-4 py-2.5">
+          <SkeletonPulse className="h-10 w-full rounded-[8px]" />
+        </div>
+      </div>
+      {/* Profile details */}
+      <div className="section-card space-y-2">
+        <SkeletonPulse className="h-4 w-24 rounded" />
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center justify-between py-2">
+            <SkeletonPulse className="h-3 w-20 rounded" />
+            <SkeletonPulse className="h-3 w-24 rounded" />
+          </div>
+        ))}
+      </div>
+      {/* Streak */}
+      <SkeletonPulse className="h-[52px] rounded-[12px]" />
+    </div>
+  )
+}
+
 /** Structure page section skeleton */
 export function StructureSkeleton() {
   return (

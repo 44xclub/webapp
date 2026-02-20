@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useMemo, useCallback } from 'react'
 import {
   WeekStrip,
   BlockModal,
@@ -13,10 +11,10 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Loader2 } from 'lucide-react'
-import { BlockListSkeleton } from '@/components/ui/Skeletons'
+import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -26,7 +24,6 @@ import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import type { Block } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 /*
   44CLUB App Page
@@ -34,8 +31,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 */
 
 export default function AppPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [modalOpen, setModalOpen] = useState(false)
@@ -44,31 +40,6 @@ export default function AppPage() {
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
   const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
-
-  const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-
-  useEffect(() => {
-    let isMounted = true
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (!isMounted) return
-        if (error || !user) { router.push('/login'); return }
-        setUser(user)
-        setAuthLoading(false)
-      } catch { if (isMounted) { setAuthLoading(false); router.push('/login') } }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) return
-      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) router.push('/login')
-      else if (session?.user) { setUser(session.user); setAuthLoading(false) }
-    })
-
-    return () => { isMounted = false; subscription.unsubscribe() }
-  }, [router, supabase])
 
   const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
@@ -168,7 +139,7 @@ export default function AppPage() {
   const handleDuplicate = useCallback(async (block: Block) => await duplicateBlock(block), [duplicateBlock])
   const handleDelete = useCallback(async (block: Block) => await deleteBlock(block.id), [deleteBlock])
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="min-h-app flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-blue)]" />
@@ -177,7 +148,7 @@ export default function AppPage() {
   }
 
   return (
-    <div className="min-h-app flex flex-col content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app flex flex-col content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} avatarUrl={avatarUrl} />
 
       {/* Streak Strip - ultra-compact */}
@@ -203,8 +174,12 @@ export default function AppPage() {
       {/* Framework + Challenge cards side-by-side */}
       {viewMode === 'day' && (
         <div className="px-4 pt-2">
-          {/* Show side-by-side when both are visible, full-width when only one */}
-          {!frameworkLoading && challenge && !challengeTodayBlock?.completed_at ? (
+          {frameworkLoading ? (
+            <div className="grid grid-cols-2 gap-2">
+              <CompactCardSkeleton />
+              <CompactCardSkeleton />
+            </div>
+          ) : challenge && !challengeTodayBlock?.completed_at ? (
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Framework</span>
@@ -228,15 +203,13 @@ export default function AppPage() {
             </div>
           ) : (
             <>
-              {!frameworkLoading && (
-                <ActiveFrameworkCard
-                  activeFramework={activeFramework}
-                  todaySubmission={null}
-                  completionCount={completionCount}
-                  onOpenChecklist={() => setFrameworkModalOpen(true)}
-                  compact
-                />
-              )}
+              <ActiveFrameworkCard
+                activeFramework={activeFramework}
+                todaySubmission={null}
+                completionCount={completionCount}
+                onOpenChecklist={() => setFrameworkModalOpen(true)}
+                compact
+              />
               {challenge && !challengeTodayBlock?.completed_at && (
                 <div className="mt-2">
                   <ChallengeCard

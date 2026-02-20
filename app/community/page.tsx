@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
-import { useProfile } from '@/lib/hooks'
+import { useAuth, useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -12,7 +11,6 @@ import { FeedPostCard, FeedPost } from '@/components/feed/FeedPostCard'
 import { FeedSkeleton, TeamCardSkeleton } from '@/components/ui/Skeletons'
 import { calculateDisciplineLevel } from '@/lib/types'
 import { parseDateOnly } from '@/lib/date'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { DisciplineBadge, TeamDailyOverview, TeamSnapshot, TeamSnapshotHighlight, TeamSnapshotFlag } from '@/lib/types'
 
 type TabType = 'team' | 'feed'
@@ -62,59 +60,13 @@ const communityTabs = [
 ]
 
 export default function CommunityPage() {
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('team')
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
   const [feedLoaded, setFeedLoaded] = useState(false)
 
-  const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
-
-  // Auth check
-  useEffect(() => {
-    let isMounted = true
-
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-
-        if (!isMounted) return
-
-        if (error || !user) {
-          router.push('/login')
-          return
-        }
-        setUser(user)
-        setAuthLoading(false)
-      } catch (err) {
-        if (isMounted) {
-          setAuthLoading(false)
-          router.push('/login')
-        }
-      }
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!isMounted) return
-
-        if (event === 'SIGNED_OUT') {
-          router.push('/login')
-        } else if (session?.user) {
-          setUser(session.user)
-          setAuthLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [router, supabase])
 
   // Fetch feed posts when tab changes to feed (only once, then use cache)
   useEffect(() => {
@@ -216,7 +168,7 @@ export default function CommunityPage() {
   // Data hooks
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
 
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="app-shell">
         <div className="min-h-app flex items-center justify-center">
@@ -227,7 +179,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="min-h-app content-container" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
