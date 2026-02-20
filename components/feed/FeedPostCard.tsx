@@ -167,7 +167,7 @@ export function FeedPostCard({ post, userId, onRespect, onDelete, deleting }: Fe
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center overflow-hidden flex-shrink-0">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
             ) : (
               <span className="text-[12px] font-medium text-[rgba(238,242,255,0.52)]">
                 {initials}
@@ -286,15 +286,74 @@ function detectPostType(payload: any): string {
   return 'habit'
 }
 
-// Workout Data Panel
+/** Format a reps value - handle number, string, or range */
+function formatValue(val: any): string {
+  if (val == null || val === '' || val === 0) return '\u2014'
+  return String(val)
+}
+
+// Compact micro-table for one exercise: columns Set | Reps | Kg
+function ExerciseMicroTable({
+  name,
+  sets,
+  defaultExpanded = true,
+}: {
+  name: string
+  sets: Array<{ reps?: any; weight?: any }>
+  defaultExpanded?: boolean
+}) {
+  const [showAll, setShowAll] = useState(defaultExpanded)
+  const validSets = sets.filter((s: any) => s.reps || s.weight)
+  const hasWeight = validSets.some((s: any) => s.weight)
+  const collapsedCount = 6
+  const needsCollapse = validSets.length > collapsedCount
+  const displaySets = showAll ? validSets : validSets.slice(0, collapsedCount)
+
+  return (
+    <div>
+      <p className="text-[13px] font-semibold text-[#eef2ff] mb-1 truncate">{name}</p>
+      <div
+        className="grid text-[12px] tabular-nums"
+        style={{
+          gridTemplateColumns: hasWeight ? '32px 1fr 1fr' : '32px 1fr',
+        }}
+      >
+        {/* Header */}
+        <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Set</span>
+        <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Reps</span>
+        {hasWeight && <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Kg</span>}
+
+        {/* Rows */}
+        {displaySets.map((s: any, si: number) => (
+          <>
+            <span key={`s${si}`} className="text-[rgba(238,242,255,0.45)] py-px">{si + 1}</span>
+            <span key={`r${si}`} className="text-[rgba(238,242,255,0.72)] py-px">{formatValue(s.reps)}</span>
+            {hasWeight && <span key={`w${si}`} className="text-[rgba(238,242,255,0.72)] py-px">{formatValue(s.weight)}</span>}
+          </>
+        ))}
+      </div>
+      {needsCollapse && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="text-[11px] text-[#3b82f6] mt-0.5"
+        >
+          + {validSets.length - collapsedCount} more set{validSets.length - collapsedCount !== 1 ? 's' : ''}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Workout Data Panel — redesigned with compact micro-tables
 function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   const workout = payload?.workout
   const legacyMatrix = (payload as any)?.workout_matrix || (payload as any)?.exercises
-
   const exercises = workout?.exercises || legacyMatrix || []
   const kind = workout?.kind || (payload as any)?.category || 'weight_lifting'
   const isDetailsType = ['running', 'sport', 'other'].includes(kind)
   const details = workout?.details || {}
+
+  const [exercisesExpanded, setExercisesExpanded] = useState(false)
 
   // For running/sport/other, show session details instead of exercise matrix
   if (isDetailsType || (exercises.length === 0 && details?.description)) {
@@ -345,16 +404,20 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   // Matrix-based workout (weight_lifting, hyrox, hybrid)
   if (exercises.length === 0) return null
 
+  // In feed: show first 3 exercises, then collapse
+  const previewCount = 3
+  const hasMore = exercises.length > previewCount
+  const visibleExercises = exercisesExpanded ? exercises : exercises.slice(0, previewCount)
+
   return (
     <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 mb-3">
       {workout?.session_title && (
         <p className="text-[12px] font-medium text-[#3b82f6] mb-2">{workout.session_title}</p>
       )}
-      <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">
-        Session Breakdown
-      </p>
-      <div className="space-y-2.5">
-        {exercises.map((exercise: any, idx: number) => {
+
+      {/* Exercise micro-tables */}
+      <div className="space-y-3">
+        {visibleExercises.map((exercise: any, idx: number) => {
           const name = exercise.name || exercise.exercise || 'Exercise'
           const sets = exercise.sets || []
           const hasStructuredSets = Array.isArray(sets) && sets.length > 0 && sets.some((s: any) => s.reps || s.weight)
@@ -365,56 +428,36 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
             return (
               <div key={idx}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-medium text-[#eef2ff] truncate">{name}</span>
+                  <span className="text-[13px] font-semibold text-[#eef2ff] truncate">{name}</span>
                   {legacyStr && <span className="text-[11px] text-[rgba(238,242,255,0.45)] flex-shrink-0">{legacyStr}</span>}
                 </div>
               </div>
             )
           }
 
-          // Set matrix: columns for each set
-          const validSets = sets.filter((s: any) => s.reps || s.weight)
-          const hasWeight = validSets.some((s: any) => s.weight)
-
           return (
-            <div key={idx}>
-              <span className="text-[12px] font-medium text-[#eef2ff] truncate block mb-1">{name}</span>
-              <div className="overflow-x-auto scrollbar-hide">
-                <table className="text-[11px] w-auto border-collapse">
-                  <thead>
-                    <tr>
-                      <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.30)] font-medium whitespace-nowrap">Set</td>
-                      {validSets.map((_: any, si: number) => (
-                        <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.30)] font-medium min-w-[28px]">{si + 1}</td>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.45)] font-medium whitespace-nowrap">Reps</td>
-                      {validSets.map((s: any, si: number) => (
-                        <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.72)] min-w-[28px]">
-                          {s.reps || '\u2014'}
-                        </td>
-                      ))}
-                    </tr>
-                    {hasWeight && (
-                      <tr>
-                        <td className="pr-2 py-0.5 text-[rgba(238,242,255,0.45)] font-medium whitespace-nowrap">Kg</td>
-                        {validSets.map((s: any, si: number) => (
-                          <td key={si} className="px-1.5 py-0.5 text-center text-[rgba(238,242,255,0.72)] min-w-[28px]">
-                            {s.weight || '\u2014'}
-                          </td>
-                        ))}
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <ExerciseMicroTable
+              key={idx}
+              name={name}
+              sets={sets}
+            />
           )
         })}
       </div>
+
+      {/* Expand / collapse for long sessions */}
+      {hasMore && (
+        <button
+          onClick={() => setExercisesExpanded(!exercisesExpanded)}
+          className="text-[12px] text-[#3b82f6] mt-2 flex items-center gap-1"
+        >
+          {exercisesExpanded ? (
+            <>Show less <ChevronUp className="h-3 w-3" /></>
+          ) : (
+            <>View full session ({exercises.length - previewCount} more) <ChevronDown className="h-3 w-3" /></>
+          )}
+        </button>
+      )}
 
       {/* Tags row */}
       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
@@ -456,11 +499,6 @@ function formatSetsLegacy(exercise: any): string {
 function NutritionDataPanel({ payload }: { payload: FeedPostPayload }) {
   const nutrition = payload?.nutrition
   const meals = nutrition?.meals || (payload as any)?.meals || []
-
-  // Check if any macros are present
-  const hasMacros = meals.some((meal: any) =>
-    meal.calories || meal.protein || meal.carbs || meal.fat
-  )
 
   if (meals.length === 0) {
     return null
@@ -590,6 +628,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
             src={imageUrl}
             alt="Post media"
             className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
       </div>
@@ -609,6 +648,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
                 src={imageUrl}
                 alt={`Post media ${idx + 1}`}
                 className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           )
@@ -634,6 +674,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
             src={primaryUrl}
             alt="Post media 1"
             className="w-full h-full object-cover rounded-l-[10px]"
+            loading="lazy"
           />
         </div>
 
@@ -644,6 +685,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
               src={secondaryUrl}
               alt="Post media 2"
               className="w-full h-full object-cover rounded-tr-[10px]"
+              loading="lazy"
             />
           </div>
           <div className="relative flex-1">
@@ -651,6 +693,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
               src={tertiaryUrl}
               alt="Post media 3"
               className="w-full h-full object-cover rounded-br-[10px]"
+              loading="lazy"
             />
           </div>
         </div>
@@ -671,6 +714,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
               src={imageUrl}
               alt={`Post media ${idx + 1}`}
               className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
             />
             {idx === 3 && allMedia.length > 4 && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
