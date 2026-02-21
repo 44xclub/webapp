@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
       .from('voice_commands_log')
       .insert({
         user_id: user.id,
+        input_type: 'text' as const,
+        intent: action.intent,
         raw_transcript: transcript,
         proposed_action: action as unknown as Record<string, unknown>,
         confidence,

@@ -99,7 +99,6 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('voice_commands_log')
       .update({
-        approved_action: approved_action as unknown as Record<string, unknown>,
         status: 'executed',
         block_id: blockId,
         executed_at: new Date().toISOString(),
