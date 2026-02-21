@@ -5,31 +5,26 @@
 -- Table to audit every voice scheduling attempt
 CREATE TABLE IF NOT EXISTS voice_commands_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  raw_transcript TEXT,
-  proposed_action JSONB,
-  approved_action JSONB,
-  confidence REAL CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
-  needs_clarification TEXT[] DEFAULT '{}',
-  status TEXT NOT NULL DEFAULT 'proposed'
-    CHECK (status IN ('proposed', 'executed', 'failed', 'cancelled')),
-  block_id UUID REFERENCES blocks(id) ON DELETE SET NULL,
-  error_message TEXT,
-  executed_at TIMESTAMPTZ,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  input_type TEXT NOT NULL CHECK (input_type IN ('audio', 'text')),
+  raw_transcript TEXT,
+  raw_audio_path TEXT,
+  intent TEXT NOT NULL CHECK (intent IN ('create_block', 'reschedule_block', 'cancel_block')),
+  proposed_action JSONB NOT NULL DEFAULT '{}'::jsonb,
+  confidence NUMERIC NOT NULL DEFAULT 0,
+  needs_clarification JSONB NOT NULL DEFAULT '[]'::jsonb,
+  status TEXT NOT NULL DEFAULT 'proposed'
+    CHECK (status IN ('proposed', 'confirmed', 'executed', 'failed')),
+  executed_at TIMESTAMPTZ,
+  block_id UUID REFERENCES blocks(id),
+  error_message TEXT
 );
 
 -- Indexes
 CREATE INDEX idx_voice_commands_log_user ON voice_commands_log(user_id);
 CREATE INDEX idx_voice_commands_log_status ON voice_commands_log(user_id, status);
 CREATE INDEX idx_voice_commands_log_block ON voice_commands_log(block_id);
-
--- Updated_at trigger
-CREATE TRIGGER update_voice_commands_log_updated_at
-  BEFORE UPDATE ON voice_commands_log
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- RLS for voice_commands_log

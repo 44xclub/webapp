@@ -41,20 +41,32 @@ export function useVoiceScheduling(
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<VoiceParseResponse | null>(null)
 
+  // Ref to track state without stale closures in SpeechRecognition callbacks
+  const stateRef = useRef<VoiceState>('idle')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recognitionRef = useRef<any>(null)
   const audioChunksRef = useRef<Blob[]>([])
+  // Track whether onresult already fired (so onend knows if it needs to handle no-speech)
+  const gotResultRef = useRef(false)
+
+  const setVoiceState = useCallback((newState: VoiceState) => {
+    stateRef.current = newState
+    setState(newState)
+  }, [])
 
   const reset = useCallback(() => {
-    setState('idle')
+    setVoiceState('idle')
     setError(null)
     setProposal(null)
+    recognitionRef.current = null
     mediaRecorderRef.current = null
     audioChunksRef.current = []
-  }, [])
+    gotResultRef.current = false
+  }, [setVoiceState])
 
   // ---- Parse a text transcript via the API ----
   const parseTranscript = useCallback(async (transcript: string) => {
-    setState('parsing')
+    setVoiceState('parsing')
     setError(null)
     setProposal(null)
 
@@ -73,36 +85,32 @@ export function useVoiceScheduling(
       const data: VoiceParseResponse = await res.json()
 
       setProposal(data)
-      setState('confirming')
+      setVoiceState('confirming')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Parse failed'
       setError(msg)
-      setState('error')
+      setVoiceState('error')
     }
-  }, [])
+  }, [setVoiceState])
 
   // ---- Transcribe audio blob using OpenAI Whisper via browser ----
   const transcribeAndParse = useCallback(async (audioBlob: Blob) => {
-    setState('transcribing')
+    setVoiceState('transcribing')
 
     try {
-      // Use the Web Speech API for transcription (simpler than sending audio to server)
-      // Fall back to sending audio to a server-side endpoint if needed.
-      // For v1, we use the SpeechRecognition API directly.
-      // This function is called when we don't use SpeechRecognition.
-      // For now, throw to indicate we need the text path.
       throw new Error('Audio transcription not yet implemented — use text input')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Transcription failed'
       setError(msg)
-      setState('error')
+      setVoiceState('error')
     }
-  }, [parseTranscript])
+  }, [setVoiceState, parseTranscript])
 
   // ---- Start recording ----
   const startRecording = useCallback(async () => {
     setError(null)
     setProposal(null)
+    gotResultRef.current = false
 
     // Use Web Speech API for real-time transcription
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,35 +119,42 @@ export function useVoiceScheduling(
 
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition()
-      recognition.continuous = false
+      recognition.continuous = true
       recognition.interimResults = false
       recognition.lang = 'en-GB'
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results?.[0]?.[0]?.transcript
+        // Collect all final results into one transcript
+        let transcript = ''
+        for (let i = 0; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript
+          }
+        }
         if (transcript) {
+          gotResultRef.current = true
           parseTranscript(transcript)
-        } else {
-          setError('No speech detected')
-          setState('error')
         }
       }
 
       recognition.onerror = (event: any) => {
+        // 'no-speech' is not a fatal error — user just hasn't spoken yet
+        if (event.error === 'no-speech') return
         setError(`Speech recognition error: ${event.error}`)
-        setState('error')
+        setVoiceState('error')
       }
 
       recognition.onend = () => {
-        if (state === 'recording') {
-          // Recognition ended naturally (silence timeout)
-          setState('transcribing')
+        // Only handle if we're still in 'recording' state and no result was captured
+        if (stateRef.current === 'recording' && !gotResultRef.current) {
+          setError('No speech detected — tap the mic and try again')
+          setVoiceState('error')
         }
       }
 
-      mediaRecorderRef.current = recognition as unknown as MediaRecorder
+      recognitionRef.current = recognition
       recognition.start()
-      setState('recording')
+      setVoiceState('recording')
       return
     }
 
@@ -161,23 +176,34 @@ export function useVoiceScheduling(
 
       mediaRecorderRef.current = recorder
       recorder.start()
-      setState('recording')
+      setVoiceState('recording')
     } catch (err) {
       setError('Microphone access denied')
-      setState('error')
+      setVoiceState('error')
     }
-  }, [parseTranscript, transcribeAndParse, state])
+  }, [parseTranscript, transcribeAndParse, setVoiceState])
 
   // ---- Stop recording ----
   const stopRecording = useCallback(() => {
-    const recorder = mediaRecorderRef.current
-    if (!recorder) return
+    // Stop SpeechRecognition
+    const recognition = recognitionRef.current
+    if (recognition) {
+      try {
+        recognition.stop()
+      } catch {
+        // Ignore if already stopped
+      }
+      recognitionRef.current = null
+    }
 
-    // Both SpeechRecognition and MediaRecorder have a stop() method
-    try {
-      (recorder as any).stop()
-    } catch {
-      // Ignore if already stopped
+    // Stop MediaRecorder (fallback path)
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.stop()
+      } catch {
+        // Ignore if already stopped
+      }
     }
   }, [])
 
@@ -185,7 +211,7 @@ export function useVoiceScheduling(
   const confirmAction = useCallback(async (): Promise<VoiceExecuteResponse | null> => {
     if (!proposal) return null
 
-    setState('executing')
+    setVoiceState('executing')
     setError(null)
 
     try {
@@ -204,16 +230,16 @@ export function useVoiceScheduling(
         throw new Error(data.result_summary || 'Execution failed')
       }
 
-      setState('success')
+      setVoiceState('success')
       onSuccess?.(data)
       return data
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Execution failed'
       setError(msg)
-      setState('error')
+      setVoiceState('error')
       return null
     }
-  }, [proposal, onSuccess])
+  }, [proposal, onSuccess, setVoiceState])
 
   // ---- Dismiss ----
   const dismiss = useCallback(() => {
