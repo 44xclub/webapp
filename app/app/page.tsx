@@ -8,12 +8,14 @@ import {
   DayView,
   WeekOverview,
   SharePromptModal,
+  VoiceButton,
+  VoiceConfirmationSheet,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge, useWhopLink } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge, useWhopLink, useVoiceScheduling } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Mic, Loader2 } from 'lucide-react'
 import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { StreakCard } from '@/components/shared/StreakCard'
@@ -41,7 +43,7 @@ export default function AppPage() {
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
   const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
 
-  const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock } = useBlocks(selectedDate, user?.id)
+  const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock, refetch: refetchBlocks } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight, avatarUrl } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
@@ -51,6 +53,27 @@ export default function AppPage() {
 
   // Auto-link Whop account when loaded inside the Whop iframe
   useWhopLink(user?.id, !!profile?.whop_user_id)
+
+  // Voice scheduling
+  const voice = useVoiceScheduling(
+    useCallback(() => {
+      // Refetch blocks after successful voice command
+      refetchBlocks()
+    }, [refetchBlocks])
+  )
+
+  // Handle "Edit" from voice confirmation — open BlockModal pre-filled
+  const handleVoiceEdit = useCallback(() => {
+    if (!voice.proposal?.proposed_action) return
+    const action = voice.proposal.proposed_action
+    if (action.intent === 'create_block') {
+      const { block } = action
+      setAddingToDate(new Date(block.date_local + 'T00:00:00'))
+      setEditingBlock(null)
+      setModalOpen(true)
+    }
+    voice.dismiss()
+  }, [voice])
 
   const handleChallengeLogSuccess = useCallback(() => {
     refetchChallenge()
@@ -248,20 +271,38 @@ export default function AppPage() {
         )}
       </main>
 
-      {/* FAB - positioned above bottom nav with safe area + 16px gap */}
+      {/* FAB area — voice button + add block button */}
       {!modalOpen && !challengeModalOpen && (
         <div
-          className="fixed z-30"
+          className="fixed z-30 flex items-end gap-3"
           style={{
             bottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px)',
             right: 'calc(16px + env(safe-area-inset-right, 0px))',
           }}
         >
+          {/* Voice mic button */}
+          <VoiceButton
+            state={voice.state}
+            onStartRecording={voice.startRecording}
+            onStopRecording={voice.stopRecording}
+            onDismiss={voice.dismiss}
+          />
+          {/* Add block FAB */}
           <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>
             <Plus className="h-6 w-6" />
           </Button>
         </div>
       )}
+
+      {/* Voice confirmation sheet */}
+      <VoiceConfirmationSheet
+        proposal={voice.proposal}
+        state={voice.state}
+        error={voice.error}
+        onConfirm={voice.confirmAction}
+        onEdit={handleVoiceEdit}
+        onCancel={voice.dismiss}
+      />
 
       <BottomNav />
 
