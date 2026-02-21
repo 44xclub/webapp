@@ -737,6 +737,53 @@ export interface Database {
           created_at?: string
         }
       }
+      voice_commands_log: {
+        Row: {
+          id: string
+          user_id: string
+          raw_transcript: string | null
+          proposed_action: Json
+          approved_action: Json | null
+          confidence: number | null
+          needs_clarification: string[]
+          status: 'proposed' | 'executed' | 'failed' | 'cancelled'
+          block_id: string | null
+          error_message: string | null
+          executed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          raw_transcript?: string | null
+          proposed_action?: Json
+          approved_action?: Json | null
+          confidence?: number | null
+          needs_clarification?: string[]
+          status?: 'proposed' | 'executed' | 'failed' | 'cancelled'
+          block_id?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          raw_transcript?: string | null
+          proposed_action?: Json
+          approved_action?: Json | null
+          confidence?: number | null
+          needs_clarification?: string[]
+          status?: 'proposed' | 'executed' | 'failed' | 'cancelled'
+          block_id?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       reflection_entries: {
         Row: {
           id: string
@@ -1598,4 +1645,26 @@ export interface ReflectionEntry {
 export interface ReflectionCycleWithEntry extends ReflectionCycle {
   entry?: ReflectionEntry | null
   displayStatus: ReflectionStatus
+}
+
+// ============================================
+// Voice Commands Log (Voice Scheduling v1)
+// ============================================
+
+export type VoiceCommandStatus = 'proposed' | 'executed' | 'failed' | 'cancelled'
+
+export interface VoiceCommandLog {
+  id: string
+  user_id: string
+  raw_transcript: string | null
+  proposed_action: Json
+  approved_action: Json | null
+  confidence: number | null
+  needs_clarification: string[]
+  status: VoiceCommandStatus
+  block_id: string | null
+  error_message: string | null
+  executed_at: string | null
+  created_at: string
+  updated_at: string
 }
