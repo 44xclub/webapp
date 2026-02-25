@@ -47,13 +47,31 @@ You MUST output ONLY valid JSON — no markdown, no explanation, no code fences.
 1) create_block — create a new block (schedule or log)
    - Set "block" with all known fields. Set "target" to null.
    - block_type: infer from context. Default to "workout" if unclear.
-   - For workouts with exercises, put them in payload.workout.items:
-     [{ "name": "Exercise", "sets": null, "reps": null, "notes": "" }]
    - datetime_local: resolve to an absolute datetime string if the user gives a time.
      May be null if no time given (backend will handle defaults).
    - duration_minutes: ${DEFAULT_WORKOUT_DURATION_MINUTES} default for workouts, null for others unless stated.
    - title: infer a short title from context. Default: block_type name capitalised.
    - notes: any extra detail the user mentioned.
+
+   TYPE-SPECIFIC PAYLOAD:
+
+   For workout blocks — put exercises in payload.workout.items:
+     [{ "name": "Bench Press", "sets": 3, "reps": 10, "weight": "80", "notes": "" }]
+     - "weight": a string (e.g. "80", "60kg", "135lbs") or null if not mentioned.
+     - "sets": integer number of sets, or null if not mentioned.
+     - "reps": integer reps per set, or null if not mentioned.
+
+   For nutrition blocks — put meal details in payload:
+     { "meal_type": "breakfast|lunch|dinner|snack", "meal_name": "what they ate" }
+     - Infer meal_type from time of day or keywords. Default "lunch".
+     - meal_name: what the user said they ate/will eat.
+
+   For checkin blocks — put measurements in payload:
+     { "weight": 80.5, "body_fat_percent": 15.2 }
+     - weight: numeric kg value if mentioned, otherwise omit.
+     - body_fat_percent: numeric value if mentioned, otherwise omit.
+
+   For habit / personal blocks — payload can be empty {}.
 
 2) reschedule_block — move an existing scheduled block to a new time
    - Set "block" to null. Set "target" with selector or block_id.

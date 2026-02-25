@@ -35,6 +35,8 @@ interface BlockModalProps {
   onShowSharePreview?: (block: Block) => void
   initialDate: Date
   editingBlock?: Block | null
+  /** Pre-filled form data (e.g. from voice). Opens at step 2 but creates a new block. */
+  draftData?: BlockFormData | null
   blockMedia?: BlockMedia[]
   userId?: string
   onMediaUpload?: (blockId: string, file: File, meta?: Record<string, unknown>) => Promise<BlockMedia | void>
@@ -169,6 +171,7 @@ export function BlockModal({
   onShowSharePreview,
   initialDate,
   editingBlock,
+  draftData,
   blockMedia = [],
   userId,
   onMediaUpload,
@@ -179,7 +182,7 @@ export function BlockModal({
   userTimezone = 'Europe/London',
   onTaskToggle,
 }: BlockModalProps) {
-  const [step, setStep] = useState<1 | 2>(editingBlock ? 2 : 1)
+  const [step, setStep] = useState<1 | 2>(editingBlock || draftData ? 2 : 1)
   const [blockType, setBlockType] = useState<BlockType>(editingBlock?.block_type || 'workout')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -240,6 +243,10 @@ export function BlockModal({
       }
     }
 
+    if (draftData) {
+      return draftData
+    }
+
     return {
       date: formatDateForApi(initialDate),
       start_time: roundToNearest5Minutes(),
@@ -250,7 +257,7 @@ export function BlockModal({
       payload: getDefaultPayload(blockType),
       repeat_rule: { pattern: 'none' as const },
     }
-  }, [editingBlock, initialDate, blockType])
+  }, [editingBlock, draftData, initialDate, blockType])
 
   const form = useForm<BlockFormData>({
     resolver: dynamicResolver,
@@ -328,6 +335,30 @@ export function BlockModal({
           payload: editingBlock.payload || getDefaultPayload(editingBlock.block_type),
           repeat_rule: editingBlock.repeat_rule || { pattern: 'none' },
         } as BlockFormData)
+      } else if (draftData) {
+        // Voice draft — go to step 2 with pre-filled data, but save as new block
+        setStep(2)
+        setBlockType(draftData.block_type)
+        setPendingMedia([])
+
+        // Set duration from draft
+        const draftDuration = (draftData.payload as any)?.duration || calculateMinutesBetween(
+          draftData.start_time,
+          draftData.end_time || null
+        ) || 30
+        const presetValues = [15, 30, 45, 60, 90, 120]
+        if (presetValues.includes(draftDuration)) {
+          setSelectedDuration(draftDuration)
+        } else {
+          setSelectedDuration('custom')
+          setCustomDurationValue(String(draftDuration))
+          setCustomDurationUnit('min')
+        }
+
+        // Set entry mode based on voice mode
+        setEntryMode(draftData.block_type === 'checkin' ? 'log' : 'schedule')
+
+        form.reset(draftData)
       } else {
         setStep(1)
         setBlockType('workout') // Reset to default type
@@ -349,7 +380,7 @@ export function BlockModal({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, editingBlock, initialDate])
+  }, [isOpen, editingBlock, draftData, initialDate])
 
   const handleBlockTypeChange = (newType: BlockType) => {
     if (editingBlock) return
@@ -573,13 +604,13 @@ export function BlockModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={editingBlock ? `Edit ${blockTypeLabels[blockType]}` : step === 1 ? 'New Block' : 'Details'}
+      title={editingBlock ? `Edit ${blockTypeLabels[blockType]}` : draftData ? 'Edit Details' : step === 1 ? 'New Block' : 'Details'}
       showClose={true}
       fullScreen={true}
-      footer={step === 1 && !editingBlock ? step1Footer : step2Footer}
+      footer={step === 1 && !editingBlock && !draftData ? step1Footer : step2Footer}
     >
       {/* Step 1: Quick Entry - Premium UI */}
-      {step === 1 && !editingBlock && (
+      {step === 1 && !editingBlock && !draftData && (
         <div className="p-4 space-y-5">
           {/* Schedule vs Log Toggle */}
           {blockType !== 'challenge' ? (

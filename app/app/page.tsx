@@ -24,8 +24,130 @@ import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistM
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
 import { ChallengeCard } from '@/components/structure/ChallengeCard'
-import type { Block } from '@/lib/types'
+import type { Block, BlockType } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
+import type { LLMCreateBlock, VoiceParseResponse } from '@/lib/voice/types'
+import { DEFAULT_WORKOUT_DURATION_MINUTES } from '@/lib/voice/config'
+
+/**
+ * Convert a voice LLM create_block proposal into BlockFormData
+ * so the BlockModal can open at step 2 with all fields pre-filled.
+ */
+function voiceProposalToFormData(
+  action: LLMCreateBlock,
+  proposal: VoiceParseResponse
+): BlockFormData {
+  const { block } = action
+  const dt = proposal.resolved_datetime || block.datetime_local
+  const dateStr = dt ? dt.slice(0, 10) : new Date().toISOString().slice(0, 10)
+  const timeStr = dt ? dt.slice(11, 16) : new Date().toISOString().slice(11, 16)
+  const durationMinutes = block.duration_minutes || DEFAULT_WORKOUT_DURATION_MINUTES
+
+  // Calculate end time
+  const [h, m] = timeStr.split(':').map(Number)
+  const totalMins = h * 60 + m + durationMinutes
+  const endTime = `${String(Math.floor(totalMins / 60) % 24).padStart(2, '0')}:${String(totalMins % 60).padStart(2, '0')}`
+
+  const blockType = block.block_type as BlockType
+
+  // Build type-specific payload matching what the forms expect
+  const base = {
+    date: dateStr,
+    start_time: timeStr,
+    end_time: endTime,
+    block_type: blockType,
+    title: block.title || '',
+    notes: block.notes || '',
+    repeat_rule: null,
+  }
+
+  switch (blockType) {
+    case 'workout': {
+      const workoutData = block.payload?.workout as { items?: { name: string; sets?: number | null; reps?: number | null; weight?: string | null; notes?: string }[] } | undefined
+      const items = workoutData?.items || []
+
+      const exerciseMatrix = items.map((item) => ({
+        exercise: item.name,
+        sets: Array.from({ length: item.sets || 1 }, (_, i) => ({
+          set: i + 1,
+          reps: item.reps != null ? String(item.reps) : '',
+          weight: item.weight != null ? String(item.weight).replace(/[^0-9.]/g, '') : '',
+        })),
+        notes: item.notes || '',
+      }))
+
+      if (exerciseMatrix.length === 0) {
+        exerciseMatrix.push({ exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' })
+      }
+
+      return {
+        ...base,
+        block_type: 'workout' as const,
+        payload: {
+          subtype: 'custom' as const,
+          category: 'weight_lifting' as const,
+          exercise_matrix: exerciseMatrix,
+          duration: durationMinutes,
+        },
+      }
+    }
+
+    case 'nutrition': {
+      const mealType = (block.payload?.meal_type as string) || 'lunch'
+      const mealName = (block.payload?.meal_name as string) || block.title || ''
+      return {
+        ...base,
+        block_type: 'nutrition' as const,
+        title: block.title || mealName || null,
+        payload: {
+          meal_type: (mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack'),
+          meal_name: mealName,
+          ...(block.payload?.calories != null ? { calories: Number(block.payload.calories) } : {}),
+          ...(block.payload?.protein != null ? { protein: Number(block.payload.protein) } : {}),
+        },
+      }
+    }
+
+    case 'checkin': {
+      return {
+        ...base,
+        block_type: 'checkin' as const,
+        end_time: null,
+        payload: {
+          weight: block.payload?.weight != null ? Number(block.payload.weight) : 0,
+          ...(block.payload?.body_fat_percent != null ? { body_fat_percent: Number(block.payload.body_fat_percent) } : {}),
+        },
+      }
+    }
+
+    case 'habit': {
+      return {
+        ...base,
+        block_type: 'habit' as const,
+        payload: {},
+      }
+    }
+
+    case 'personal': {
+      return {
+        ...base,
+        block_type: 'personal' as const,
+        payload: {},
+      }
+    }
+
+    default:
+      return {
+        ...base,
+        block_type: 'workout' as const,
+        payload: {
+          subtype: 'custom' as const,
+          category: 'weight_lifting' as const,
+          exercise_matrix: [{ exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }],
+        },
+      }
+  }
+}
 
 /*
   44CLUB App Page
@@ -42,6 +164,7 @@ export default function AppPage() {
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
   const [challengeModalOpen, setChallengeModalOpen] = useState(false)
   const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
+  const [voiceDraft, setVoiceDraft] = useState<BlockFormData | null>(null)
 
   const { blocks, loading: blocksLoading, createBlock, updateBlock, updateBlockPayload, toggleComplete, duplicateBlock, deleteBlock, refetch: refetchBlocks } = useBlocks(selectedDate, user?.id)
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
@@ -62,15 +185,15 @@ export default function AppPage() {
     }, [refetchBlocks])
   )
 
-  // Handle "Edit" from voice confirmation — open BlockModal pre-filled
+  // Handle "Edit" from voice confirmation — open BlockModal at step 2 with voice data pre-filled
   const handleVoiceEdit = useCallback(() => {
     if (!voice.proposal?.proposed_action) return
     const action = voice.proposal.proposed_action
     if (action.intent === 'create_block') {
-      const { block } = action
-      const dateStr = block.datetime_local ? block.datetime_local.slice(0, 10) : new Date().toISOString().slice(0, 10)
-      setAddingToDate(new Date(dateStr + 'T00:00:00'))
+      const draft = voiceProposalToFormData(action, voice.proposal)
+      setVoiceDraft(draft)
       setEditingBlock(null)
+      setAddingToDate(null)
       setModalOpen(true)
     }
     voice.dismiss()
@@ -113,7 +236,7 @@ export default function AppPage() {
   const handleViewModeChange = useCallback((mode: ViewMode) => setViewMode(mode), [])
   const handleAddBlock = useCallback((date: Date) => { setAddingToDate(date); setEditingBlock(null); setModalOpen(true) }, [])
   const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
-  const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null) }, [])
+  const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null); setVoiceDraft(null) }, [])
   const handleSaveBlock = useCallback(async (data: BlockFormData, entryMode?: 'schedule' | 'log') => {
     if (editingBlock) {
       await updateBlock(editingBlock.id, data)
@@ -314,6 +437,7 @@ export default function AppPage() {
         onShowSharePreview={handleShowSharePreview}
         initialDate={addingToDate || selectedDate}
         editingBlock={editingBlock}
+        draftData={voiceDraft}
         blockMedia={editingBlock?.block_media || []}
         userId={user?.id}
         onMediaUpload={uploadMedia}

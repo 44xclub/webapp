@@ -15,6 +15,7 @@ export interface VoiceWorkoutItem {
   name: string
   sets: number | null
   reps: number | null
+  weight: string | null
   notes: string
 }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DEFAULT_WORKOUT_DURATION_MINUTES } from '@/lib/voice/config'
-import type { VoiceExecuteRequest, LLMAction, VoiceBlockPayload, VoiceWorkoutItem, VoiceMode } from '@/lib/voice/types'
+import type { VoiceExecuteRequest, LLMAction, VoiceWorkoutItem, VoiceMode } from '@/lib/voice/types'
 import { resolveUser } from '@/app/api/voice/_auth'
 
 type SupabaseClient = ReturnType<typeof createAdminClient>
@@ -136,6 +136,79 @@ async function markFailed(
 }
 
 /**
+ * Transform voice LLM payload into the app's native payload format.
+ * This is critical so that editing voice-created blocks shows the correct data
+ * in WorkoutForm, NutritionForm, CheckinForm, etc.
+ */
+function buildNativePayload(
+  blockType: string,
+  voicePayload: Record<string, unknown>,
+  durationMinutes: number,
+  commandId: string,
+  title: string
+): Record<string, unknown> {
+  const base = { source: 'voice', voice_command_id: commandId }
+
+  switch (blockType) {
+    case 'workout': {
+      // Transform voice workout.items → exercise_matrix format
+      const workoutData = voicePayload?.workout as { items?: VoiceWorkoutItem[] } | undefined
+      const items = workoutData?.items || []
+
+      const exerciseMatrix = items.map((item) => ({
+        exercise: item.name,
+        sets: Array.from({ length: item.sets || 1 }, (_, i) => ({
+          set: i + 1,
+          reps: item.reps != null ? String(item.reps) : '',
+          weight: item.weight != null ? String(item.weight).replace(/[^0-9.]/g, '') : '',
+        })),
+        notes: item.notes || '',
+      }))
+
+      // If no exercises were provided, add one empty row so the form isn't blank
+      if (exerciseMatrix.length === 0) {
+        exerciseMatrix.push({ exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' })
+      }
+
+      return {
+        ...base,
+        subtype: 'custom',
+        category: 'weight_lifting',
+        exercise_matrix: exerciseMatrix,
+        duration: durationMinutes,
+      }
+    }
+
+    case 'nutrition': {
+      const mealType = (voicePayload?.meal_type as string) || 'lunch'
+      const mealName = (voicePayload?.meal_name as string) || title
+      return {
+        ...base,
+        meal_type: mealType,
+        meal_name: mealName,
+        ...(voicePayload?.calories != null ? { calories: Number(voicePayload.calories) } : {}),
+        ...(voicePayload?.protein != null ? { protein: Number(voicePayload.protein) } : {}),
+        ...(voicePayload?.carbs != null ? { carbs: Number(voicePayload.carbs) } : {}),
+        ...(voicePayload?.fat != null ? { fat: Number(voicePayload.fat) } : {}),
+      }
+    }
+
+    case 'checkin': {
+      return {
+        ...base,
+        ...(voicePayload?.weight != null ? { weight: Number(voicePayload.weight) } : {}),
+        ...(voicePayload?.body_fat_percent != null ? { body_fat_percent: Number(voicePayload.body_fat_percent) } : {}),
+        ...(voicePayload?.height != null ? { height: Number(voicePayload.height) } : {}),
+      }
+    }
+
+    default:
+      // habit, personal — pass through with voice metadata
+      return { ...base }
+  }
+}
+
+/**
  * Create a block from voice input.
  * - LOG mode: is_planned=false, completed_at=performed_at=resolved_datetime, shared_to_feed=true, create feed_posts row
  * - SCHEDULE mode: is_planned=true
@@ -177,21 +250,6 @@ async function executeCreate(
   const endMins = totalMins % 60
   const endTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`
 
-  // Build voice payload
-  const voicePayload: VoiceBlockPayload = {
-    source: 'voice',
-    voice_command_id: commandId,
-  }
-
-  // Attach workout items if present
-  const workoutData = block.payload?.workout as { items?: VoiceWorkoutItem[] } | undefined
-  if (block.block_type === 'workout' && workoutData?.items) {
-    voicePayload.workout = {
-      duration_minutes: durationMinutes,
-      items: workoutData.items,
-    }
-  }
-
   // Build default title based on block type
   const defaultTitles: Record<string, string> = {
     workout: 'Workout',
@@ -202,6 +260,10 @@ async function executeCreate(
   }
   const title = block.title || defaultTitles[block.block_type] || 'Block'
 
+  // Build payload in the app's native format so editing/display works correctly.
+  // The LLM returns voice-specific payload; we transform it here.
+  const payload = buildNativePayload(block.block_type, block.payload, durationMinutes, commandId, title)
+
   // Build insert data
   const insertData: Record<string, unknown> = {
     user_id: userId,
@@ -211,7 +273,7 @@ async function executeCreate(
     block_type: block.block_type,
     title,
     notes: block.notes || null,
-    payload: { ...voicePayload, ...block.payload, source: 'voice', voice_command_id: commandId } as Record<string, unknown>,
+    payload,
     is_planned: !isLog,
   }
 
