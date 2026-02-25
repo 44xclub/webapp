@@ -426,6 +426,7 @@ export default function AppPage() {
         onConfirm={voice.confirmAction}
         onEdit={handleVoiceEdit}
         onCancel={voice.dismiss}
+        onTextSubmit={voice.parseTranscript}
       />
 
       <BottomNav />

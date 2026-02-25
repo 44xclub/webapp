@@ -11,6 +11,7 @@ import type {
 export type VoiceState =
   | 'idle'
   | 'recording'
+  | 'text_input'
   | 'transcribing'
   | 'parsing'
   | 'confirming'
@@ -242,16 +243,10 @@ export function useVoiceScheduling(
       mediaRecorderRef.current = recorder
       recorder.start()
       setVoiceState('recording')
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : ''
-      if (errMsg === 'not-supported') {
-        setError('Voice recording is not supported in this browser')
-      } else if (errMsg.includes('Permission') || errMsg.includes('NotAllowed')) {
-        setError('Microphone access denied — check your browser permissions')
-      } else {
-        setError('Microphone access denied')
-      }
-      setVoiceState('error')
+    } catch {
+      // Audio APIs not available (e.g. iOS WKWebView in Whop app).
+      // Fall back to text input — user can type their command instead.
+      setVoiceState('text_input')
     }
   }, [parseTranscript, transcribeAndParse, setVoiceState])
 
