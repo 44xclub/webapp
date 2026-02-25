@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import type {
   VoiceParseResponse,
   VoiceExecuteResponse,
@@ -41,6 +42,24 @@ export function useVoiceScheduling(
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<VoiceParseResponse | null>(null)
 
+  const supabase = useMemo(() => createClient(), [])
+
+  // Get the current Supabase access token to send in API headers.
+  // Cookie-based auth fails inside the Whop iframe (third-party cookie blocking),
+  // so we explicitly pass the token from the client-side session.
+  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+    } catch {
+      // Fall through — the API route will attempt cookie auth as fallback
+    }
+    return headers
+  }, [supabase])
+
   // Ref to track state without stale closures in SpeechRecognition callbacks
   const stateRef = useRef<VoiceState>('idle')
   const recognitionRef = useRef<any>(null)
@@ -71,9 +90,10 @@ export function useVoiceScheduling(
     setProposal(null)
 
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch('/api/voice/parse', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ transcript }),
       })
 
@@ -91,7 +111,7 @@ export function useVoiceScheduling(
       setError(msg)
       setVoiceState('error')
     }
-  }, [setVoiceState])
+  }, [setVoiceState, getAuthHeaders])
 
   // ---- Transcribe audio blob (fallback path — not implemented in v1) ----
   const transcribeAndParse = useCallback(async (audioBlob: Blob) => {
@@ -222,9 +242,10 @@ export function useVoiceScheduling(
     setError(null)
 
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch('/api/voice/execute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           command_id: proposal.command_id,
           approved_action: proposal.proposed_action,
@@ -246,7 +267,7 @@ export function useVoiceScheduling(
       setVoiceState('error')
       return null
     }
-  }, [proposal, onSuccess, setVoiceState])
+  }, [proposal, onSuccess, setVoiceState, getAuthHeaders])
 
   // ---- Dismiss ----
   const dismiss = useCallback(() => {

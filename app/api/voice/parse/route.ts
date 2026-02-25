@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { parseTranscript, summarizeAction } from '@/lib/voice/parse-transcript'
 import { DEFAULT_TIMEZONE, MAX_TRANSCRIPT_LENGTH } from '@/lib/voice/config'
 import type { VoiceParseRequest } from '@/lib/voice/types'
+import { resolveUser } from '@/app/api/voice/_auth'
 
 /**
  * POST /api/voice/parse
@@ -13,13 +15,15 @@ import type { VoiceParseRequest } from '@/lib/voice/types'
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Auth — get current user via Supabase session
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // 1. Auth — resolve user from Authorization header token or cookie session
+    const user = await resolveUser(request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Use admin client for DB operations (cookie-based client may lack a
+    // valid session inside the Whop iframe due to third-party cookie blocking)
+    const db = createAdminClient()
 
     // 2. Parse request body
     const body = (await request.json()) as VoiceParseRequest
@@ -47,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Get user timezone from profile
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from('profiles')
       .select('timezone')
       .eq('id', user.id)
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
     const summaryText = summarizeAction(action)
 
     // 6. Log to voice_commands_log with status='proposed'
-    const { data: logRow, error: logError } = await supabase
+    const { data: logRow, error: logError } = await db
       .from('voice_commands_log')
       .insert({
         user_id: user.id,
