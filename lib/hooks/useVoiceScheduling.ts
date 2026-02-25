@@ -113,18 +113,43 @@ export function useVoiceScheduling(
     }
   }, [setVoiceState, getAuthHeaders])
 
-  // ---- Transcribe audio blob (fallback path — not implemented in v1) ----
+  // ---- Transcribe audio blob via server (fallback for WebViews without SpeechRecognition) ----
   const transcribeAndParse = useCallback(async (audioBlob: Blob) => {
     setVoiceState('transcribing')
 
     try {
-      throw new Error('Audio transcription not yet implemented — use text input')
+      // Send audio to our server-side Whisper transcription endpoint
+      const headers = await getAuthHeaders()
+      // Remove Content-Type — fetch sets it automatically for FormData
+      delete headers['Content-Type']
+
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const res = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        headers,
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Transcription failed (${res.status})`)
+      }
+
+      const { transcript } = await res.json()
+      if (!transcript) {
+        throw new Error('No speech detected — try again')
+      }
+
+      // Now parse the transcript through the LLM
+      await parseTranscript(transcript)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Transcription failed'
       setError(msg)
       setVoiceState('error')
     }
-  }, [setVoiceState, parseTranscript])
+  }, [setVoiceState, parseTranscript, getAuthHeaders])
 
   // ---- Start recording ----
   const startRecording = useCallback(async () => {
@@ -184,10 +209,23 @@ export function useVoiceScheduling(
       return
     }
 
-    // Fallback: MediaRecorder for audio capture (would need server-side STT)
+    // Fallback: MediaRecorder for audio capture → server-side Whisper transcription
+    // This path is used in WebViews (e.g. Whop mobile app) where SpeechRecognition is unavailable.
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('not-supported')
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+
+      // Pick a supported MIME type — WebViews may not support audio/webm
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '' // Let the browser pick its default
+      const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {}
+
+      const recorder = new MediaRecorder(stream, recorderOptions)
       audioChunksRef.current = []
 
       recorder.ondataavailable = (e) => {
@@ -196,7 +234,8 @@ export function useVoiceScheduling(
 
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop())
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const actualType = mimeType || recorder.mimeType || 'audio/webm'
+        const blob = new Blob(audioChunksRef.current, { type: actualType })
         transcribeAndParse(blob)
       }
 
@@ -204,7 +243,14 @@ export function useVoiceScheduling(
       recorder.start()
       setVoiceState('recording')
     } catch (err) {
-      setError('Microphone access denied')
+      const errMsg = err instanceof Error ? err.message : ''
+      if (errMsg === 'not-supported') {
+        setError('Voice recording is not supported in this browser')
+      } else if (errMsg.includes('Permission') || errMsg.includes('NotAllowed')) {
+        setError('Microphone access denied — check your browser permissions')
+      } else {
+        setError('Microphone access denied')
+      }
       setVoiceState('error')
     }
   }, [parseTranscript, transcribeAndParse, setVoiceState])
