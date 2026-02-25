@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { DEFAULT_WORKOUT_DURATION_MINUTES } from '@/lib/voice/config'
 import type { VoiceExecuteRequest, LLMAction, VoiceBlockPayload } from '@/lib/voice/types'
+import { resolveUser } from '@/app/api/voice/_auth'
+
+type SupabaseClient = ReturnType<typeof createAdminClient>
 
 /**
  * POST /api/voice/execute
@@ -12,13 +15,15 @@ import type { VoiceExecuteRequest, LLMAction, VoiceBlockPayload } from '@/lib/vo
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Auth
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    // 1. Auth — resolve user from Authorization header or cookies
+    const user = await resolveUser(request)
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Use admin client for DB operations (cookie-based client may lack a
+    // valid session inside the Whop iframe due to third-party cookie blocking)
+    const db = createAdminClient()
 
     // 2. Parse request
     const body = (await request.json()) as VoiceExecuteRequest
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { command_id, approved_action } = body
 
     // 3. Verify the command log exists and belongs to this user
-    const { data: logRow, error: logError } = await supabase
+    const { data: logRow, error: logError } = await db
       .from('voice_commands_log')
       .select('id, user_id, status')
       .eq('id', command_id)
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
     // 4. Validate the action intent
     const intent = approved_action.intent
     if (!['create_block', 'reschedule_block', 'cancel_block'].includes(intent)) {
-      await markFailed(supabase, command_id, `Invalid intent: ${intent}`)
+      await markFailed(db, command_id, `Invalid intent: ${intent}`)
       return NextResponse.json({ error: `Invalid intent: ${intent}` }, { status: 400 })
     }
 
@@ -68,19 +73,19 @@ export async function POST(request: NextRequest) {
     try {
       switch (intent) {
         case 'create_block': {
-          const result = await executeCreate(supabase, user.id, command_id, approved_action)
+          const result = await executeCreate(db, user.id, command_id, approved_action)
           blockId = result.blockId
           resultSummary = result.summary
           break
         }
         case 'reschedule_block': {
-          const result = await executeReschedule(supabase, user.id, approved_action)
+          const result = await executeReschedule(db, user.id, approved_action)
           blockId = result.blockId
           resultSummary = result.summary
           break
         }
         case 'cancel_block': {
-          const result = await executeCancel(supabase, user.id, approved_action)
+          const result = await executeCancel(db, user.id, approved_action)
           blockId = result.blockId
           resultSummary = result.summary
           break
@@ -88,7 +93,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (execErr) {
       const errMsg = execErr instanceof Error ? execErr.message : 'Execution failed'
-      await markFailed(supabase, command_id, errMsg)
+      await markFailed(db, command_id, errMsg)
       return NextResponse.json(
         { status: 'failed', block_id: null, result_summary: errMsg },
         { status: 422 }
@@ -96,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Update voice_commands_log to executed
-    await supabase
+    await db
       .from('voice_commands_log')
       .update({
         status: 'executed',
@@ -123,20 +128,18 @@ export async function POST(request: NextRequest) {
 // ---- Helpers ----
 
 async function markFailed(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: SupabaseClient,
   commandId: string,
   errorMessage: string
 ) {
-  await supabase
+  await db
     .from('voice_commands_log')
     .update({ status: 'failed', error_message: errorMessage })
     .eq('id', commandId)
 }
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>
-
 async function executeCreate(
-  supabase: SupabaseClient,
+  db: SupabaseClient,
   userId: string,
   commandId: string,
   action: LLMAction
@@ -163,7 +166,7 @@ async function executeCreate(
     },
   }
 
-  const { data: newBlock, error } = await supabase
+  const { data: newBlock, error } = await db
     .from('blocks')
     .insert({
       user_id: userId,
@@ -188,15 +191,15 @@ async function executeCreate(
 }
 
 async function executeReschedule(
-  supabase: SupabaseClient,
+  db: SupabaseClient,
   userId: string,
   action: LLMAction
 ) {
   if (action.intent !== 'reschedule_block') throw new Error('Wrong intent')
 
-  const blockId = await resolveTargetBlock(supabase, userId, action.target)
+  const blockId = await resolveTargetBlock(db, userId, action.target)
 
-  const { error } = await supabase
+  const { error } = await db
     .from('blocks')
     .update({
       date: action.new_time.date_local,
@@ -214,15 +217,15 @@ async function executeReschedule(
 }
 
 async function executeCancel(
-  supabase: SupabaseClient,
+  db: SupabaseClient,
   userId: string,
   action: LLMAction
 ) {
   if (action.intent !== 'cancel_block') throw new Error('Wrong intent')
 
-  const blockId = await resolveTargetBlock(supabase, userId, action.target)
+  const blockId = await resolveTargetBlock(db, userId, action.target)
 
-  const { error } = await supabase
+  const { error } = await db
     .from('blocks')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', blockId)
@@ -241,13 +244,13 @@ async function executeCancel(
  * Either by direct block_id or by (user_id, date, start_time, block_type=workout).
  */
 async function resolveTargetBlock(
-  supabase: SupabaseClient,
+  db: SupabaseClient,
   userId: string,
   target: { block_id: string | null; selector: { date_local: string; start_time_local: string } | null }
 ): Promise<string> {
   // Direct ID
   if (target.block_id) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('blocks')
       .select('id')
       .eq('id', target.block_id)
@@ -265,7 +268,7 @@ async function resolveTargetBlock(
     throw new Error('No block_id or selector provided')
   }
 
-  const { data: matches, error } = await supabase
+  const { data: matches, error } = await db
     .from('blocks')
     .select('id')
     .eq('user_id', userId)
