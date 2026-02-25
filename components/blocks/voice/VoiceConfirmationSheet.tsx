@@ -2,10 +2,22 @@
 
 import { useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, Pencil, X, Clock, Calendar, Dumbbell } from 'lucide-react'
+import {
+  Check,
+  Pencil,
+  X,
+  Clock,
+  Calendar,
+  Dumbbell,
+  Apple,
+  Heart,
+  User,
+  ArrowRight,
+  Trash2,
+} from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatTime } from '@/lib/date'
-import type { VoiceParseResponse, LLMCreateBlock, LLMRescheduleBlock, LLMCancelBlock } from '@/lib/voice/types'
+import type { VoiceParseResponse, LLMCreateBlock, LLMRescheduleBlock, LLMCancelBlock, VoiceMode } from '@/lib/voice/types'
 import type { VoiceState } from '@/lib/hooks/useVoiceScheduling'
 
 interface VoiceConfirmationSheetProps {
@@ -15,6 +27,35 @@ interface VoiceConfirmationSheetProps {
   onConfirm: () => void
   onEdit: () => void
   onCancel: () => void
+}
+
+/** Icon for each block type */
+function BlockTypeIcon({ type, className }: { type: string; className?: string }) {
+  switch (type) {
+    case 'workout':
+      return <Dumbbell className={className} />
+    case 'nutrition':
+      return <Apple className={className} />
+    case 'checkin':
+      return <Heart className={className} />
+    case 'personal':
+      return <User className={className} />
+    case 'habit':
+    default:
+      return <Check className={className} />
+  }
+}
+
+/** Human-readable label for block types */
+function blockTypeLabel(type: string): string {
+  switch (type) {
+    case 'workout': return 'Workout'
+    case 'habit': return 'Habit'
+    case 'nutrition': return 'Nutrition'
+    case 'checkin': return 'Check-in'
+    case 'personal': return 'Personal'
+    default: return type.charAt(0).toUpperCase() + type.slice(1)
+  }
 }
 
 export function VoiceConfirmationSheet({
@@ -34,7 +75,7 @@ export function VoiceConfirmationSheet({
 
     switch (action.intent) {
       case 'create_block':
-        return <CreateBlockPreview action={action} />
+        return <CreateBlockPreview action={action} mode={proposal.mode} resolvedDatetime={proposal.resolved_datetime} />
       case 'reschedule_block':
         return <RescheduleBlockPreview action={action} />
       case 'cancel_block':
@@ -47,6 +88,10 @@ export function VoiceConfirmationSheet({
   if (!isOpen || !proposal) return null
 
   const hasClarification = proposal.needs_clarification.length > 0
+  const isLog = proposal.mode === 'log'
+  const headerText = state === 'success'
+    ? (isLog ? 'Logged' : 'Scheduled')
+    : 'Confirm Voice Command'
 
   return createPortal(
     <div className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center">
@@ -65,9 +110,20 @@ export function VoiceConfirmationSheet({
 
         {/* Header */}
         <div className="px-4 pb-2">
-          <h3 className="text-[15px] font-bold text-[#eef2ff]">
-            {state === 'success' ? 'Scheduled' : 'Confirm Voice Command'}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-[15px] font-bold text-[#eef2ff]">
+              {headerText}
+            </h3>
+            {proposal.mode && (
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                isLog
+                  ? 'bg-[rgba(34,197,94,0.12)] text-[rgba(34,197,94,0.85)]'
+                  : 'bg-[rgba(99,102,241,0.12)] text-[rgba(129,140,248,0.85)]'
+              }`}>
+                {isLog ? 'LOG' : 'SCHEDULE'}
+              </span>
+            )}
+          </div>
           <p className="text-[12px] text-[rgba(238,242,255,0.52)] mt-0.5">
             {proposal.summary_text}
           </p>
@@ -147,45 +203,94 @@ export function VoiceConfirmationSheet({
 
 // ---- Sub-components for each intent preview ----
 
-function CreateBlockPreview({ action }: { action: LLMCreateBlock }) {
+function CreateBlockPreview({
+  action,
+  mode,
+  resolvedDatetime,
+}: {
+  action: LLMCreateBlock
+  mode: VoiceMode | null
+  resolvedDatetime: string | null
+}) {
   const { block } = action
-  const items = block.payload?.workout?.items || []
+  const workoutData = block.payload?.workout as { items?: { name: string; sets?: number | null; reps?: number | null }[] } | undefined
+  const workoutItems = block.block_type === 'workout' ? (workoutData?.items || []) : []
+
+  // Parse date/time from datetime_local or resolved_datetime
+  const dt = resolvedDatetime || block.datetime_local
+  const dateStr = dt ? dt.slice(0, 10) : null
+  const timeStr = dt ? dt.slice(11, 16) : null
 
   return (
     <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 space-y-2">
-      {/* Date + Time */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1.5 text-[13px] text-[rgba(238,242,255,0.75)]">
-          <Calendar className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
-          {block.date_local}
-        </div>
-        <div className="flex items-center gap-1.5 text-[13px] text-[rgba(238,242,255,0.75)]">
-          <Clock className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
-          {formatTime(block.start_time_local)}
-        </div>
+      {/* Block type badge + title */}
+      <div className="flex items-center gap-2">
+        <BlockTypeIcon type={block.block_type} className="h-4 w-4 text-[rgba(238,242,255,0.55)]" />
+        <span className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] uppercase tracking-wider">
+          {blockTypeLabel(block.block_type)}
+        </span>
       </div>
 
       {/* Title */}
       <div className="text-[14px] font-semibold text-[#eef2ff]">
-        {block.title || 'Workout'}
+        {block.title || blockTypeLabel(block.block_type)}
       </div>
 
-      {/* Items */}
-      {items.length > 0 && (
+      {/* Date + Time */}
+      {(dateStr || timeStr) && (
+        <div className="flex items-center gap-4">
+          {dateStr && (
+            <div className="flex items-center gap-1.5 text-[13px] text-[rgba(238,242,255,0.75)]">
+              <Calendar className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
+              {dateStr}
+            </div>
+          )}
+          {timeStr && (
+            <div className="flex items-center gap-1.5 text-[13px] text-[rgba(238,242,255,0.75)]">
+              <Clock className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
+              {formatTime(timeStr)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Workout items */}
+      {workoutItems.length > 0 && (
         <div className="space-y-1">
-          {items.map((item, i) => (
+          {workoutItems.map((item: { name: string; sets?: number | null; reps?: number | null }, i: number) => (
             <div key={i} className="flex items-center gap-2 text-[13px] text-[rgba(238,242,255,0.60)]">
               <Dumbbell className="h-3 w-3 text-[rgba(238,242,255,0.30)]" />
-              {item.name}
+              <span>{item.name}</span>
+              {(item.sets || item.reps) && (
+                <span className="text-[rgba(238,242,255,0.40)]">
+                  {item.sets && item.reps ? `${item.sets}×${item.reps}` : item.sets ? `${item.sets} sets` : `${item.reps} reps`}
+                </span>
+              )}
             </div>
           ))}
         </div>
       )}
 
+      {/* Notes */}
+      {block.notes && (
+        <div className="text-[12px] text-[rgba(238,242,255,0.50)] italic">
+          {block.notes}
+        </div>
+      )}
+
       {/* Duration */}
-      <div className="text-[11px] text-[rgba(238,242,255,0.40)]">
-        Duration: {block.duration_minutes} min
-      </div>
+      {block.duration_minutes && (
+        <div className="text-[11px] text-[rgba(238,242,255,0.40)]">
+          Duration: {block.duration_minutes} min
+        </div>
+      )}
+
+      {/* Log mode feed indicator */}
+      {mode === 'log' && block.block_type !== 'personal' && (
+        <div className="text-[11px] text-[rgba(34,197,94,0.65)]">
+          Will be shared to feed
+        </div>
+      )}
     </div>
   )
 }
@@ -196,13 +301,21 @@ function RescheduleBlockPreview({ action }: { action: LLMRescheduleBlock }) {
 
   return (
     <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 space-y-2">
+      <div className="flex items-center gap-2 text-[13px] text-[rgba(238,242,255,0.52)]">
+        <Calendar className="h-3.5 w-3.5" />
+        <span>Move block</span>
+      </div>
       {from && (
-        <div className="text-[13px] text-[rgba(238,242,255,0.52)]">
-          From: {from.date_local} at {formatTime(from.start_time_local)}
+        <div className="flex items-center gap-2 text-[13px] text-[rgba(238,242,255,0.52)]">
+          <span>
+            From: {from.date_local}{from.start_time_local ? ` at ${formatTime(from.start_time_local)}` : ''}
+            {from.block_type ? ` (${blockTypeLabel(from.block_type)})` : ''}
+          </span>
         </div>
       )}
-      <div className="text-[13px] text-[rgba(238,242,255,0.75)] font-medium">
-        To: {to.date_local} at {formatTime(to.start_time_local)}
+      <div className="flex items-center gap-2 text-[13px] text-[rgba(238,242,255,0.75)] font-medium">
+        <ArrowRight className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
+        <span>To: {to.date_local} at {formatTime(to.start_time_local)}</span>
       </div>
     </div>
   )
@@ -212,10 +325,18 @@ function CancelBlockPreview({ action }: { action: LLMCancelBlock }) {
   const target = action.target.selector
 
   return (
-    <div className="rounded-[12px] border border-[rgba(255,80,80,0.10)] bg-[rgba(255,80,80,0.04)] p-3">
-      <div className="text-[13px] text-[rgba(255,80,80,0.75)] font-medium">
-        Cancel workout {target ? `on ${target.date_local} at ${formatTime(target.start_time_local)}` : ''}
+    <div className="rounded-[12px] border border-[rgba(255,80,80,0.10)] bg-[rgba(255,80,80,0.04)] p-3 space-y-1">
+      <div className="flex items-center gap-2 text-[13px] text-[rgba(255,80,80,0.75)] font-medium">
+        <Trash2 className="h-3.5 w-3.5" />
+        <span>Cancel block</span>
       </div>
+      {target && (
+        <div className="text-[12px] text-[rgba(255,80,80,0.55)]">
+          {target.date_local}{target.start_time_local ? ` at ${formatTime(target.start_time_local)}` : ''}
+          {target.block_type ? ` — ${blockTypeLabel(target.block_type)}` : ''}
+          {target.title_contains ? ` matching "${target.title_contains}"` : ''}
+        </div>
+      )}
     </div>
   )
 }

@@ -249,6 +249,8 @@ export function useVoiceScheduling(
         body: JSON.stringify({
           command_id: proposal.command_id,
           approved_action: proposal.proposed_action,
+          mode: proposal.mode,
+          resolved_datetime: proposal.resolved_datetime,
         }),
       })
 

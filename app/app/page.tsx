@@ -68,7 +68,8 @@ export default function AppPage() {
     const action = voice.proposal.proposed_action
     if (action.intent === 'create_block') {
       const { block } = action
-      setAddingToDate(new Date(block.date_local + 'T00:00:00'))
+      const dateStr = block.datetime_local ? block.datetime_local.slice(0, 10) : new Date().toISOString().slice(0, 10)
+      setAddingToDate(new Date(dateStr + 'T00:00:00'))
       setEditingBlock(null)
       setModalOpen(true)
     }
