@@ -1,5 +1,5 @@
 // =====================================================
-// Voice Scheduling v1 — Configuration
+// Voice Blocks v2 — Configuration
 // =====================================================
 
 /** Default workout duration in minutes when not specified by user */

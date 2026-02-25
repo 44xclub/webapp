@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DEFAULT_WORKOUT_DURATION_MINUTES } from '@/lib/voice/config'
-import type { VoiceExecuteRequest, LLMAction, VoiceBlockPayload } from '@/lib/voice/types'
+import type { VoiceExecuteRequest, LLMAction, VoiceWorkoutItem, VoiceMode } from '@/lib/voice/types'
 import { resolveUser } from '@/app/api/voice/_auth'
 
 type SupabaseClient = ReturnType<typeof createAdminClient>
@@ -10,19 +10,16 @@ type SupabaseClient = ReturnType<typeof createAdminClient>
  * POST /api/voice/execute
  *
  * Executes a previously proposed voice command after user confirmation.
- * Performs the actual DB write (create / update / soft-delete) on blocks
- * and updates voice_commands_log.
+ * Supports all block types, LOG vs SCHEDULE mode, and feed post creation.
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Auth — resolve user from Authorization header or cookies
+    // 1. Auth
     const user = await resolveUser(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Use admin client for DB operations (cookie-based client may lack a
-    // valid session inside the Whop iframe due to third-party cookie blocking)
     const db = createAdminClient()
 
     // 2. Parse request
@@ -35,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { command_id, approved_action } = body
+    const { command_id, approved_action, mode, resolved_datetime } = body
 
     // 3. Verify the command log exists and belongs to this user
     const { data: logRow, error: logError } = await db
@@ -73,7 +70,7 @@ export async function POST(request: NextRequest) {
     try {
       switch (intent) {
         case 'create_block': {
-          const result = await executeCreate(db, user.id, command_id, approved_action)
+          const result = await executeCreate(db, user.id, command_id, approved_action, mode, resolved_datetime)
           blockId = result.blockId
           resultSummary = result.summary
           break
@@ -138,55 +135,184 @@ async function markFailed(
     .eq('id', commandId)
 }
 
+/**
+ * Transform voice LLM payload into the app's native payload format.
+ * This is critical so that editing voice-created blocks shows the correct data
+ * in WorkoutForm, NutritionForm, CheckinForm, etc.
+ */
+function buildNativePayload(
+  blockType: string,
+  voicePayload: Record<string, unknown>,
+  durationMinutes: number,
+  commandId: string,
+  title: string
+): Record<string, unknown> {
+  const base = { source: 'voice', voice_command_id: commandId }
+
+  switch (blockType) {
+    case 'workout': {
+      // Transform voice workout.items → exercise_matrix format
+      const workoutData = voicePayload?.workout as { items?: VoiceWorkoutItem[] } | undefined
+      const items = workoutData?.items || []
+
+      const exerciseMatrix = items.map((item) => ({
+        exercise: item.name,
+        sets: Array.from({ length: item.sets || 1 }, (_, i) => ({
+          set: i + 1,
+          reps: item.reps != null ? String(item.reps) : '',
+          weight: item.weight != null ? String(item.weight).replace(/[^0-9.]/g, '') : '',
+        })),
+        notes: item.notes || '',
+      }))
+
+      // If no exercises were provided, add one empty row so the form isn't blank
+      if (exerciseMatrix.length === 0) {
+        exerciseMatrix.push({ exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' })
+      }
+
+      return {
+        ...base,
+        subtype: 'custom',
+        category: 'weight_lifting',
+        exercise_matrix: exerciseMatrix,
+        duration: durationMinutes,
+      }
+    }
+
+    case 'nutrition': {
+      const mealType = (voicePayload?.meal_type as string) || 'lunch'
+      const mealName = (voicePayload?.meal_name as string) || title
+      return {
+        ...base,
+        meal_type: mealType,
+        meal_name: mealName,
+        ...(voicePayload?.calories != null ? { calories: Number(voicePayload.calories) } : {}),
+        ...(voicePayload?.protein != null ? { protein: Number(voicePayload.protein) } : {}),
+        ...(voicePayload?.carbs != null ? { carbs: Number(voicePayload.carbs) } : {}),
+        ...(voicePayload?.fat != null ? { fat: Number(voicePayload.fat) } : {}),
+      }
+    }
+
+    case 'checkin': {
+      return {
+        ...base,
+        ...(voicePayload?.weight != null ? { weight: Number(voicePayload.weight) } : {}),
+        ...(voicePayload?.body_fat_percent != null ? { body_fat_percent: Number(voicePayload.body_fat_percent) } : {}),
+        ...(voicePayload?.height != null ? { height: Number(voicePayload.height) } : {}),
+      }
+    }
+
+    default:
+      // habit, personal — pass through with voice metadata
+      return { ...base }
+  }
+}
+
+/**
+ * Create a block from voice input.
+ * - LOG mode: is_planned=false, completed_at=performed_at=resolved_datetime, shared_to_feed=true, create feed_posts row
+ * - SCHEDULE mode: is_planned=true
+ */
 async function executeCreate(
   db: SupabaseClient,
   userId: string,
   commandId: string,
-  action: LLMAction
+  action: LLMAction,
+  mode: VoiceMode | null,
+  resolvedDatetime: string | null
 ) {
   if (action.intent !== 'create_block') throw new Error('Wrong intent')
 
   const { block } = action
-  const durationMinutes = block.duration_minutes || DEFAULT_WORKOUT_DURATION_MINUTES
+  const isLog = mode === 'log'
+  const now = new Date().toISOString()
+
+  // Parse date and start_time from datetime_local
+  const datetimeStr = resolvedDatetime || block.datetime_local
+  let dateLocal: string
+  let startTimeLocal: string
+
+  if (datetimeStr) {
+    // datetime_local format: YYYY-MM-DDTHH:MM:SS or YYYY-MM-DDTHH:MM
+    dateLocal = datetimeStr.slice(0, 10)
+    startTimeLocal = datetimeStr.slice(11, 16)
+  } else {
+    // No datetime — use today + current time
+    dateLocal = now.slice(0, 10)
+    startTimeLocal = now.slice(11, 16)
+  }
 
   // Calculate end_time from start_time + duration
-  const [hours, mins] = block.start_time_local.split(':').map(Number)
+  const durationMinutes = block.duration_minutes || DEFAULT_WORKOUT_DURATION_MINUTES
+  const [hours, mins] = startTimeLocal.split(':').map(Number)
   const totalMins = hours * 60 + mins + durationMinutes
   const endHours = Math.floor(totalMins / 60) % 24
   const endMins = totalMins % 60
   const endTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`
 
-  // Build voice payload
-  const voicePayload: VoiceBlockPayload = {
-    source: 'voice',
-    voice: { command_id: commandId },
-    workout: {
-      duration_minutes: durationMinutes,
-      items: block.payload?.workout?.items || [],
-    },
+  // Build default title based on block type
+  const defaultTitles: Record<string, string> = {
+    workout: 'Workout',
+    habit: 'Habit',
+    nutrition: 'Meal',
+    checkin: 'Check-in',
+    personal: 'Personal',
+  }
+  const title = block.title || defaultTitles[block.block_type] || 'Block'
+
+  // Build payload in the app's native format so editing/display works correctly.
+  // The LLM returns voice-specific payload; we transform it here.
+  const payload = buildNativePayload(block.block_type, block.payload, durationMinutes, commandId, title)
+
+  // Build insert data
+  const insertData: Record<string, unknown> = {
+    user_id: userId,
+    date: dateLocal,
+    start_time: startTimeLocal,
+    end_time: endTime,
+    block_type: block.block_type,
+    title,
+    notes: block.notes || null,
+    payload,
+    is_planned: !isLog,
+  }
+
+  // LOG mode fields
+  if (isLog) {
+    const performedAt = datetimeStr ? new Date(datetimeStr).toISOString() : now
+    insertData.completed_at = performedAt
+    insertData.performed_at = performedAt
+    insertData.shared_to_feed = block.block_type !== 'personal'
   }
 
   const { data: newBlock, error } = await db
     .from('blocks')
-    .insert({
-      user_id: userId,
-      date: block.date_local,
-      start_time: block.start_time_local,
-      end_time: endTime,
-      block_type: 'workout',
-      title: block.title || 'Workout',
-      notes: block.notes || null,
-      payload: voicePayload as unknown as Record<string, unknown>,
-      is_planned: true,
-    })
+    .insert(insertData)
     .select('id')
     .single()
 
   if (error) throw new Error(`Failed to create block: ${error.message}`)
 
+  // Create feed post for logged blocks (except personal)
+  if (isLog && block.block_type !== 'personal') {
+    try {
+      await db.from('feed_posts').insert({
+        user_id: userId,
+        block_id: newBlock.id,
+        title,
+        body: block.notes || null,
+        payload: { block_type: block.block_type, source: 'voice' },
+      })
+    } catch (feedErr) {
+      console.error('[VoiceExecute] Feed post creation failed:', feedErr)
+      // Non-fatal — block was still created
+    }
+  }
+
+  const verb = isLog ? 'Logged' : 'Scheduled'
   return {
     blockId: newBlock.id,
-    summary: `Scheduled: ${block.title || 'Workout'} — ${block.start_time_local}`,
+    summary: `${verb}: ${title} — ${startTimeLocal}`,
   }
 }
 
@@ -235,18 +361,27 @@ async function executeCancel(
 
   return {
     blockId,
-    summary: 'Workout cancelled',
+    summary: 'Block cancelled',
   }
 }
 
 /**
  * Resolve which block the user is referring to.
- * Either by direct block_id or by (user_id, date, start_time, block_type=workout).
+ * Supports direct block_id or selector-based lookup with block_type and title_contains.
+ * Only matches scheduled (is_planned=true), non-deleted blocks.
  */
 async function resolveTargetBlock(
   db: SupabaseClient,
   userId: string,
-  target: { block_id: string | null; selector: { date_local: string; start_time_local: string } | null }
+  target: {
+    block_id: string | null
+    selector: {
+      date_local: string | null
+      start_time_local: string | null
+      block_type: string | null
+      title_contains: string | null
+    } | null
+  }
 ): Promise<string> {
   // Direct ID
   if (target.block_id) {
@@ -255,11 +390,11 @@ async function resolveTargetBlock(
       .select('id')
       .eq('id', target.block_id)
       .eq('user_id', userId)
-      .eq('block_type', 'workout')
+      .eq('is_planned', true)
       .is('deleted_at', null)
       .single()
 
-    if (error || !data) throw new Error('Target block not found or already deleted')
+    if (error || !data) throw new Error('Target block not found, already completed, or already deleted')
     return data.id
   }
 
@@ -268,23 +403,46 @@ async function resolveTargetBlock(
     throw new Error('No block_id or selector provided')
   }
 
-  const { data: matches, error } = await db
+  let query = db
     .from('blocks')
-    .select('id')
+    .select('id, title')
     .eq('user_id', userId)
-    .eq('date', target.selector.date_local)
-    .eq('start_time', target.selector.start_time_local)
-    .eq('block_type', 'workout')
+    .eq('is_planned', true)
     .is('deleted_at', null)
+
+  if (target.selector.date_local) {
+    query = query.eq('date', target.selector.date_local)
+  }
+  if (target.selector.start_time_local) {
+    query = query.eq('start_time', target.selector.start_time_local)
+  }
+  if (target.selector.block_type) {
+    query = query.eq('block_type', target.selector.block_type)
+  }
+
+  const { data: matches, error } = await query
 
   if (error) throw new Error(`Block lookup failed: ${error.message}`)
 
   if (!matches || matches.length === 0) {
-    throw new Error('No matching workout found at that time')
+    throw new Error('No matching scheduled block found')
+  }
+
+  // If title_contains is provided, filter further
+  if (target.selector.title_contains && matches.length > 1) {
+    const keyword = target.selector.title_contains.toLowerCase()
+    const filtered = matches.filter(
+      (m: { id: string; title: string | null }) => m.title?.toLowerCase().includes(keyword)
+    )
+    if (filtered.length === 1) return filtered[0].id
+    if (filtered.length > 1) {
+      throw new Error('Multiple matching blocks found — please be more specific')
+    }
+    // No title matches — fall through to count check below
   }
 
   if (matches.length > 1) {
-    throw new Error('Multiple workouts found at that time — please specify which one')
+    throw new Error('Multiple blocks found at that time — please specify which one')
   }
 
   return matches[0].id

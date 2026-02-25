@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { parseTranscript, summarizeAction } from '@/lib/voice/parse-transcript'
+import { parseTranscript, summarizeAction, determineMode } from '@/lib/voice/parse-transcript'
 import { DEFAULT_TIMEZONE, MAX_TRANSCRIPT_LENGTH } from '@/lib/voice/config'
 import type { VoiceParseRequest } from '@/lib/voice/types'
 import { resolveUser } from '@/app/api/voice/_auth'
@@ -10,19 +9,17 @@ import { resolveUser } from '@/app/api/voice/_auth'
  * POST /api/voice/parse
  *
  * Accepts a transcript, runs it through the LLM to produce a proposed
- * block action, logs the attempt in voice_commands_log, and returns
- * the proposed action for user confirmation.
+ * block action, determines LOG vs SCHEDULE, logs the attempt in
+ * voice_commands_log, and returns the proposed action for user confirmation.
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Auth — resolve user from Authorization header token or cookie session
+    // 1. Auth
     const user = await resolveUser(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Use admin client for DB operations (cookie-based client may lack a
-    // valid session inside the Whop iframe due to third-party cookie blocking)
     const db = createAdminClient()
 
     // 2. Parse request body
@@ -69,9 +66,12 @@ export async function POST(request: NextRequest) {
       nowISO
     )
 
-    const summaryText = summarizeAction(action)
+    // 6. Determine LOG vs SCHEDULE for create_block
+    const { mode, resolvedDatetime } = determineMode(action, nowISO)
 
-    // 6. Log to voice_commands_log with status='proposed'
+    const summaryText = summarizeAction(action, action.intent === 'create_block' ? mode : null)
+
+    // 7. Log to voice_commands_log with status='proposed'
     const { data: logRow, error: logError } = await db
       .from('voice_commands_log')
       .insert({
@@ -95,10 +95,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 7. Return proposed action
+    // 8. Return proposed action with mode
     return NextResponse.json({
       command_id: logRow.id,
       proposed_action: action,
+      mode: action.intent === 'create_block' ? mode : null,
+      resolved_datetime: resolvedDatetime,
       summary_text: summaryText,
       needs_clarification,
       confidence,
