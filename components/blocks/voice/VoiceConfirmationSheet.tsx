@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Check,
@@ -14,6 +14,8 @@ import {
   User,
   ArrowRight,
   Trash2,
+  Send,
+  Keyboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatTime } from '@/lib/date'
@@ -27,6 +29,8 @@ interface VoiceConfirmationSheetProps {
   onConfirm: () => void
   onEdit: () => void
   onCancel: () => void
+  /** Submit a typed command (fallback when mic unavailable) */
+  onTextSubmit?: (text: string) => void
 }
 
 /** Icon for each block type */
@@ -65,8 +69,15 @@ export function VoiceConfirmationSheet({
   onConfirm,
   onEdit,
   onCancel,
+  onTextSubmit,
 }: VoiceConfirmationSheetProps) {
-  const isOpen = state === 'confirming' || state === 'executing' || state === 'success'
+  // Track whether we entered text input mode (stays true through parsing/error)
+  const wasTextInputRef = useRef(false)
+  if (state === 'text_input') wasTextInputRef.current = true
+  if (state === 'idle' || state === 'recording' || state === 'confirming') wasTextInputRef.current = false
+
+  const isTextInput = state === 'text_input' || ((state === 'parsing' || state === 'error') && wasTextInputRef.current)
+  const isOpen = state === 'confirming' || state === 'executing' || state === 'success' || isTextInput
 
   const content = useMemo(() => {
     if (!proposal) return null
@@ -84,6 +95,11 @@ export function VoiceConfirmationSheet({
         return null
     }
   }, [proposal])
+
+  // Text input fallback — shown when mic APIs aren't available (e.g. iOS WebView)
+  if (isTextInput) {
+    return <VoiceTextInputSheet onSubmit={onTextSubmit} onCancel={onCancel} isParsing={state === 'parsing'} error={error} />
+  }
 
   if (!isOpen || !proposal) return null
 
@@ -338,5 +354,109 @@ function CancelBlockPreview({ action }: { action: LLMCancelBlock }) {
         </div>
       )}
     </div>
+  )
+}
+
+// ---- Text Input Fallback (for iOS WebView / Whop mobile) ----
+
+function VoiceTextInputSheet({
+  onSubmit,
+  onCancel,
+  isParsing,
+  error,
+}: {
+  onSubmit?: (text: string) => void
+  onCancel: () => void
+  isParsing: boolean
+  error: string | null
+}) {
+  const [text, setText] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-focus the input when sheet appears
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 100)
+  }, [])
+
+  const handleSubmit = () => {
+    const trimmed = text.trim()
+    if (!trimmed || !onSubmit) return
+    onSubmit(trimmed)
+  }
+
+  return createPortal(
+    <div className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-[#05070a]/70 backdrop-blur-sm animate-fadeIn"
+        onClick={onCancel}
+      />
+
+      {/* Sheet */}
+      <div className="relative z-10 w-full sm:max-w-lg bg-[#0d1014] border-t border-[rgba(255,255,255,0.10)] rounded-t-[16px] animate-slideUp">
+        {/* Handle */}
+        <div className="flex justify-center pt-2 pb-1">
+          <div className="w-8 h-1 rounded-full bg-[rgba(255,255,255,0.12)]" />
+        </div>
+
+        {/* Header */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center gap-2">
+            <Keyboard className="h-4 w-4 text-[rgba(238,242,255,0.55)]" />
+            <h3 className="text-[15px] font-bold text-[#eef2ff]">
+              Type your command
+            </h3>
+          </div>
+          <p className="text-[12px] text-[rgba(238,242,255,0.45)] mt-1">
+            Mic not available here — type what you&apos;d like to schedule or log
+          </p>
+        </div>
+
+        {/* Input */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
+              placeholder="e.g. Bench press 3x10 80kg tomorrow 7pm"
+              disabled={isParsing}
+              className="flex-1 px-3 py-2.5 rounded-[10px] text-[14px] text-[#eef2ff] placeholder-[rgba(238,242,255,0.30)] bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.10)] focus:border-[#3b82f6] focus:outline-none transition-colors"
+            />
+            <Button
+              onClick={handleSubmit}
+              disabled={!text.trim() || isParsing}
+              loading={isParsing}
+              className="h-[42px] w-[42px] p-0 rounded-[10px]"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mx-4 mb-2 px-3 py-2 rounded-[10px] bg-[rgba(255,80,80,0.08)] border border-[rgba(255,80,80,0.15)]">
+            <p className="text-[12px] text-[rgba(255,80,80,0.85)]">{error}</p>
+          </div>
+        )}
+
+        {/* Cancel */}
+        <div
+          className="px-4 pt-1"
+          style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <button
+            onClick={onCancel}
+            className="w-full py-2 text-[13px] font-medium text-[rgba(238,242,255,0.40)] hover:text-[rgba(238,242,255,0.60)] transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   )
 }

@@ -15,6 +15,7 @@ interface VoiceButtonProps {
 const stateLabels: Record<VoiceState, string> = {
   idle: 'Tap to speak',
   recording: 'Listening...',
+  text_input: '',
   transcribing: 'Transcribing...',
   parsing: 'Processing...',
   confirming: '',
@@ -41,8 +42,8 @@ export function VoiceButton({
     }
   }, [state, isActive, isError, onStartRecording, onStopRecording])
 
-  // Don't render when confirming or when the sheet is showing
-  if (state === 'confirming') return null
+  // Don't render when confirming, text input, or when the sheet is showing
+  if (state === 'confirming' || state === 'text_input') return null
 
   return (
     <div className="flex flex-col items-center gap-2">
