@@ -43,11 +43,11 @@ export function useVoiceScheduling(
 
   // Ref to track state without stale closures in SpeechRecognition callbacks
   const stateRef = useRef<VoiceState>('idle')
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recognitionRef = useRef<any>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  // Track whether onresult already fired (so onend knows if it needs to handle no-speech)
-  const gotResultRef = useRef(false)
+  // Accumulates transcript across multiple onresult events (continuous mode)
+  const transcriptRef = useRef('')
 
   const setVoiceState = useCallback((newState: VoiceState) => {
     stateRef.current = newState
@@ -61,7 +61,7 @@ export function useVoiceScheduling(
     recognitionRef.current = null
     mediaRecorderRef.current = null
     audioChunksRef.current = []
-    gotResultRef.current = false
+    transcriptRef.current = ''
   }, [setVoiceState])
 
   // ---- Parse a text transcript via the API ----
@@ -93,7 +93,7 @@ export function useVoiceScheduling(
     }
   }, [setVoiceState])
 
-  // ---- Transcribe audio blob using OpenAI Whisper via browser ----
+  // ---- Transcribe audio blob (fallback path — not implemented in v1) ----
   const transcribeAndParse = useCallback(async (audioBlob: Blob) => {
     setVoiceState('transcribing')
 
@@ -110,7 +110,7 @@ export function useVoiceScheduling(
   const startRecording = useCallback(async () => {
     setError(null)
     setProposal(null)
-    gotResultRef.current = false
+    transcriptRef.current = ''
 
     // Use Web Speech API for real-time transcription
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,32 +123,38 @@ export function useVoiceScheduling(
       recognition.interimResults = false
       recognition.lang = 'en-GB'
 
+      // Accumulate transcript — do NOT call parseTranscript here.
+      // With continuous=true, onresult fires for each finalized segment
+      // while the user is still speaking. We only parse once the user
+      // clicks stop (which triggers onend).
       recognition.onresult = (event: any) => {
-        // Collect all final results into one transcript
         let transcript = ''
         for (let i = 0; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             transcript += event.results[i][0].transcript
           }
         }
-        if (transcript) {
-          gotResultRef.current = true
-          parseTranscript(transcript)
-        }
+        transcriptRef.current = transcript
       }
 
       recognition.onerror = (event: any) => {
-        // 'no-speech' is not a fatal error — user just hasn't spoken yet
+        // 'no-speech' is not fatal — user just hasn't spoken yet
         if (event.error === 'no-speech') return
         setError(`Speech recognition error: ${event.error}`)
         setVoiceState('error')
       }
 
+      // onend fires after recognition.stop() is called, or on unexpected end.
+      // This is the single place we read the accumulated transcript and parse.
       recognition.onend = () => {
-        // Only handle if we're still in 'recording' state and no result was captured
-        if (stateRef.current === 'recording' && !gotResultRef.current) {
-          setError('No speech detected — tap the mic and try again')
-          setVoiceState('error')
+        if (stateRef.current === 'recording') {
+          const transcript = transcriptRef.current.trim()
+          if (transcript) {
+            parseTranscript(transcript)
+          } else {
+            setError('No speech detected — tap the mic and try again')
+            setVoiceState('error')
+          }
         }
       }
 
@@ -185,7 +191,8 @@ export function useVoiceScheduling(
 
   // ---- Stop recording ----
   const stopRecording = useCallback(() => {
-    // Stop SpeechRecognition
+    // Stop SpeechRecognition — this triggers onend which reads
+    // the accumulated transcript and calls parseTranscript
     const recognition = recognitionRef.current
     if (recognition) {
       try {
@@ -243,10 +250,21 @@ export function useVoiceScheduling(
 
   // ---- Dismiss ----
   const dismiss = useCallback(() => {
-    // If there's an active recording, stop it
-    stopRecording()
+    // If there's an active recording, stop it first
+    const recognition = recognitionRef.current
+    if (recognition) {
+      // We're dismissing, not submitting — clear transcript so onend
+      // doesn't try to parse it after we reset.
+      stateRef.current = 'idle'
+      try { recognition.stop() } catch { /* ignore */ }
+      recognitionRef.current = null
+    }
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      try { recorder.stop() } catch { /* ignore */ }
+    }
     reset()
-  }, [stopRecording, reset])
+  }, [reset])
 
   return {
     state,
