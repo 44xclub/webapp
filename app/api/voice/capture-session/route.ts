@@ -5,15 +5,12 @@ import { createClient } from '@/lib/supabase/server'
 /**
  * POST /api/voice/capture-session
  *
- * Creates a temporary voice capture session. Used by Strategy B (breakout
- * recording) when mic capture is blocked inside the Whop mobile iframe.
- *
- * The client opens an external page in the system browser that records
- * audio, uploads it, and stores the transcript under this session_id.
- * The embedded app then polls /api/voice/session-result to retrieve it.
+ * Creates a voice capture session for breakout recording. The embedded app
+ * calls this when inline mic capture is blocked, then opens the external
+ * /voice-capture page in the system browser.
  *
  * Body: { return_url?: string }
- * Returns: { session_id, capture_url }
+ * Returns: { session_id, capture_url, return_url }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +24,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Create a capture session record
     const sessionId = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 min TTL
 
@@ -36,7 +32,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: sessionId,
         user_id: user.id,
-        status: 'pending',
+        status: 'created',
         return_url: returnUrl,
         expires_at: expiresAt,
       })
@@ -46,13 +42,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
     }
 
-    // Build the capture URL — external page that opens in system browser
     const origin = request.nextUrl.origin
     const captureUrl = `${origin}/voice-capture?session_id=${sessionId}`
 
     return NextResponse.json({
       session_id: sessionId,
       capture_url: captureUrl,
+      return_url: returnUrl,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
