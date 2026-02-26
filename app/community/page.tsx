@@ -502,7 +502,7 @@ function DailyOverviewCard({
   overview: TeamDailyOverview
   members: TeamMemberData[]
 }) {
-  const payload = overview.payload as TeamSnapshot
+  const payload = overview.snapshot as TeamSnapshot
   const date = parseDateOnly(overview.date)
   const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'short',
