@@ -191,7 +191,7 @@ export function useVoiceScheduling(
       setError(null)
       setProposal({
         command_id: data.command_id || '',
-        proposed_action: data.proposed_action as VoiceParseResponse['proposed_action'],
+        proposed_action: data.proposed_action as unknown as VoiceParseResponse['proposed_action'],
         mode: (data.mode as VoiceParseResponse['mode']) || null,
         resolved_datetime: (data.resolved_datetime as string) || null,
         summary_text: (data.summary_text as string) || '',
