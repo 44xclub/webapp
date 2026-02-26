@@ -105,6 +105,39 @@ export async function queryMicPermission(): Promise<string> {
   }
 }
 
+/**
+ * Probe getUserMedia to measure time-to-reject.
+ * If rejection < 50ms, it's almost certainly a container-level policy denial
+ * rather than a user prompt that was dismissed.
+ */
+export async function probeGetUserMedia(): Promise<{
+  success: boolean
+  durationMs: number
+  errorName?: string
+  errorMessage?: string
+}> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return { success: false, durationMs: 0, errorName: 'NotSupported', errorMessage: 'getUserMedia not available' }
+  }
+  const start = performance.now()
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const duration = performance.now() - start
+    // Stop the stream immediately — we only wanted to test
+    stream.getTracks().forEach((t) => t.stop())
+    return { success: true, durationMs: Math.round(duration) }
+  } catch (err) {
+    const duration = performance.now() - start
+    const e = err instanceof Error ? err : new Error(String(err))
+    return {
+      success: false,
+      durationMs: Math.round(duration),
+      errorName: e.name,
+      errorMessage: e.message,
+    }
+  }
+}
+
 // ------------------------------------------------------------------
 // Strategy 1: getUserMedia + MediaRecorder
 // ------------------------------------------------------------------
