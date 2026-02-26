@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type {
   VoiceParseResponse,
   VoiceExecuteResponse,
-  LLMAction,
 } from '@/lib/voice/types'
 import {
   startMediaRecorder,
   triggerFileCapture,
   captureErrorMessage,
   shouldFallbackToFileCapture,
+  shouldUseFileCaptureOnly,
   type MediaRecorderHandle,
   type VoiceCaptureError,
   type CaptureResult,
@@ -37,7 +37,7 @@ interface UseVoiceSchedulingReturn {
   /** The parsed proposal awaiting confirmation */
   proposal: VoiceParseResponse | null
   /** Start recording via browser MediaRecorder */
-  startRecording: () => Promise<void>
+  startRecording: () => void
   /** Stop recording and begin transcription + parsing */
   stopRecording: () => void
   /** Submit a text transcript directly (dev/testing) */
@@ -56,6 +56,14 @@ export function useVoiceScheduling(
   const [proposal, setProposal] = useState<VoiceParseResponse | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
+
+  // --- Pre-detect: should we go straight to file capture? ---
+  // This runs once on mount. The result is read synchronously in the
+  // tap handler so we never lose user gesture context.
+  const fileCaptureOnlyRef = useRef(false)
+  useEffect(() => {
+    fileCaptureOnlyRef.current = shouldUseFileCaptureOnly()
+  }, [])
 
   // Get the current Supabase access token to send in API headers.
   // Cookie-based auth fails inside the Whop iframe (third-party cookie blocking),
@@ -174,16 +182,10 @@ export function useVoiceScheduling(
     }
   }, [setVoiceState, parseTranscript, getAuthHeaders])
 
-  // ---- Fallback: trigger file input capture (Strategy 2) ----
-  const attemptFileCapture = useCallback(async (policyError?: VoiceCaptureError) => {
-    // Show a brief message explaining the fallback
-    if (policyError) {
-      setError(captureErrorMessage(policyError))
-    }
-    setVoiceState('file_capture')
-
+  // ---- Handle file capture result (async, called after input.click()) ----
+  const handleFileCaptureResult = useCallback(async (fileCapturePromise: Promise<CaptureResult>) => {
     try {
-      const result = await triggerFileCapture()
+      const result = await fileCapturePromise
       // User recorded audio via OS UI — transcribe it
       setError(null)
       await transcribeAndParse(result)
@@ -201,10 +203,29 @@ export function useVoiceScheduling(
   }, [transcribeAndParse, setVoiceState, reset])
 
   // ---- Start recording ----
-  const startRecording = useCallback(async () => {
+  // IMPORTANT: This must remain synchronous at the top level for file capture.
+  // On mobile, input.click() must be in the synchronous user gesture call stack.
+  // Any `await` before input.click() will cause mobile browsers to silently
+  // ignore the click (gesture context consumed by the microtask).
+  const startRecording = useCallback(() => {
     setError(null)
     setProposal(null)
     transcriptRef.current = ''
+
+    // ============================================================
+    // FAST PATH: If pre-detection says mic is blocked, go straight
+    // to file capture SYNCHRONOUSLY — no getUserMedia attempt.
+    // This is the critical fix for Whop mobile.
+    // ============================================================
+    if (fileCaptureOnlyRef.current) {
+      setVoiceState('file_capture')
+      // triggerFileCapture() calls input.click() synchronously here,
+      // within the user gesture call stack. The returned Promise is
+      // awaited asynchronously after the click has fired.
+      const capturePromise = triggerFileCapture()
+      handleFileCaptureResult(capturePromise)
+      return
+    }
 
     // Strategy 0: Web Speech API for real-time transcription (desktop browsers)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -261,27 +282,38 @@ export function useVoiceScheduling(
       return
     }
 
-    // Strategy 1: getUserMedia + MediaRecorder (WebViews without SpeechRecognition)
-    // Called synchronously in the click handler to preserve user gesture context.
-    try {
-      const handle = await startMediaRecorder()
-      mediaRecorderHandleRef.current = handle
-      setVoiceState('recording')
-    } catch (err) {
-      // err is a VoiceCaptureError from the capture module
-      const captureErr = err as VoiceCaptureError
-      logVoiceDiagnosticError('getUserMedia', err)
+    // Strategy 1: getUserMedia + MediaRecorder (WebViews without SpeechRecognition
+    // but where mic IS available — e.g. desktop Whop embed)
+    // This is async, which is fine because MediaRecorder doesn't need input.click().
+    const tryMediaRecorder = async () => {
+      try {
+        const handle = await startMediaRecorder()
+        mediaRecorderHandleRef.current = handle
+        setVoiceState('recording')
+      } catch (err) {
+        // err is a VoiceCaptureError from the capture module
+        const captureErr = err as VoiceCaptureError
+        logVoiceDiagnosticError('getUserMedia', err)
 
-      // Strategy 2: If mic is blocked (Permissions Policy / WebView), try file capture
-      if (shouldFallbackToFileCapture(captureErr)) {
-        await attemptFileCapture(captureErr)
-      } else {
-        // Unexpected error — fall back to text input
-        setError(captureErrorMessage(captureErr))
-        setVoiceState('text_input')
+        // Strategy 2 fallback: if mic is blocked, try file capture.
+        // NOTE: At this point we've lost gesture context (await above),
+        // so input.click() may be silently ignored on mobile. But we
+        // already handle the mobile case above via fileCaptureOnlyRef.
+        // This path is for unexpected failures on desktop/non-mobile.
+        if (shouldFallbackToFileCapture(captureErr)) {
+          setError(captureErrorMessage(captureErr))
+          setVoiceState('file_capture')
+          const capturePromise = triggerFileCapture()
+          handleFileCaptureResult(capturePromise)
+        } else {
+          setError(captureErrorMessage(captureErr))
+          setVoiceState('text_input')
+        }
       }
     }
-  }, [parseTranscript, setVoiceState, attemptFileCapture])
+
+    tryMediaRecorder()
+  }, [parseTranscript, setVoiceState, handleFileCaptureResult])
 
   // ---- Stop recording ----
   const stopRecording = useCallback(async () => {

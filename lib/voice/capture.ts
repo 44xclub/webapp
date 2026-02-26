@@ -275,27 +275,40 @@ export function triggerFileCapture(): Promise<CaptureResult> {
     input.setAttribute('capture', '')
     input.style.display = 'none'
 
+    let settled = false
+
     const cleanup = () => {
       input.remove()
-      document.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', handleWindowFocus)
     }
 
-    // Detect user cancelling the file picker (focus returns without change event)
-    let settled = false
-    const handleFocus = () => {
-      // Delay to let change event fire first
-      setTimeout(() => {
-        if (!settled) {
-          settled = true
-          cleanup()
-          reject({
-            strategy: 'file_input',
-            errorName: 'UserCancelled',
-            errorMessage: 'User cancelled file capture',
-            code: 'no_audio_data',
-          } as VoiceCaptureError)
-        }
-      }, 500)
+    const cancelCapture = () => {
+      if (!settled) {
+        settled = true
+        cleanup()
+        reject({
+          strategy: 'file_input',
+          errorName: 'UserCancelled',
+          errorMessage: 'User cancelled file capture',
+          code: 'no_audio_data',
+        } as VoiceCaptureError)
+      }
+    }
+
+    // Detect user cancelling: when the page regains visibility / focus after
+    // the OS picker closes without selecting a file. We use both
+    // visibilitychange (reliable on iOS) and window focus (reliable on Android).
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        // Delay to let the change event fire first (it fires before or
+        // simultaneously with visibilitychange on some devices)
+        setTimeout(cancelCapture, 1000)
+      }
+    }
+
+    const handleWindowFocus = () => {
+      setTimeout(cancelCapture, 1000)
     }
 
     input.onchange = () => {
@@ -319,7 +332,8 @@ export function triggerFileCapture(): Promise<CaptureResult> {
     }
 
     document.body.appendChild(input)
-    document.addEventListener('focus', handleFocus, { once: true })
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', handleWindowFocus)
     input.click()
   })
 }
@@ -354,4 +368,76 @@ export function shouldFallbackToFileCapture(error: VoiceCaptureError): boolean {
     // On mobile inside Whop, NotAllowedError with no prior prompt = policy block
     error.code === 'permission_denied'
   )
+}
+
+// ------------------------------------------------------------------
+// Pre-detection: should we skip getUserMedia and go straight to file?
+// ------------------------------------------------------------------
+
+/**
+ * Detect whether getUserMedia will almost certainly fail in this environment.
+ *
+ * This runs on mount (not on tap) so we can choose the right strategy
+ * **synchronously** in the gesture handler, preserving the user gesture
+ * context required for input.click() on mobile.
+ *
+ * Returns true if we should skip getUserMedia and use file capture directly.
+ */
+export function shouldUseFileCaptureOnly(): boolean {
+  // Not in a browser
+  if (typeof window === 'undefined') return false
+
+  const isIframe = window.self !== window.top
+
+  // If not in an iframe, getUserMedia should work normally
+  if (!isIframe) return false
+
+  // Check Permissions Policy — if mic is explicitly blocked, skip getUserMedia
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pp = (document as any).permissionsPolicy
+    if (pp?.allowsFeature) {
+      if (!pp.allowsFeature('microphone')) return true
+    }
+  } catch { /* not available */ }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fp = (document as any).featurePolicy
+    if (fp?.allowsFeature) {
+      if (!fp.allowsFeature('microphone')) return true
+    }
+  } catch { /* not available */ }
+
+  // No getUserMedia API at all
+  if (!navigator.mediaDevices?.getUserMedia) return true
+
+  // Heuristic: mobile webview inside iframe
+  // On mobile + iframe, if we can't confirm mic is allowed, err on the side
+  // of file capture (it will always work) rather than losing the gesture
+  // context on a getUserMedia rejection.
+  const ua = navigator.userAgent
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
+  const isWebView =
+    // iOS WKWebView identifiers
+    (/(iPhone|iPad|iPod)/.test(ua) && !/Safari/i.test(ua)) ||
+    // Android WebView identifier
+    /wv\)/.test(ua) ||
+    // Generic in-app browser markers
+    /FBAN|FBAV|Instagram|WhopApp/i.test(ua)
+
+  // In a mobile webview iframe, mic access is almost never available
+  if (isMobile && isWebView) return true
+
+  // On mobile in an iframe without a clear policy signal, we still can't
+  // risk losing gesture context. Only Permissions Policy can tell us for
+  // sure, and if the API isn't available we have no way to know.
+  // Conservative: if mobile + iframe + no Permissions Policy API → file capture
+  if (isMobile) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasPolicyAPI = !!(document as any).permissionsPolicy || !!(document as any).featurePolicy
+    if (!hasPolicyAPI) return true
+  }
+
+  return false
 }
