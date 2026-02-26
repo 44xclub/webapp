@@ -7,6 +7,16 @@ import type {
   VoiceExecuteResponse,
   LLMAction,
 } from '@/lib/voice/types'
+import {
+  startMediaRecorder,
+  triggerFileCapture,
+  captureErrorMessage,
+  shouldFallbackToFileCapture,
+  type MediaRecorderHandle,
+  type VoiceCaptureError,
+  type CaptureResult,
+} from '@/lib/voice/capture'
+import { logVoiceDiagnosticError } from '@/components/blocks/voice/VoiceDebugOverlay'
 
 export type VoiceState =
   | 'idle'
@@ -18,6 +28,8 @@ export type VoiceState =
   | 'executing'
   | 'success'
   | 'error'
+  // New states for file capture fallback
+  | 'file_capture'
 
 interface UseVoiceSchedulingReturn {
   state: VoiceState
@@ -63,9 +75,9 @@ export function useVoiceScheduling(
 
   // Ref to track state without stale closures in SpeechRecognition callbacks
   const stateRef = useRef<VoiceState>('idle')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
+  const mediaRecorderHandleRef = useRef<MediaRecorderHandle | null>(null)
   // Accumulates transcript across multiple onresult events (continuous mode)
   const transcriptRef = useRef('')
 
@@ -79,8 +91,7 @@ export function useVoiceScheduling(
     setError(null)
     setProposal(null)
     recognitionRef.current = null
-    mediaRecorderRef.current = null
-    audioChunksRef.current = []
+    mediaRecorderHandleRef.current = null
     transcriptRef.current = ''
   }, [setVoiceState])
 
@@ -108,14 +119,15 @@ export function useVoiceScheduling(
       setProposal(data)
       setVoiceState('confirming')
     } catch (err) {
+      logVoiceDiagnosticError('parseTranscript', err)
       const msg = err instanceof Error ? err.message : 'Parse failed'
       setError(msg)
       setVoiceState('error')
     }
   }, [setVoiceState, getAuthHeaders])
 
-  // ---- Transcribe audio blob via server (fallback for WebViews without SpeechRecognition) ----
-  const transcribeAndParse = useCallback(async (audioBlob: Blob) => {
+  // ---- Transcribe audio blob via server (Whisper) ----
+  const transcribeAndParse = useCallback(async (result: CaptureResult) => {
     setVoiceState('transcribing')
 
     try {
@@ -124,8 +136,17 @@ export function useVoiceScheduling(
       // Remove Content-Type — fetch sets it automatically for FormData
       delete headers['Content-Type']
 
+      // Determine file extension from MIME type for the server
+      const ext = result.mimeType.includes('mp4') || result.mimeType.includes('m4a')
+        ? 'recording.mp4'
+        : result.mimeType.includes('aac')
+          ? 'recording.aac'
+          : result.mimeType.includes('wav')
+            ? 'recording.wav'
+            : 'recording.webm'
+
       const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
+      formData.append('audio', result.blob, ext)
 
       const res = await fetch('/api/voice/transcribe', {
         method: 'POST',
@@ -146,11 +167,38 @@ export function useVoiceScheduling(
       // Now parse the transcript through the LLM
       await parseTranscript(transcript)
     } catch (err) {
+      logVoiceDiagnosticError('transcribeAndParse', err)
       const msg = err instanceof Error ? err.message : 'Transcription failed'
       setError(msg)
       setVoiceState('error')
     }
   }, [setVoiceState, parseTranscript, getAuthHeaders])
+
+  // ---- Fallback: trigger file input capture (Strategy 2) ----
+  const attemptFileCapture = useCallback(async (policyError?: VoiceCaptureError) => {
+    // Show a brief message explaining the fallback
+    if (policyError) {
+      setError(captureErrorMessage(policyError))
+    }
+    setVoiceState('file_capture')
+
+    try {
+      const result = await triggerFileCapture()
+      // User recorded audio via OS UI — transcribe it
+      setError(null)
+      await transcribeAndParse(result)
+    } catch (err) {
+      logVoiceDiagnosticError('fileCapture', err)
+      const captureErr = err as VoiceCaptureError
+      if (captureErr.code === 'no_audio_data' && captureErr.errorName === 'UserCancelled') {
+        // User cancelled the OS recording — just go back to idle
+        reset()
+      } else {
+        // File capture also failed — fall back to text input
+        setVoiceState('text_input')
+      }
+    }
+  }, [transcribeAndParse, setVoiceState, reset])
 
   // ---- Start recording ----
   const startRecording = useCallback(async () => {
@@ -158,7 +206,7 @@ export function useVoiceScheduling(
     setProposal(null)
     transcriptRef.current = ''
 
-    // Use Web Speech API for real-time transcription
+    // Strategy 0: Web Speech API for real-time transcription (desktop browsers)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any
     const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition
@@ -173,6 +221,7 @@ export function useVoiceScheduling(
       // With continuous=true, onresult fires for each finalized segment
       // while the user is still speaking. We only parse once the user
       // clicks stop (which triggers onend).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onresult = (event: any) => {
         let transcript = ''
         for (let i = 0; i < event.results.length; i++) {
@@ -183,9 +232,11 @@ export function useVoiceScheduling(
         transcriptRef.current = transcript
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onerror = (event: any) => {
         // 'no-speech' is not fatal — user just hasn't spoken yet
         if (event.error === 'no-speech') return
+        logVoiceDiagnosticError('speechRecognition', new Error(event.error))
         setError(`Speech recognition error: ${event.error}`)
         setVoiceState('error')
       }
@@ -210,48 +261,30 @@ export function useVoiceScheduling(
       return
     }
 
-    // Fallback: MediaRecorder for audio capture → server-side Whisper transcription
-    // This path is used in WebViews (e.g. Whop mobile app) where SpeechRecognition is unavailable.
+    // Strategy 1: getUserMedia + MediaRecorder (WebViews without SpeechRecognition)
+    // Called synchronously in the click handler to preserve user gesture context.
     try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('not-supported')
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-      // Pick a supported MIME type — WebViews may not support audio/webm
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : '' // Let the browser pick its default
-      const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {}
-
-      const recorder = new MediaRecorder(stream, recorderOptions)
-      audioChunksRef.current = []
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data)
-      }
-
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop())
-        const actualType = mimeType || recorder.mimeType || 'audio/webm'
-        const blob = new Blob(audioChunksRef.current, { type: actualType })
-        transcribeAndParse(blob)
-      }
-
-      mediaRecorderRef.current = recorder
-      recorder.start()
+      const handle = await startMediaRecorder()
+      mediaRecorderHandleRef.current = handle
       setVoiceState('recording')
-    } catch {
-      // Audio APIs not available (e.g. iOS WKWebView in Whop app).
-      // Fall back to text input — user can type their command instead.
-      setVoiceState('text_input')
+    } catch (err) {
+      // err is a VoiceCaptureError from the capture module
+      const captureErr = err as VoiceCaptureError
+      logVoiceDiagnosticError('getUserMedia', err)
+
+      // Strategy 2: If mic is blocked (Permissions Policy / WebView), try file capture
+      if (shouldFallbackToFileCapture(captureErr)) {
+        await attemptFileCapture(captureErr)
+      } else {
+        // Unexpected error — fall back to text input
+        setError(captureErrorMessage(captureErr))
+        setVoiceState('text_input')
+      }
     }
-  }, [parseTranscript, transcribeAndParse, setVoiceState])
+  }, [parseTranscript, setVoiceState, attemptFileCapture])
 
   // ---- Stop recording ----
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     // Stop SpeechRecognition — this triggers onend which reads
     // the accumulated transcript and calls parseTranscript
     const recognition = recognitionRef.current
@@ -264,16 +297,21 @@ export function useVoiceScheduling(
       recognitionRef.current = null
     }
 
-    // Stop MediaRecorder (fallback path)
-    const recorder = mediaRecorderRef.current
-    if (recorder && recorder.state !== 'inactive') {
+    // Stop MediaRecorder (Strategy 1 path)
+    const handle = mediaRecorderHandleRef.current
+    if (handle) {
+      mediaRecorderHandleRef.current = null
       try {
-        recorder.stop()
-      } catch {
-        // Ignore if already stopped
+        const result = await handle.stop()
+        await transcribeAndParse(result)
+      } catch (err) {
+        logVoiceDiagnosticError('mediaRecorderStop', err)
+        const captureErr = err as VoiceCaptureError
+        setError(captureErrorMessage(captureErr))
+        setVoiceState('error')
       }
     }
-  }, [])
+  }, [transcribeAndParse, setVoiceState])
 
   // ---- Confirm and execute ----
   const confirmAction = useCallback(async (): Promise<VoiceExecuteResponse | null> => {
@@ -305,6 +343,7 @@ export function useVoiceScheduling(
       onSuccess?.(data)
       return data
     } catch (err) {
+      logVoiceDiagnosticError('execute', err)
       const msg = err instanceof Error ? err.message : 'Execution failed'
       setError(msg)
       setVoiceState('error')
@@ -323,9 +362,10 @@ export function useVoiceScheduling(
       try { recognition.stop() } catch { /* ignore */ }
       recognitionRef.current = null
     }
-    const recorder = mediaRecorderRef.current
-    if (recorder && recorder.state !== 'inactive') {
-      try { recorder.stop() } catch { /* ignore */ }
+    const handle = mediaRecorderHandleRef.current
+    if (handle) {
+      handle.abort()
+      mediaRecorderHandleRef.current = null
     }
     reset()
   }, [reset])

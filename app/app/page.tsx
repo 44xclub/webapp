@@ -10,6 +10,7 @@ import {
   SharePromptModal,
   VoiceButton,
   VoiceConfirmationSheet,
+  VoiceDebugOverlay,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
@@ -476,6 +477,9 @@ export default function AppPage() {
           onSuccess={handleChallengeLogSuccess}
         />
       )}
+
+      {/* Voice diagnostics overlay — enabled via ?voice_debug=1 */}
+      <VoiceDebugOverlay />
     </div>
   )
 }

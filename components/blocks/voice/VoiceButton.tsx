@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Mic, MicOff, Loader2, X } from 'lucide-react'
+import { useCallback } from 'react'
+import { Mic, MicOff, Loader2, FileAudio } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { VoiceState } from '@/lib/hooks/useVoiceScheduling'
 
@@ -16,6 +16,7 @@ const stateLabels: Record<VoiceState, string> = {
   idle: 'Tap to speak',
   recording: 'Listening...',
   text_input: '',
+  file_capture: 'Recording via OS...',
   transcribing: 'Transcribing...',
   parsing: 'Processing...',
   confirming: '',
@@ -33,6 +34,7 @@ export function VoiceButton({
   const isActive = state === 'recording'
   const isProcessing = state === 'transcribing' || state === 'parsing' || state === 'executing'
   const isError = state === 'error'
+  const isFileCapture = state === 'file_capture'
 
   const handleClick = useCallback(() => {
     if (isActive) {
@@ -48,8 +50,13 @@ export function VoiceButton({
   return (
     <div className="flex flex-col items-center gap-2">
       {/* Status label */}
-      {state !== 'idle' && (
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.52)]">
+      {state !== 'idle' && stateLabels[state] && (
+        <span className={cn(
+          'text-[11px] font-semibold uppercase tracking-wider max-w-[140px] text-center leading-tight',
+          isFileCapture
+            ? 'text-[rgba(251,191,36,0.75)]'
+            : 'text-[rgba(238,242,255,0.52)]',
+        )}>
           {stateLabels[state]}
         </span>
       )}
@@ -57,7 +64,7 @@ export function VoiceButton({
       {/* Main mic button */}
       <button
         onClick={handleClick}
-        disabled={isProcessing}
+        disabled={isProcessing || isFileCapture}
         className={cn(
           'relative flex items-center justify-center rounded-full transition-all duration-200',
           'h-14 w-14 shadow-lg',
@@ -65,13 +72,17 @@ export function VoiceButton({
             ? 'bg-red-500/90 scale-110'
             : isProcessing
               ? 'bg-[rgba(255,255,255,0.08)] cursor-wait'
-              : isError
-                ? 'bg-[rgba(255,80,80,0.15)] border border-red-500/30'
-                : 'bg-[#3b82f6] hover:bg-[#3b82f6]/90',
+              : isFileCapture
+                ? 'bg-[rgba(251,191,36,0.12)] border border-amber-500/30 cursor-wait'
+                : isError
+                  ? 'bg-[rgba(255,80,80,0.15)] border border-red-500/30'
+                  : 'bg-[#3b82f6] hover:bg-[#3b82f6]/90',
         )}
       >
         {isProcessing ? (
           <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.70)]" />
+        ) : isFileCapture ? (
+          <FileAudio className="h-6 w-6 text-amber-400 animate-pulse" />
         ) : isActive ? (
           <MicOff className="h-6 w-6 text-white" />
         ) : (
