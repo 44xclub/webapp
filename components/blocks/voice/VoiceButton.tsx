@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Mic, MicOff, Loader2, X } from 'lucide-react'
+import { useCallback } from 'react'
+import { Mic, MicOff, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { VoiceState } from '@/lib/hooks/useVoiceScheduling'
 
@@ -15,6 +15,7 @@ interface VoiceButtonProps {
 const stateLabels: Record<VoiceState, string> = {
   idle: 'Tap to speak',
   recording: 'Listening...',
+  capturing: 'System recording...',
   text_input: '',
   transcribing: 'Transcribing...',
   parsing: 'Processing...',
@@ -31,18 +32,21 @@ export function VoiceButton({
   onDismiss,
 }: VoiceButtonProps) {
   const isActive = state === 'recording'
+  const isCapturing = state === 'capturing'
   const isProcessing = state === 'transcribing' || state === 'parsing' || state === 'executing'
   const isError = state === 'error'
 
   const handleClick = useCallback(() => {
     if (isActive) {
       onStopRecording()
+    } else if (isCapturing) {
+      onDismiss()
     } else if (state === 'idle' || isError) {
       onStartRecording()
     }
-  }, [state, isActive, isError, onStartRecording, onStopRecording])
+  }, [state, isActive, isCapturing, isError, onStartRecording, onStopRecording, onDismiss])
 
-  // Don't render when confirming, text input, or when the sheet is showing
+  // Don't render when confirming or text input (sheet handles the UI)
   if (state === 'confirming' || state === 'text_input') return null
 
   return (
@@ -63,17 +67,21 @@ export function VoiceButton({
           'h-14 w-14 shadow-lg',
           isActive
             ? 'bg-red-500/90 scale-110'
-            : isProcessing
-              ? 'bg-[rgba(255,255,255,0.08)] cursor-wait'
-              : isError
-                ? 'bg-[rgba(255,80,80,0.15)] border border-red-500/30'
-                : 'bg-[#3b82f6] hover:bg-[#3b82f6]/90',
+            : isCapturing
+              ? 'bg-amber-500/80 scale-105'
+              : isProcessing
+                ? 'bg-[rgba(255,255,255,0.08)] cursor-wait'
+                : isError
+                  ? 'bg-[rgba(255,80,80,0.15)] border border-red-500/30'
+                  : 'bg-[#3b82f6] hover:bg-[#3b82f6]/90',
         )}
       >
         {isProcessing ? (
           <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.70)]" />
         ) : isActive ? (
           <MicOff className="h-6 w-6 text-white" />
+        ) : isCapturing ? (
+          <Mic className="h-6 w-6 text-white animate-pulse" />
         ) : (
           <Mic className="h-6 w-6 text-white" />
         )}
@@ -81,6 +89,9 @@ export function VoiceButton({
         {/* Recording pulse ring */}
         {isActive && (
           <span className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping opacity-40" />
+        )}
+        {isCapturing && (
+          <span className="absolute inset-0 rounded-full border-2 border-amber-400 animate-ping opacity-30" />
         )}
       </button>
 

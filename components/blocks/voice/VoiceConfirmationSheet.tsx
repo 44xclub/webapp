@@ -74,7 +74,7 @@ export function VoiceConfirmationSheet({
   // Track whether we entered text input mode (stays true through parsing/error)
   const wasTextInputRef = useRef(false)
   if (state === 'text_input') wasTextInputRef.current = true
-  if (state === 'idle' || state === 'recording' || state === 'confirming') wasTextInputRef.current = false
+  if (state === 'idle' || state === 'recording' || state === 'capturing' || state === 'confirming') wasTextInputRef.current = false
 
   const isTextInput = state === 'text_input' || ((state === 'parsing' || state === 'error') && wasTextInputRef.current)
   const isOpen = state === 'confirming' || state === 'executing' || state === 'success' || isTextInput

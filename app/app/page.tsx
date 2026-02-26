@@ -10,6 +10,7 @@ import {
   SharePromptModal,
   VoiceButton,
   VoiceConfirmationSheet,
+  VoiceDiagnostics,
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
@@ -430,6 +431,13 @@ export default function AppPage() {
       />
 
       <BottomNav />
+
+      {/* Voice debug overlay — enabled via ?voice_debug=1 */}
+      <VoiceDiagnostics
+        selectedStrategy={voice.selectedStrategy}
+        voiceState={voice.state}
+        lastError={voice.error}
+      />
 
       <BlockModal
         isOpen={modalOpen}
