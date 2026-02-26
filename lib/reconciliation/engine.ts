@@ -646,8 +646,8 @@ async function generateTeamOverviews(
       .upsert({
         team_id: team.id,
         date: targetDate,
-        cutoff_at: new Date().toISOString(),
-        payload,
+        generated_at: new Date().toISOString(),
+        snapshot: payload,
       }, { onConflict: 'team_id,date' })
 
     if (upsertErr) {

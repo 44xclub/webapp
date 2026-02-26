@@ -571,24 +571,24 @@ export interface Database {
           id: string
           team_id: string
           date: string
-          cutoff_at: string
-          payload: Json
+          generated_at: string
+          snapshot: Json
           created_at: string
         }
         Insert: {
           id?: string
           team_id: string
           date: string
-          cutoff_at: string
-          payload?: Json
+          generated_at: string
+          snapshot?: Json
           created_at?: string
         }
         Update: {
           id?: string
           team_id?: string
           date?: string
-          cutoff_at?: string
-          payload?: Json
+          generated_at?: string
+          snapshot?: Json
           created_at?: string
         }
       }
@@ -1182,8 +1182,8 @@ export interface TeamDailyOverview {
   id: string
   team_id: string
   date: string
-  cutoff_at: string
-  payload: TeamSnapshot
+  generated_at: string
+  snapshot: TeamSnapshot
   created_at: string
 }
 
