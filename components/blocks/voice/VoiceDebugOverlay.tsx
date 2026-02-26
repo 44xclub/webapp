@@ -2,12 +2,24 @@
 
 import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { X, Copy, Check, Bug } from 'lucide-react'
-import { detectEnvironment, queryMicPermission } from '@/lib/voice/capture'
+import { detectEnvironment, queryMicPermission, probeGetUserMedia, shouldUseFileCaptureOnly } from '@/lib/voice/capture'
+
+interface GetUserMediaProbe {
+  success: boolean
+  durationMs: number
+  errorName?: string
+  errorMessage?: string
+}
 
 interface DiagnosticsData {
   timestamp: string
-  environment: ReturnType<typeof detectEnvironment>
+  environment: ReturnType<typeof detectEnvironment> & {
+    locationHref: string
+    documentReferrer: string
+  }
   micPermission: string
+  getUserMediaProbe: GetUserMediaProbe | null
+  preDetection: { fileCaptureOnly: boolean }
   runtimeErrors: RuntimeError[]
 }
 
@@ -61,11 +73,19 @@ export function VoiceDebugOverlay() {
   const collectDiagnostics = useCallback(async () => {
     const env = detectEnvironment()
     const micPerm = await queryMicPermission()
+    const probe = await probeGetUserMedia()
+    const fileCaptureOnly = shouldUseFileCaptureOnly()
 
     setDiagnostics({
       timestamp: new Date().toISOString(),
-      environment: env,
+      environment: {
+        ...env,
+        locationHref: location.href,
+        documentReferrer: document.referrer,
+      },
       micPermission: micPerm,
+      getUserMediaProbe: probe,
+      preDetection: { fileCaptureOnly },
       runtimeErrors: [...runtimeErrors],
     })
   }, [])
@@ -158,9 +178,40 @@ export function VoiceDebugOverlay() {
               )}
             </Section>
 
+            {/* Extra environment */}
+            <Section title="Location">
+              <Row label="href" value={diagnostics.environment.locationHref} truncate />
+              <Row label="referrer" value={diagnostics.environment.documentReferrer || '(empty)'} truncate />
+            </Section>
+
             {/* Mic Permission */}
             <Section title="Microphone Permission">
               <Row label="state" value={diagnostics.micPermission} warn={diagnostics.micPermission !== 'granted'} />
+            </Section>
+
+            {/* getUserMedia Probe */}
+            {diagnostics.getUserMediaProbe && (
+              <Section title="getUserMedia Probe">
+                <Row label="success" value={String(diagnostics.getUserMediaProbe.success)} warn={!diagnostics.getUserMediaProbe.success} />
+                <Row
+                  label="durationMs"
+                  value={String(diagnostics.getUserMediaProbe.durationMs)}
+                  warn={!diagnostics.getUserMediaProbe.success && diagnostics.getUserMediaProbe.durationMs < 50}
+                />
+                {!diagnostics.getUserMediaProbe.success && diagnostics.getUserMediaProbe.durationMs < 50 && (
+                  <div className="text-[11px] text-[rgba(255,80,80,0.85)] mt-1">
+                    Rejected in &lt;50ms — container-level policy denial
+                  </div>
+                )}
+                {diagnostics.getUserMediaProbe.errorName && (
+                  <Row label="error" value={`${diagnostics.getUserMediaProbe.errorName}: ${diagnostics.getUserMediaProbe.errorMessage}`} warn />
+                )}
+              </Section>
+            )}
+
+            {/* Pre-detection */}
+            <Section title="Pre-detection">
+              <Row label="fileCaptureOnly" value={String(diagnostics.preDetection.fileCaptureOnly)} warn={diagnostics.preDetection.fileCaptureOnly} />
             </Section>
 
             {/* Runtime Errors */}

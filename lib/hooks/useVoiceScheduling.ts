@@ -28,8 +28,8 @@ export type VoiceState =
   | 'executing'
   | 'success'
   | 'error'
-  // New states for file capture fallback
   | 'file_capture'
+  | 'breakout'       // Waiting for external capture page to complete
 
 interface UseVoiceSchedulingReturn {
   state: VoiceState
@@ -88,10 +88,19 @@ export function useVoiceScheduling(
   const mediaRecorderHandleRef = useRef<MediaRecorderHandle | null>(null)
   // Accumulates transcript across multiple onresult events (continuous mode)
   const transcriptRef = useRef('')
+  // Breakout session polling
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const setVoiceState = useCallback((newState: VoiceState) => {
     stateRef.current = newState
     setState(newState)
+  }, [])
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
   }, [])
 
   const reset = useCallback(() => {
@@ -101,7 +110,8 @@ export function useVoiceScheduling(
     recognitionRef.current = null
     mediaRecorderHandleRef.current = null
     transcriptRef.current = ''
-  }, [setVoiceState])
+    stopPolling()
+  }, [setVoiceState, stopPolling])
 
   // ---- Parse a text transcript via the API ----
   const parseTranscript = useCallback(async (transcript: string) => {
@@ -182,6 +192,73 @@ export function useVoiceScheduling(
     }
   }, [setVoiceState, parseTranscript, getAuthHeaders])
 
+  // ---- Strategy B: Breakout recording via external page ----
+  const startBreakoutCapture = useCallback(async () => {
+    setVoiceState('breakout')
+    setError('Voice recording not supported in this embedded view. Opening external recorder...')
+
+    try {
+      const headers = await getAuthHeaders()
+      const res = await fetch('/api/voice/capture-session', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ return_url: window.location.href }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to create capture session')
+      }
+
+      const { session_id, capture_url } = await res.json()
+
+      // Open in new tab / system browser
+      window.open(capture_url, '_blank')
+
+      // Poll for result
+      let attempts = 0
+      const maxAttempts = 120 // 10 minutes at 5-second intervals
+      pollIntervalRef.current = setInterval(async () => {
+        attempts++
+        if (attempts > maxAttempts) {
+          stopPolling()
+          setError('Capture session timed out')
+          setVoiceState('error')
+          return
+        }
+
+        try {
+          const pollHeaders = await getAuthHeaders()
+          const pollRes = await fetch(`/api/voice/session-result?session_id=${session_id}`, {
+            headers: pollHeaders,
+          })
+
+          if (!pollRes.ok) return // Retry next interval
+
+          const data = await pollRes.json()
+
+          if (data.status === 'completed' && data.transcript) {
+            stopPolling()
+            setError(null)
+            await parseTranscript(data.transcript)
+          } else if (data.status === 'failed' || data.status === 'expired') {
+            stopPolling()
+            setError(data.status === 'expired' ? 'Capture session expired' : 'External recording failed')
+            setVoiceState('error')
+          }
+          // If still 'pending', continue polling
+        } catch {
+          // Network error — continue polling
+        }
+      }, 5000)
+    } catch (err) {
+      logVoiceDiagnosticError('breakoutCapture', err)
+      const msg = err instanceof Error ? err.message : 'Failed to start external capture'
+      setError(msg)
+      // Last resort — text input
+      setVoiceState('text_input')
+    }
+  }, [getAuthHeaders, parseTranscript, setVoiceState, stopPolling])
+
   // ---- Handle file capture result (async, called after input.click()) ----
   const handleFileCaptureResult = useCallback(async (fileCapturePromise: Promise<CaptureResult>) => {
     try {
@@ -196,11 +273,54 @@ export function useVoiceScheduling(
         // User cancelled the OS recording — just go back to idle
         reset()
       } else {
-        // File capture also failed — fall back to text input
-        setVoiceState('text_input')
+        // File capture also failed — escalate to breakout (Strategy B)
+        await startBreakoutCapture()
       }
     }
-  }, [transcribeAndParse, setVoiceState, reset])
+  }, [transcribeAndParse, reset, startBreakoutCapture])
+
+  // ---- Check for returning from breakout capture on mount ----
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionId = params.get('voice_session_id')
+    if (!sessionId) return
+
+    // Remove the param from URL to prevent re-triggering
+    const url = new URL(window.location.href)
+    url.searchParams.delete('voice_session_id')
+    window.history.replaceState({}, '', url.toString())
+
+    // Poll for the session result
+    const checkResult = async () => {
+      setVoiceState('transcribing')
+      try {
+        const headers = await getAuthHeaders()
+        const res = await fetch(`/api/voice/session-result?session_id=${sessionId}`, {
+          headers,
+        })
+        if (!res.ok) throw new Error('Failed to fetch session result')
+        const data = await res.json()
+
+        if (data.status === 'completed' && data.transcript) {
+          await parseTranscript(data.transcript)
+        } else if (data.status === 'pending') {
+          // Session not complete yet — set up polling
+          setError('Waiting for external recording to complete...')
+          setVoiceState('breakout')
+        } else {
+          throw new Error('External capture session failed or expired')
+        }
+      } catch (err) {
+        logVoiceDiagnosticError('sessionReturn', err)
+        const msg = err instanceof Error ? err.message : 'Failed to load capture result'
+        setError(msg)
+        setVoiceState('error')
+      }
+    }
+
+    checkResult()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ---- Start recording ----
   // IMPORTANT: This must remain synchronous at the top level for file capture.
@@ -238,10 +358,6 @@ export function useVoiceScheduling(
       recognition.interimResults = false
       recognition.lang = 'en-GB'
 
-      // Accumulate transcript — do NOT call parseTranscript here.
-      // With continuous=true, onresult fires for each finalized segment
-      // while the user is still speaking. We only parse once the user
-      // clicks stop (which triggers onend).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onresult = (event: any) => {
         let transcript = ''
@@ -255,15 +371,12 @@ export function useVoiceScheduling(
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onerror = (event: any) => {
-        // 'no-speech' is not fatal — user just hasn't spoken yet
         if (event.error === 'no-speech') return
         logVoiceDiagnosticError('speechRecognition', new Error(event.error))
         setError(`Speech recognition error: ${event.error}`)
         setVoiceState('error')
       }
 
-      // onend fires after recognition.stop() is called, or on unexpected end.
-      // This is the single place we read the accumulated transcript and parse.
       recognition.onend = () => {
         if (stateRef.current === 'recording') {
           const transcript = transcriptRef.current.trim()
@@ -284,22 +397,15 @@ export function useVoiceScheduling(
 
     // Strategy 1: getUserMedia + MediaRecorder (WebViews without SpeechRecognition
     // but where mic IS available — e.g. desktop Whop embed)
-    // This is async, which is fine because MediaRecorder doesn't need input.click().
     const tryMediaRecorder = async () => {
       try {
         const handle = await startMediaRecorder()
         mediaRecorderHandleRef.current = handle
         setVoiceState('recording')
       } catch (err) {
-        // err is a VoiceCaptureError from the capture module
         const captureErr = err as VoiceCaptureError
         logVoiceDiagnosticError('getUserMedia', err)
 
-        // Strategy 2 fallback: if mic is blocked, try file capture.
-        // NOTE: At this point we've lost gesture context (await above),
-        // so input.click() may be silently ignored on mobile. But we
-        // already handle the mobile case above via fileCaptureOnlyRef.
-        // This path is for unexpected failures on desktop/non-mobile.
         if (shouldFallbackToFileCapture(captureErr)) {
           setError(captureErrorMessage(captureErr))
           setVoiceState('file_capture')
@@ -317,19 +423,12 @@ export function useVoiceScheduling(
 
   // ---- Stop recording ----
   const stopRecording = useCallback(async () => {
-    // Stop SpeechRecognition — this triggers onend which reads
-    // the accumulated transcript and calls parseTranscript
     const recognition = recognitionRef.current
     if (recognition) {
-      try {
-        recognition.stop()
-      } catch {
-        // Ignore if already stopped
-      }
+      try { recognition.stop() } catch { /* ignore */ }
       recognitionRef.current = null
     }
 
-    // Stop MediaRecorder (Strategy 1 path)
     const handle = mediaRecorderHandleRef.current
     if (handle) {
       mediaRecorderHandleRef.current = null
@@ -385,11 +484,8 @@ export function useVoiceScheduling(
 
   // ---- Dismiss ----
   const dismiss = useCallback(() => {
-    // If there's an active recording, stop it first
     const recognition = recognitionRef.current
     if (recognition) {
-      // We're dismissing, not submitting — clear transcript so onend
-      // doesn't try to parse it after we reset.
       stateRef.current = 'idle'
       try { recognition.stop() } catch { /* ignore */ }
       recognitionRef.current = null
@@ -401,6 +497,11 @@ export function useVoiceScheduling(
     }
     reset()
   }, [reset])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => stopPolling()
+  }, [stopPolling])
 
   return {
     state,
