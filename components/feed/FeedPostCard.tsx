@@ -489,7 +489,12 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
 // Legacy format fallback for exercises without structured sets
 function formatSetsLegacy(exercise: any): string {
   const parts = []
-  if (exercise.sets_count || exercise.sets) parts.push(`${exercise.sets_count || exercise.sets} sets`)
+  const setsVal = exercise.sets_count || exercise.sets
+  if (setsVal) {
+    // sets could be a number or an array of set objects — handle both
+    const setsNum = Array.isArray(setsVal) ? setsVal.length : setsVal
+    parts.push(`${setsNum} sets`)
+  }
   if (exercise.reps) parts.push(`${exercise.reps} reps`)
   if (exercise.weight) parts.push(`${exercise.weight}kg`)
   return parts.join(' \u00B7 ')

@@ -131,8 +131,8 @@ export function ProgrammeDetailModal({
             <div className="flex-1">
               <p className="text-[13px] font-medium text-[rgba(238,242,255,0.90)]">{ex.exercise || ex.name || `Exercise ${idx + 1}`}</p>
               <div className="flex flex-wrap gap-2 mt-0.5">
-                {ex.sets && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{ex.sets} sets</span>}
-                {ex.reps && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{ex.reps} reps</span>}
+                {ex.sets && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{Array.isArray(ex.sets) ? ex.sets.length : ex.sets} sets</span>}
+                {ex.reps && !Array.isArray(ex.reps) && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{ex.reps} reps</span>}
                 {ex.weight && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{ex.weight}</span>}
                 {ex.duration && <span className="text-[11px] text-[rgba(238,242,255,0.40)]">{ex.duration}</span>}
               </div>
