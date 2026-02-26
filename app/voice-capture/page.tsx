@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Mic, MicOff, Loader2, Check, ArrowLeft } from 'lucide-react'
+import { Mic, MicOff, Loader2, Check, ArrowLeft, RotateCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 /**
- * External Voice Capture Page — Strategy B (Breakout Recording)
+ * External Voice Capture Page — Breakout Recording
  *
  * This page opens in the system browser (outside the Whop iframe) where
- * getUserMedia works normally. After recording, it transcribes the audio
- * and stores the result in the voice_capture_sessions table. The embedded
- * app polls for the result.
+ * getUserMedia works normally. After recording, it uploads the audio to
+ * /api/voice/upload which handles transcription + parsing. The embedded
+ * app polls for the result via /api/voice/session-result.
  *
  * URL: /voice-capture?session_id=xxx
  */
@@ -19,6 +19,7 @@ export default function VoiceCapturePage() {
   const [phase, setPhase] = useState<'init' | 'ready' | 'recording' | 'uploading' | 'done' | 'error'>('init')
   const [error, setError] = useState<string | null>(null)
   const [transcript, setTranscript] = useState<string | null>(null)
+  const [returnUrl, setReturnUrl] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -32,6 +33,17 @@ export default function VoiceCapturePage() {
       return
     }
     setSessionId(sid)
+
+    // Extract return URL if provided
+    const ret = params.get('return')
+    if (ret) {
+      try {
+        setReturnUrl(decodeURIComponent(ret))
+      } catch {
+        // malformed return URL — ignore
+      }
+    }
+
     setPhase('ready')
   }, [])
 
@@ -47,6 +59,21 @@ export default function VoiceCapturePage() {
     return headers
   }, [])
 
+  // Select the best supported MIME type
+  const selectMimeType = useCallback((): string => {
+    if (typeof MediaRecorder === 'undefined') return ''
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+    ]
+    for (const mime of candidates) {
+      if (MediaRecorder.isTypeSupported(mime)) return mime
+    }
+    return ''
+  }, [])
+
   const startRecording = useCallback(async () => {
     setError(null)
     try {
@@ -56,12 +83,7 @@ export default function VoiceCapturePage() {
       })
       streamRef.current = stream
 
-      const mimeType = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : ''
-
+      const mimeType = selectMimeType()
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {})
       chunksRef.current = []
 
@@ -77,7 +99,7 @@ export default function VoiceCapturePage() {
       setError(`Microphone error: ${e.name} — ${e.message}`)
       setPhase('error')
     }
-  }, [])
+  }, [selectMimeType])
 
   const stopRecording = useCallback(async () => {
     const recorder = mediaRecorderRef.current
@@ -108,55 +130,50 @@ export default function VoiceCapturePage() {
     }
 
     try {
-      // 1. Transcribe
+      // Upload audio to /api/voice/upload — server handles transcription + parsing
       const headers = await getAuthHeaders()
       const formData = new FormData()
-      const ext = blob.type.includes('mp4') ? 'recording.mp4' : 'recording.webm'
+      const ext = blob.type.includes('mp4') ? 'recording.mp4'
+        : blob.type.includes('aac') ? 'recording.aac'
+        : 'recording.webm'
       formData.append('audio', blob, ext)
+      formData.append('session_id', sessionId)
 
-      const transcribeRes = await fetch('/api/voice/transcribe', {
+      const res = await fetch('/api/voice/upload', {
         method: 'POST',
         headers,
         body: formData,
       })
 
-      if (!transcribeRes.ok) {
-        const body = await transcribeRes.json().catch(() => ({}))
-        throw new Error(body.error || `Transcription failed (${transcribeRes.status})`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Upload failed (${res.status})`)
       }
 
-      const { transcript: text } = await transcribeRes.json()
-      if (!text) throw new Error('No speech detected in recording')
-
-      // 2. Store transcript in session
-      const supabase = createClient()
-      const { error: updateError } = await supabase
-        .from('voice_capture_sessions')
-        .update({ status: 'completed', transcript: text })
-        .eq('id', sessionId)
-
-      if (updateError) {
-        throw new Error('Failed to save transcript')
-      }
-
-      setTranscript(text)
+      const data = await res.json()
+      setTranscript(data.transcript || null)
       setPhase('done')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Upload failed'
       setError(msg)
-
-      // Mark session as failed
-      try {
-        const supabase = createClient()
-        await supabase
-          .from('voice_capture_sessions')
-          .update({ status: 'failed', error_message: msg })
-          .eq('id', sessionId)
-      } catch { /* best effort */ }
-
       setPhase('error')
     }
   }, [sessionId, getAuthHeaders])
+
+  const handleReturn = useCallback(() => {
+    if (returnUrl) {
+      // Append voice_session_id so the embedded app can pick it up
+      try {
+        const url = new URL(returnUrl)
+        if (sessionId) url.searchParams.set('voice_session_id', sessionId)
+        window.location.href = url.toString()
+        return
+      } catch {
+        // malformed return URL — try window.close
+      }
+    }
+    window.close()
+  }, [returnUrl, sessionId])
 
   return (
     <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center p-6 text-center">
@@ -187,7 +204,7 @@ export default function VoiceCapturePage() {
           {phase === 'recording' && (
             <button
               onClick={stopRecording}
-              className="h-20 w-20 rounded-full bg-red-500/90 flex items-center justify-center shadow-lg scale-110 transition-transform"
+              className="relative h-20 w-20 rounded-full bg-red-500/90 flex items-center justify-center shadow-lg scale-110 transition-transform"
             >
               <MicOff className="h-8 w-8 text-white" />
               <span className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping opacity-40" />
@@ -221,16 +238,14 @@ export default function VoiceCapturePage() {
         )}
 
         {/* Return to app */}
-        {(phase === 'done' || phase === 'error') && (
+        {phase === 'done' && (
           <div className="space-y-3">
             <p className="text-[12px] text-[rgba(238,242,255,0.40)]">
-              {phase === 'done'
-                ? 'Your voice command has been saved. Return to the app to continue.'
-                : 'You can close this page and try again from the app.'}
+              Your voice command has been processed. Return to the app to confirm.
             </p>
             <button
-              onClick={() => window.close()}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-[10px] bg-[rgba(255,255,255,0.06)] text-[14px] font-medium text-[#eef2ff] hover:bg-[rgba(255,255,255,0.10)] transition-colors"
+              onClick={handleReturn}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-[10px] bg-[#3b82f6] text-[14px] font-medium text-white hover:bg-[#3b82f6]/90 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Return to 44CLUB
@@ -238,14 +253,24 @@ export default function VoiceCapturePage() {
           </div>
         )}
 
-        {/* Retry */}
+        {/* Error actions */}
         {phase === 'error' && (
-          <button
-            onClick={() => { setError(null); setPhase('ready') }}
-            className="text-[13px] text-[#3b82f6] hover:text-[#3b82f6]/80 transition-colors"
-          >
-            Try again
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => { setError(null); setPhase('ready') }}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-[10px] bg-[rgba(255,255,255,0.06)] text-[14px] font-medium text-[#eef2ff] hover:bg-[rgba(255,255,255,0.10)] transition-colors"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Try again
+            </button>
+            <button
+              onClick={handleReturn}
+              className="flex items-center justify-center gap-2 w-full py-2 text-[13px] text-[rgba(238,242,255,0.40)] hover:text-[rgba(238,242,255,0.60)] transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Return to 44CLUB
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -1,17 +1,18 @@
 -- Voice Capture Sessions
--- Used by Strategy B (breakout recording) when mic is blocked inside
--- the Whop mobile iframe. The embedded app creates a session, opens an
--- external page in the system browser for recording, and polls for the
--- transcript result.
+-- Used by breakout recording when mic is blocked inside the Whop mobile
+-- iframe. The embedded app creates a session, opens an external page in
+-- the system browser for recording, and polls for the result.
 
 CREATE TABLE IF NOT EXISTS voice_capture_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'completed', 'expired', 'failed')),
+  status TEXT NOT NULL DEFAULT 'created'
+    CHECK (status IN ('created', 'uploaded', 'transcribed', 'parsed', 'failed', 'expired')),
+  audio_path TEXT,
   transcript TEXT,
+  parse_result JSONB,
   error_message TEXT,
   return_url TEXT
 );

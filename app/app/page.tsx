@@ -408,9 +408,11 @@ export default function AppPage() {
           {/* Voice mic button */}
           <VoiceButton
             state={voice.state}
+            error={voice.error}
             onStartRecording={voice.startRecording}
             onStopRecording={voice.stopRecording}
             onDismiss={voice.dismiss}
+            onCheckBreakout={voice.checkBreakoutResult}
           />
           {/* Add block FAB */}
           <Button size="icon" className="h-14 w-14 rounded-full shadow-lg" onClick={() => handleAddBlock(selectedDate)}>

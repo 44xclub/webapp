@@ -6,14 +6,16 @@ import { createClient } from '@/lib/supabase/server'
  * GET /api/voice/session-result?session_id=xxx
  *
  * Polls for the result of a breakout voice capture session.
- * Returns the transcript once the external capture page has completed
- * recording and transcription.
+ * Returns the full parse result once the external page has completed
+ * recording, transcription, and LLM parsing.
  *
  * Statuses:
- * - pending: session created, waiting for external capture
- * - completed: audio captured and transcribed, transcript available
+ * - created: session created, waiting for external capture
+ * - uploaded: audio received, processing
+ * - transcribed: audio transcribed, parsing
+ * - parsed: fully processed — transcript + proposed_action available
  * - expired: session timed out (10 min TTL)
- * - failed: capture or transcription failed
+ * - failed: capture, transcription, or parse failed
  */
 export async function GET(request: NextRequest) {
   try {
@@ -41,16 +43,51 @@ export async function GET(request: NextRequest) {
     }
 
     // Check expiry
-    if (new Date(session.expires_at) < new Date()) {
+    if (new Date(session.expires_at) < new Date() && session.status !== 'parsed') {
       return NextResponse.json({
         status: 'expired',
         transcript: null,
+        proposed_action: null,
+        summary_text: null,
+        command_id: null,
       })
     }
 
+    // For parsed sessions, return the full result
+    if (session.status === 'parsed' && session.parse_result) {
+      const pr = session.parse_result as Record<string, unknown>
+      return NextResponse.json({
+        status: 'parsed',
+        transcript: session.transcript,
+        proposed_action: pr.proposed_action || null,
+        summary_text: pr.summary_text || null,
+        command_id: pr.command_id || null,
+        mode: pr.mode || null,
+        resolved_datetime: pr.resolved_datetime || null,
+        needs_clarification: pr.needs_clarification || [],
+        confidence: pr.confidence || null,
+      })
+    }
+
+    // For failed sessions, include error
+    if (session.status === 'failed') {
+      return NextResponse.json({
+        status: 'failed',
+        error_message: session.error_message || 'Unknown error',
+        transcript: session.transcript || null,
+        proposed_action: null,
+        summary_text: null,
+        command_id: null,
+      })
+    }
+
+    // Still processing (created, uploaded, transcribed)
     return NextResponse.json({
       status: session.status,
-      transcript: session.transcript || null,
+      transcript: null,
+      proposed_action: null,
+      summary_text: null,
+      command_id: null,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'

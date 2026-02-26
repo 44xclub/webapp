@@ -1,9 +1,9 @@
-# Voice Recording — Whop Mobile Fallback
+# Voice Recording — Whop Mobile Workaround
 
 ## Problem
 
 Voice capture works on desktop (inside Whop iframe) and on mobile browsers
-(Safari, Chrome), but **fails on mobile inside the Whop app**. The mic
+(Safari, Chrome), but **fails on mobile inside the Whop native app**. The mic
 button press instantly returns "try again" with no actual recording.
 
 ## Root Cause
@@ -21,77 +21,104 @@ environment does **not** grant `microphone` via the Permissions Policy
 This is **not** a bug in our code — we cannot change Whop's iframe
 attributes from inside the iframe.
 
-### Why the initial fallback attempt failed (gesture context)
+## Solution: Two Capture Modes
 
-The first implementation tried to fall back to `<input capture>` after
-`getUserMedia` rejected. This failed silently because:
+### Mode A — Inline Capture (where mic works)
 
-1. User taps mic → `startRecording()` is called
-2. `await getUserMedia()` rejects (policy block)
-3. catch → `triggerFileCapture()` → `input.click()`
+Standard browser audio: `getUserMedia` + `MediaRecorder` or `SpeechRecognition`.
+Works on desktop browsers (including inside Whop), mobile Safari/Chrome (direct),
+and any context where mic permissions are available.
 
-By step 3, the code has crossed `await` boundaries. Mobile browsers require
-`input.click()` to be in the **synchronous** user gesture call stack. After
-any `await`, the gesture context is consumed and the programmatic click is
-silently ignored by the browser — the file picker never opens.
+Strategy chain:
+1. **SpeechRecognition** — real-time transcription (Chrome, Edge, Safari desktop)
+2. **getUserMedia + MediaRecorder** — server-side Whisper transcription
 
-**Fix:** We run `shouldUseFileCaptureOnly()` once on mount (checks iframe
-status, Permissions Policy, mobile UA) and store the result in a ref. When
-the user taps, we read the ref **synchronously** and call
-`triggerFileCapture()` immediately — no async work before `input.click()`.
+### Mode B — Breakout Capture (Whop mobile fallback)
 
-## Solution: Strategy-Based Capture with Automatic Fallback
+When inline capture fails (policy block, instant rejection <100ms, or no
+MediaRecorder support), the app automatically opens an external `/voice-capture`
+page in the system browser. This works because the system browser is not
+constrained by Whop's iframe policy.
 
-The voice capture module (`lib/voice/capture.ts`) now attempts strategies in
-order:
+Flow:
+1. User taps mic → inline attempt fails instantly
+2. App creates a capture session (`POST /api/voice/capture-session`)
+3. Opens `/voice-capture?session_id=xxx` in system browser
+4. User records audio on external page
+5. Audio uploaded to `POST /api/voice/upload` (server transcribes + parses)
+6. User returns to app → result fetched via `GET /api/voice/session-result`
+7. Normal confirmation + execute flow continues
 
-### Strategy 0: Web Speech API (desktop browsers)
-Real-time transcription using `SpeechRecognition` / `webkitSpeechRecognition`.
-Works in Chrome, Edge, Safari on desktop.
+### Text Input (last resort)
 
-### Strategy 1: getUserMedia + MediaRecorder
-Standard web audio capture with server-side Whisper transcription.
-Works on mobile browsers and desktop webviews that allow mic access.
+If breakout session creation fails, the user can type their command manually.
 
-### Strategy 2: `<input type="file" accept="audio/*" capture>` (Whop mobile fix)
-When Strategy 1 fails (getUserMedia blocked by policy), we trigger a hidden
-file input with `capture` attribute. This invokes the **OS-level recording
-UI** (e.g. iOS Voice Memos, Android audio recorder) which bypasses iframe
-Permissions Policy entirely since the recording happens outside the webview.
+## Key Technical Details
 
-The user records audio via the OS UI, we receive the audio file as a Blob,
-upload it to our Whisper transcription endpoint, and continue the normal
-flow: transcript → parse → confirm → create block.
+### Pre-detection on mount
 
-### Strategy 3: Text input (last resort)
-If all audio strategies fail, the user can type their command manually.
+`detectInlineBlocked()` from `lib/voice/service.ts` runs on mount to check:
+- Permissions Policy API (both modern and legacy)
+- iframe status
+- Mobile webview UA heuristics
+
+Result is read **synchronously** in the tap handler — no async before
+routing to breakout, which would lose the gesture context.
+
+### Instant rejection detection
+
+If `getUserMedia` rejects in <100ms, it's a container-level policy denial
+(not a user prompt that was dismissed). These go straight to breakout,
+never showing "try again".
+
+### Session persistence
+
+`last_voice_session_id` is stored in localStorage for recovery if the
+redirect back from the external page loses the URL param.
+
+### "I'm back" button
+
+During breakout state, the VoiceButton shows an "I'm back" button that
+triggers a manual re-check of the session result, in addition to the
+automatic 5-second polling.
 
 ## Diagnostics
 
 Append `?voice_debug=1` to the URL (or set `NEXT_PUBLIC_VOICE_DEBUG=1`) to
 enable the Voice Debug Overlay. It shows:
 
-- Environment info (userAgent, isSecureContext, isIframe)
+- Environment info (userAgent, isSecureContext, isIframe, origin)
 - Permissions Policy microphone status
 - MediaRecorder MIME type support
 - Microphone permission state
+- getUserMedia probe (time-to-reject measurement)
 - Runtime errors captured during recording attempts
 - **Copy JSON** button for easy sharing
 
-## Server-Side Changes
+## Backend Endpoints
 
-The transcription endpoint (`/api/voice/transcribe`) now:
+- `POST /api/voice/capture-session` — Create breakout capture session (10-min TTL)
+- `POST /api/voice/upload` — Accept audio + session_id, transcribe, parse, store
+- `GET /api/voice/session-result` — Poll for session status + parsed result
+- `POST /api/voice/transcribe` — Direct audio transcription (inline mode)
+- `POST /api/voice/parse` — Text transcript → LLM proposed action
+- `POST /api/voice/execute` — Execute confirmed voice command
 
-- Accepts variable MIME types (webm, mp4, m4a, aac, wav, etc.)
-- Maps content-type to appropriate file extension for Whisper
-- Logs incoming audio metadata (content-type, size, mapped filename)
-- Returns structured error codes alongside error messages
+## Database
 
-## Files Changed
+`voice_capture_sessions` table stores breakout session state:
+- Status: created → uploaded → transcribed → parsed (or failed/expired)
+- Transcript, parse_result (JSONB), audio_path, error_message, return_url
 
-- `lib/voice/capture.ts` — Strategy-based capture module
-- `lib/hooks/useVoiceScheduling.ts` — Refactored to use capture strategies
-- `components/blocks/voice/VoiceButton.tsx` — New `file_capture` state
+## Files
+
+- `lib/voice/service.ts` — VoiceCaptureService: strategy routing, session helpers
+- `lib/voice/capture.ts` — Low-level capture: MediaRecorder, env detection, diagnostics
+- `lib/hooks/useVoiceScheduling.ts` — Voice state machine hook
+- `components/blocks/voice/VoiceButton.tsx` — Mic button with breakout state UI
+- `components/blocks/voice/VoiceConfirmationSheet.tsx` — Proposal confirmation + text input
 - `components/blocks/voice/VoiceDebugOverlay.tsx` — Diagnostics overlay
-- `components/blocks/voice/VoiceConfirmationSheet.tsx` — file_capture state handling
-- `app/api/voice/transcribe/route.ts` — Robust multi-format audio handling
+- `app/voice-capture/page.tsx` — External breakout recording page
+- `app/api/voice/upload/route.ts` — Audio upload + transcribe + parse pipeline
+- `app/api/voice/capture-session/route.ts` — Create capture sessions
+- `app/api/voice/session-result/route.ts` — Poll session results
