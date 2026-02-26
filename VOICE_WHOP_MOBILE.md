@@ -21,6 +21,25 @@ environment does **not** grant `microphone` via the Permissions Policy
 This is **not** a bug in our code — we cannot change Whop's iframe
 attributes from inside the iframe.
 
+### Why the initial fallback attempt failed (gesture context)
+
+The first implementation tried to fall back to `<input capture>` after
+`getUserMedia` rejected. This failed silently because:
+
+1. User taps mic → `startRecording()` is called
+2. `await getUserMedia()` rejects (policy block)
+3. catch → `triggerFileCapture()` → `input.click()`
+
+By step 3, the code has crossed `await` boundaries. Mobile browsers require
+`input.click()` to be in the **synchronous** user gesture call stack. After
+any `await`, the gesture context is consumed and the programmatic click is
+silently ignored by the browser — the file picker never opens.
+
+**Fix:** We run `shouldUseFileCaptureOnly()` once on mount (checks iframe
+status, Permissions Policy, mobile UA) and store the result in a ref. When
+the user taps, we read the ref **synchronously** and call
+`triggerFileCapture()` immediately — no async work before `input.click()`.
+
 ## Solution: Strategy-Based Capture with Automatic Fallback
 
 The voice capture module (`lib/voice/capture.ts`) now attempts strategies in
