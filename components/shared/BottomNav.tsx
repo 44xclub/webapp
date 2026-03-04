@@ -15,7 +15,10 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-t border-[rgba(255,255,255,0.07)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-t border-[rgba(255,255,255,0.07)]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       <div className="flex h-16 safe-x">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
@@ -42,8 +45,6 @@ export function BottomNav() {
           )
         })}
       </div>
-      {/* Safe area bottom spacer */}
-      <div className="safe-bottom" />
     </nav>
   )
 }

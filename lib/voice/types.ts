@@ -84,6 +84,13 @@ export interface LLMCancelBlock {
 
 export type LLMAction = LLMCreateBlock | LLMRescheduleBlock | LLMCancelBlock
 
+/** Multi-block wrapper — LLM returns one or more actions */
+export interface LLMMultiBlockResponse {
+  actions: LLMCreateBlock[]
+  overall_confidence: number
+  needs_clarification: string[]
+}
+
 // ---- API request / response types ----
 
 export interface VoiceParseRequest {
@@ -93,6 +100,8 @@ export interface VoiceParseRequest {
 export interface VoiceParseResponse {
   command_id: string
   proposed_action: LLMAction
+  /** Additional actions when user mentions multiple blocks */
+  additional_actions?: LLMCreateBlock[]
   /** 'schedule' or 'log' — computed server-side for create_block */
   mode: VoiceMode | null
   /** Resolved datetime in user's local timezone */
@@ -105,6 +114,8 @@ export interface VoiceParseResponse {
 export interface VoiceExecuteRequest {
   command_id: string
   approved_action: LLMAction
+  /** Additional actions to execute in batch */
+  additional_actions?: LLMCreateBlock[]
   mode: VoiceMode | null
   resolved_datetime: string | null
 }
@@ -112,5 +123,7 @@ export interface VoiceExecuteRequest {
 export interface VoiceExecuteResponse {
   status: 'executed' | 'failed'
   block_id: string | null
+  /** IDs of all blocks created (for multi-block) */
+  block_ids?: string[]
   result_summary: string
 }

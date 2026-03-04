@@ -14,17 +14,15 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useCommunityChallenge, useVoiceScheduling } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useVoiceScheduling } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Mic, Loader2 } from 'lucide-react'
 import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
-import { StreakCard } from '@/components/shared/StreakCard'
+import { DailyPopup } from '@/components/shared/DailyPopup'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
-import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
-import { ChallengeCard } from '@/components/structure/ChallengeCard'
 import type { Block, BlockType } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { LLMCreateBlock, VoiceParseResponse } from '@/lib/voice/types'
@@ -163,7 +161,6 @@ export default function AppPage() {
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
-  const [challengeModalOpen, setChallengeModalOpen] = useState(false)
   const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
   const [voiceDraft, setVoiceDraft] = useState<BlockFormData | null>(null)
 
@@ -173,7 +170,6 @@ export default function AppPage() {
   const { rank, loading: rankLoading } = useRank(user?.id)
   const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
   const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
-  const { challenge, todayBlock: challengeTodayBlock, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
 
 
 
@@ -199,10 +195,6 @@ export default function AppPage() {
     voice.dismiss()
   }, [voice])
 
-  const handleChallengeLogSuccess = useCallback(() => {
-    refetchChallenge()
-    setChallengeModalOpen(false)
-  }, [refetchChallenge])
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -253,7 +245,7 @@ export default function AppPage() {
 
   // Determine if block should show share prompt on completion
   const isShareEligible = useCallback((block: Block) => {
-    const shareTypes = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+    const shareTypes = ['workout', 'habit', 'nutrition', 'checkin']
     return shareTypes.includes(block.block_type) && block.block_type !== 'personal'
   }, [])
 
@@ -301,17 +293,6 @@ export default function AppPage() {
     <div className="min-h-app flex flex-col content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} avatarUrl={avatarUrl} />
 
-      {/* Streak Strip - ultra-compact */}
-      {profile && (
-        <div className="px-4 pt-2">
-          <StreakCard
-            currentStreak={profile.current_streak || 0}
-            bestStreak={profile.best_streak || 0}
-            variant="strip"
-          />
-        </div>
-      )}
-
       <WeekStrip
         selectedDate={selectedDate}
         onSelectDate={handleSelectDate}
@@ -321,56 +302,19 @@ export default function AppPage() {
         onViewModeChange={handleViewModeChange}
       />
 
-      {/* Framework + Challenge cards side-by-side */}
+      {/* Framework card */}
       {viewMode === 'day' && (
         <div className="px-4 pt-2">
           {frameworkLoading ? (
-            <div className="grid grid-cols-2 gap-2">
-              <CompactCardSkeleton />
-              <CompactCardSkeleton />
-            </div>
-          ) : challenge && !challengeTodayBlock?.completed_at ? (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Framework</span>
-                <ActiveFrameworkCard
-                  activeFramework={activeFramework}
-                  todaySubmission={null}
-                  completionCount={completionCount}
-                  onOpenChecklist={() => setFrameworkModalOpen(true)}
-                  compact
-                />
-              </div>
-              <div>
-                <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Challenge</span>
-                <ChallengeCard
-                  challenge={challenge}
-                  todayBlock={challengeTodayBlock}
-                  onLogToday={() => setChallengeModalOpen(true)}
-                  variant="compact"
-                />
-              </div>
-            </div>
+            <CompactCardSkeleton />
           ) : (
-            <>
-              <ActiveFrameworkCard
-                activeFramework={activeFramework}
-                todaySubmission={null}
-                completionCount={completionCount}
-                onOpenChecklist={() => setFrameworkModalOpen(true)}
-                compact
-              />
-              {challenge && !challengeTodayBlock?.completed_at && (
-                <div className="mt-2">
-                  <ChallengeCard
-                    challenge={challenge}
-                    todayBlock={challengeTodayBlock}
-                    onLogToday={() => setChallengeModalOpen(true)}
-                    variant="compact"
-                  />
-                </div>
-              )}
-            </>
+            <ActiveFrameworkCard
+              activeFramework={activeFramework}
+              todaySubmission={null}
+              completionCount={completionCount}
+              onOpenChecklist={() => setFrameworkModalOpen(true)}
+              compact
+            />
           )}
         </div>
       )}
@@ -396,7 +340,7 @@ export default function AppPage() {
       </main>
 
       {/* FAB area — voice button + add block button */}
-      {!modalOpen && !challengeModalOpen && (
+      {!modalOpen && (
         <div
           className="fixed z-30 flex items-end gap-3"
           style={{
@@ -466,16 +410,12 @@ export default function AppPage() {
         onConfirm={handleSharePromptConfirm}
       />
 
-      {challenge && user && (
-        <ChallengeLogModal
-          isOpen={challengeModalOpen}
-          onClose={() => setChallengeModalOpen(false)}
-          challenge={challenge}
-          userId={user.id}
-          userProfile={profile}
-          userRank={rank}
-          avatarUrl={avatarUrl}
-          onSuccess={handleChallengeLogSuccess}
+      {/* Daily popup — once per day motivational/streak summary */}
+      {profile && (
+        <DailyPopup
+          currentStreak={profile.current_streak || 0}
+          bestStreak={profile.best_streak || 0}
+          displayName={profile.display_name}
         />
       )}
 

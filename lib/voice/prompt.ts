@@ -115,6 +115,22 @@ Your job is just to resolve the datetime accurately. Examples:
   - "tomorrow", "next Monday" → resolve to future dates
 - If day or time is missing or ambiguous, add a clarifying question to needs_clarification and set confidence below 0.6.
 
+=== MULTI-BLOCK SUPPORT ===
+
+If the user mentions MULTIPLE activities in a single command, return a JSON object with an "actions" array:
+{
+  "actions": [ ...array of create_block objects... ],
+  "overall_confidence": 0.0,
+  "needs_clarification": []
+}
+
+Examples of multi-block commands:
+- "I did a workout at 7am and had breakfast at 8" → 2 create_block actions
+- "Schedule gym at 6, then meal prep at 8, and read for an hour at 9" → 3 create_block actions
+
+If the user mentions only ONE activity, return the single action object (not wrapped in "actions" array).
+If the user mentions reschedule or cancel, always return a single action (not multi-block).
+
 === GENERAL RULES ===
 
 - confidence: float 0–1 indicating certainty of interpretation.

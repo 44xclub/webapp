@@ -162,7 +162,7 @@ function isFutureScheduled(dateStr: string, startTime: string, timezone: string 
 }
 
 // Block types eligible for sharing
-const SHARE_ELIGIBLE_TYPES: BlockType[] = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+const SHARE_ELIGIBLE_TYPES: BlockType[] = ['workout', 'habit', 'nutrition', 'checkin']
 
 export function BlockModal({
   isOpen,
@@ -399,11 +399,9 @@ export function BlockModal({
   }
 
   const handleContinue = () => {
-    // For nutrition blocks, carry the step-1 title into payload.meal_name
     if (blockType === 'nutrition') {
       const currentTitle = form.getValues('title') || ''
-      const currentMealName = form.getValues('payload.meal_name' as any)
-      if (currentTitle && !currentMealName) {
+      if (currentTitle) {
         form.setValue('payload.meal_name' as any, currentTitle)
       }
     }
@@ -424,6 +422,14 @@ export function BlockModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
+      // For nutrition blocks, ensure title is set from meal_name
+      if (blockType === 'nutrition') {
+        const mealName = (data.payload as any)?.meal_name || ''
+        if (!data.title && mealName) {
+          data.title = mealName
+        }
+      }
+
       // Check-in blocks are point-in-time - no duration
       const isCheckin = blockType === 'checkin'
 

@@ -245,13 +245,13 @@ export function Modal({
         {/* Header */}
         {(title || showClose) && (
           <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
-            <h2 className="text-[15px] font-bold text-[#eef2ff]">
+            <h2 className="text-[15px] font-bold text-[#eef2ff] flex-1 min-w-0 mr-2">
               {title}
             </h2>
             {showClose && (
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-[10px] text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.05)] transition-all duration-[140ms]"
+                className="relative z-10 p-2.5 -m-1 rounded-[10px] text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.05)] transition-all duration-[140ms] touch-manipulation flex-shrink-0"
               >
                 <X className="h-5 w-5" />
               </button>

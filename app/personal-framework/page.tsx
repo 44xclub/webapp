@@ -265,6 +265,7 @@ function FrameworkEditorModal({
   onClose: () => void
   onSave: (data: { title: string; description?: string; criteria: FrameworkCriteriaItem[] }) => void
 }) {
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1)
   const [title, setTitle] = useState(existingFramework?.title || '')
   const [description, setDescription] = useState(existingFramework?.description || '')
   const [criteria, setCriteria] = useState<FrameworkCriteriaItem[]>(
@@ -273,42 +274,38 @@ function FrameworkEditorModal({
   const [saving, setSaving] = useState(false)
   const [warnings, setWarnings] = useState<string[]>([])
 
-  // Add new criterion
+  // Skip to step 2 when editing existing framework
+  useState(() => {
+    if (existingFramework) setWizardStep(1)
+  })
+
   const addCriterion = () => {
     if (criteria.length >= 5) return
     setCriteria([
       ...criteria,
-      {
-        key: `item_${Date.now()}`,
-        label: '',
-        type: 'boolean',
-      },
+      { key: `item_${Date.now()}`, label: '', type: 'boolean' },
     ])
   }
 
-  // Update criterion
   const updateCriterion = (index: number, updates: Partial<FrameworkCriteriaItem>) => {
     const newCriteria = [...criteria]
     newCriteria[index] = { ...newCriteria[index], ...updates }
     setCriteria(newCriteria)
 
-    // Check for rejected patterns
     if (updates.label) {
       const lower = updates.label.toLowerCase()
       const hasRejected = rejectedPatterns.some((p) => lower.includes(p))
       if (hasRejected) {
-        setWarnings((prev) => [...prev.filter((w) => !w.includes(updates.label!)), `"${updates.label}" may be too vague. Consider a specific, measurable action.`])
+        setWarnings((prev) => [...prev.filter((w) => !w.includes(updates.label!)), `"${updates.label}" may be too vague. Try a specific action.`])
       }
     }
   }
 
-  // Remove criterion
   const removeCriterion = (index: number) => {
     setCriteria(criteria.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSave = async () => {
     if (!title.trim() || criteria.length === 0) return
     if (criteria.some((c) => !c.label.trim())) return
 
@@ -321,178 +318,201 @@ function FrameworkEditorModal({
     setSaving(false)
   }
 
+  const canGoToStep2 = title.trim().length > 0
+  const canGoToStep3 = criteria.length > 0 && criteria.every((c) => c.label.trim())
+
+  const stepLabels = ['Name', 'Rules', 'Review']
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-[#0f1115] rounded-t-[20px] sm:rounded-[20px] border-t border-[rgba(255,255,255,0.08)] sm:border">
-        {/* Header */}
-        <div className="sticky top-0 bg-[#0f1115] px-5 py-4 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
-          <h2 className="text-[18px] font-semibold text-[#eef2ff]">
-            {existingFramework ? 'Edit Framework' : 'Create Framework'}
-          </h2>
-          <button onClick={onClose} className="p-1 rounded-[8px] hover:bg-[rgba(255,255,255,0.06)]">
-            <X className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
-          </button>
+        {/* Header with step indicator */}
+        <div className="sticky top-0 bg-[#0f1115] px-5 pt-4 pb-3 border-b border-[rgba(255,255,255,0.06)]">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[16px] font-semibold text-[#eef2ff]">
+              {existingFramework ? 'Edit Framework' : 'Build Framework'}
+            </h2>
+            <button onClick={onClose} className="p-2 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] touch-manipulation">
+              <X className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
+            </button>
+          </div>
+          {/* Step indicator */}
+          <div className="flex items-center gap-1">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex-1 flex items-center gap-1.5">
+                <div className={`flex-1 h-1 rounded-full transition-colors ${
+                  s <= wizardStep ? 'bg-[#3b82f6]' : 'bg-[rgba(255,255,255,0.08)]'
+                }`} />
+                <span className={`text-[10px] font-medium ${
+                  s === wizardStep ? 'text-[#3b82f6]' : 'text-[rgba(238,242,255,0.35)]'
+                }`}>{stepLabels[s - 1]}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-[12px] text-[rgba(238,242,255,0.52)] mb-1.5">
-              Framework Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Morning Discipline Protocol"
-              className="w-full px-3 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-[12px] text-[rgba(238,242,255,0.52)] mb-1.5">
-              Description (optional)
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description"
-              className="w-full px-3 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
-            />
-          </div>
-
-          {/* Criteria */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[12px] text-[rgba(238,242,255,0.52)]">
-                Non-Negotiables ({criteria.length}/5)
-              </label>
-              {criteria.length < 5 && (
-                <button
-                  type="button"
-                  onClick={addCriterion}
-                  className="text-[12px] text-[#3b82f6] hover:underline"
-                >
-                  + Add
-                </button>
-              )}
+        <div className="p-5">
+          {/* Step 1: Name & description */}
+          {wizardStep === 1 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
+                  Framework Name
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Morning Discipline Protocol"
+                  autoFocus
+                  className="w-full px-3 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
+                />
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
+                  Description <span className="text-[rgba(238,242,255,0.35)]">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of your framework"
+                  className="w-full px-3 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[14px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
+                />
+              </div>
+              <button
+                onClick={() => setWizardStep(2)}
+                disabled={!canGoToStep2}
+                className="w-full py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[14px] font-medium disabled:opacity-40 transition-opacity"
+              >
+                Next
+              </button>
             </div>
+          )}
 
-            <div className="space-y-3">
-              {criteria.map((item, idx) => (
-                <div key={item.key} className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 border border-[rgba(255,255,255,0.06)]">
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-[#3b82f6]/20 text-[#3b82f6] text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+          {/* Step 2: Add non-negotiables */}
+          {wizardStep === 2 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-medium text-[rgba(238,242,255,0.72)]">
+                  Non-Negotiables ({criteria.length}/5)
+                </p>
+                {criteria.length < 5 && (
+                  <button type="button" onClick={addCriterion} className="text-[12px] text-[#3b82f6] font-medium">
+                    + Add
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {criteria.map((item, idx) => (
+                  <div key={item.key} className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#3b82f6]/20 text-[#3b82f6] text-[11px] flex items-center justify-center flex-shrink-0">
                       {idx + 1}
                     </span>
-                    <div className="flex-1 space-y-2">
-                      <input
-                        type="text"
-                        value={item.label}
-                        onChange={(e) => updateCriterion(idx, { label: e.target.value })}
-                        placeholder="30 min walk (no phone)"
-                        className="w-full px-3 py-2 rounded-[8px] bg-[rgba(255,255,255,0.06)] text-[13px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
-                      />
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={item.type || 'boolean'}
-                          onChange={(e) => updateCriterion(idx, { type: e.target.value as 'boolean' | 'number' })}
-                          className="px-2 py-1.5 rounded-[6px] bg-[rgba(255,255,255,0.06)] text-[12px] text-[rgba(238,242,255,0.72)] focus:outline-none"
-                        >
-                          <option value="boolean">Checkbox</option>
-                          <option value="number">Numeric</option>
-                        </select>
-                        {item.type === 'number' && (
-                          <>
-                            <input
-                              type="number"
-                              value={item.target || ''}
-                              onChange={(e) => updateCriterion(idx, { target: parseInt(e.target.value) || undefined })}
-                              placeholder="Target"
-                              className="w-16 px-2 py-1.5 rounded-[6px] bg-[rgba(255,255,255,0.06)] text-[12px] text-[#eef2ff] focus:outline-none"
-                            />
-                            <input
-                              type="text"
-                              value={item.unit || ''}
-                              onChange={(e) => updateCriterion(idx, { unit: e.target.value })}
-                              placeholder="Unit"
-                              className="w-16 px-2 py-1.5 rounded-[6px] bg-[rgba(255,255,255,0.06)] text-[12px] text-[#eef2ff] focus:outline-none"
-                            />
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeCriterion(idx)}
-                          className="p-1 rounded-[4px] text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/10"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                    <input
+                      type="text"
+                      value={item.label}
+                      onChange={(e) => updateCriterion(idx, { label: e.target.value })}
+                      placeholder="30 min walk (no phone)"
+                      className="flex-1 px-3 py-2 rounded-[8px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[13px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.35)] focus:outline-none focus:border-[#3b82f6]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCriterion(idx)}
+                      className="p-1.5 rounded-[6px] text-rose-400/50 hover:text-rose-400 hover:bg-rose-500/10 touch-manipulation"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {criteria.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={addCriterion}
+                    className="w-full py-3 rounded-[10px] border-2 border-dashed border-[rgba(255,255,255,0.12)] text-[rgba(238,242,255,0.52)] text-[13px] flex items-center justify-center gap-2 hover:border-[rgba(255,255,255,0.2)]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add First Non-Negotiable
+                  </button>
+                )}
+              </div>
+
+              {/* Warnings */}
+              {warnings.length > 0 && (
+                <div className="bg-amber-500/10 rounded-[10px] p-3 border border-amber-500/20">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-[12px] text-amber-400 space-y-1">
+                      {warnings.map((w, i) => <p key={i}>{w}</p>)}
                     </div>
                   </div>
                 </div>
-              ))}
-
-              {criteria.length === 0 && (
-                <button
-                  type="button"
-                  onClick={addCriterion}
-                  className="w-full py-3 rounded-[10px] border-2 border-dashed border-[rgba(255,255,255,0.12)] text-[rgba(238,242,255,0.52)] text-[13px] flex items-center justify-center gap-2 hover:border-[rgba(255,255,255,0.2)]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add First Non-Negotiable
-                </button>
               )}
-            </div>
-          </div>
 
-          {/* Warnings */}
-          {warnings.length > 0 && (
-            <div className="bg-amber-500/10 rounded-[10px] p-3 border border-amber-500/20">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="text-[12px] text-amber-400 space-y-1">
-                  {warnings.map((w, i) => (
-                    <p key={i}>{w}</p>
-                  ))}
-                </div>
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)]">
+                Each item should be a specific, measurable daily action.
+              </p>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setWizardStep(1)}
+                  className="flex-1 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.06)] text-[rgba(238,242,255,0.72)] text-[14px] font-medium"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => setWizardStep(3)}
+                  disabled={!canGoToStep3}
+                  className="flex-1 py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[14px] font-medium disabled:opacity-40 transition-opacity"
+                >
+                  Review
+                </button>
               </div>
             </div>
           )}
 
-          {/* Guidelines */}
-          <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3">
-            <p className="text-[11px] text-[rgba(238,242,255,0.45)] mb-2">Guidelines:</p>
-            <ul className="text-[11px] text-[rgba(238,242,255,0.40)] space-y-0.5">
-              <li>• Must be binary or measurable</li>
-              <li>• Must be daily actions</li>
-              <li>• Include at least one physical action</li>
-              <li>• Avoid vague items like &quot;be mindful&quot;</li>
-            </ul>
-          </div>
+          {/* Step 3: Review & save */}
+          {wizardStep === 3 && (
+            <div className="space-y-4">
+              <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+                  <p className="text-[15px] font-semibold text-[#eef2ff]">{title}</p>
+                  {description && (
+                    <p className="text-[12px] text-[rgba(238,242,255,0.50)] mt-0.5">{description}</p>
+                  )}
+                </div>
+                <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+                  {criteria.map((item, idx) => (
+                    <div key={item.key} className="px-4 py-2.5 flex items-center gap-2.5">
+                      <div className="w-5 h-5 rounded-[6px] border-2 border-[rgba(255,255,255,0.20)]" />
+                      <span className="text-[13px] text-[#eef2ff]">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.06)] text-[rgba(238,242,255,0.72)] text-[14px] font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || criteria.length === 0 || criteria.some((c) => !c.label.trim()) || saving}
-              className="flex-1 py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[14px] font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {existingFramework ? 'Save Changes' : 'Create'}
-            </button>
-          </div>
-        </form>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setWizardStep(2)}
+                  className="flex-1 py-2.5 rounded-[10px] bg-[rgba(255,255,255,0.06)] text-[rgba(238,242,255,0.72)] text-[14px] font-medium"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[14px] font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {existingFramework ? 'Save Changes' : 'Create Framework'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

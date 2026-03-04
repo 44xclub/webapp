@@ -168,58 +168,57 @@ export function useFrameworks(userId: string | undefined) {
   const { data, isLoading: loading, mutate } = useSWR<FrameworksData>(
     userId ? ['frameworks', userId] : null,
     async () => {
-      // Fetch all active framework templates
-      const { data: templatesData, error: templatesError } = await supabase
-        .from('framework_templates')
-        .select('*')
-        .eq('is_active', true)
-        .order('title')
-
-      if (templatesError) throw templatesError
-
-      const frameworks = templatesData as FrameworkTemplate[]
-
-      // Fetch user's active framework
-      const { data: userFrameworkData, error: userFrameworkError } = await supabase
-        .from('user_frameworks')
-        .select('*, framework_template:framework_templates(*)')
-        .eq('user_id', userId!)
-        .maybeSingle()
-
-      if (userFrameworkError) {
-        console.error('[Frameworks] Failed to fetch user framework:', userFrameworkError)
-      }
-
-      const activeFramework = userFrameworkData as UserFramework | null
       const today = formatDateForApi(new Date())
 
-      // Ensure daily framework items exist (call RPC to hydrate)
+      // Parallelize: fetch templates + user's active framework
+      const [templatesResult, userFrameworkResult] = await Promise.all([
+        supabase
+          .from('framework_templates')
+          .select('*')
+          .eq('is_active', true)
+          .order('title'),
+        supabase
+          .from('user_frameworks')
+          .select('*, framework_template:framework_templates(*)')
+          .eq('user_id', userId!)
+          .maybeSingle(),
+      ])
+
+      if (templatesResult.error) throw templatesResult.error
+
+      const frameworks = templatesResult.data as FrameworkTemplate[]
+
+      if (userFrameworkResult.error) {
+        console.error('[Frameworks] Failed to fetch user framework:', userFrameworkResult.error)
+      }
+
+      const activeFramework = userFrameworkResult.data as UserFramework | null
+
+      // Ensure daily framework items exist (depends on activeFramework)
       if (activeFramework) {
         await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
       }
 
-      // Fetch today's submission
-      const { data: submissionData } = await supabase
-        .from('daily_framework_submissions')
-        .select('*')
-        .eq('user_id', userId!)
-        .eq('date', today)
-        .single()
-
-      const todaySubmission = submissionData as DailyFrameworkSubmission | null
-
-      // Fetch today's framework items for the active framework only
-      let todayItems: DailyFrameworkItem[] = []
-      if (activeFramework?.framework_template_id) {
-        const { data: itemsData } = await supabase
-          .from('daily_framework_items')
+      // Parallelize: fetch today's submission + today's framework items
+      const [submissionResult, itemsResult] = await Promise.all([
+        supabase
+          .from('daily_framework_submissions')
           .select('*')
           .eq('user_id', userId!)
           .eq('date', today)
-          .eq('framework_template_id', activeFramework.framework_template_id)
+          .single(),
+        activeFramework?.framework_template_id
+          ? supabase
+              .from('daily_framework_items')
+              .select('*')
+              .eq('user_id', userId!)
+              .eq('date', today)
+              .eq('framework_template_id', activeFramework.framework_template_id)
+          : Promise.resolve({ data: null }),
+      ])
 
-        todayItems = (itemsData as DailyFrameworkItem[]) || []
-      }
+      const todaySubmission = submissionResult.data as DailyFrameworkSubmission | null
+      const todayItems = (itemsResult.data as DailyFrameworkItem[]) || []
 
       return { frameworks, activeFramework, todaySubmission, todayItems }
     },
