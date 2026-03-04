@@ -45,63 +45,57 @@ export function useProgrammes(userId: string | undefined) {
   const { data, isLoading: loading, mutate } = useSWR<ProgrammesData>(
     userId ? ['programmes', userId] : null,
     async () => {
-      // Fetch all active programme templates
-      const { data: templatesData, error: templatesError } = await supabase
-        .from('programme_templates')
-        .select('*')
-        .eq('is_active', true)
-        .order('title')
+      // Parallelize: fetch templates + user's active programme
+      const [templatesResult, userProgrammeResult] = await Promise.all([
+        supabase
+          .from('programme_templates')
+          .select('*')
+          .eq('is_active', true)
+          .order('title'),
+        supabase
+          .from('user_programmes')
+          .select('*, programme_template:programme_templates(*)')
+          .eq('user_id', userId!)
+          .is('deactivated_at', null)
+          .single(),
+      ])
 
-      if (templatesError) throw templatesError
+      if (templatesResult.error) throw templatesResult.error
 
-      const programmes = templatesData as ProgrammeTemplate[]
-
-      // Fetch user's active programme
-      const { data: userProgrammeData } = await supabase
-        .from('user_programmes')
-        .select('*, programme_template:programme_templates(*)')
-        .eq('user_id', userId!)
-        .is('deactivated_at', null)
-        .single()
-
-      const activeProgramme = userProgrammeData as UserProgramme | null
+      const programmes = templatesResult.data as ProgrammeTemplate[]
+      const activeProgramme = userProgrammeResult.data as UserProgramme | null
 
       let sessions: ProgrammeSession[] = []
       let activeRun: ProgrammeRun | null = null
       let progress: ProgrammeProgress | null = null
 
       if (activeProgramme?.programme_template_id) {
-        // Fetch sessions for active programme
-        const { data: sessionsData } = await supabase
-          .from('programme_sessions')
-          .select('*')
-          .eq('programme_template_id', activeProgramme.programme_template_id)
-          .order('week')
-          .order('day_index')
-
-        sessions = sessionsData as ProgrammeSession[]
-
-        // Fetch active run
-        try {
-          const { data: runData } = await supabase
-            .from('programme_runs')
+        // Parallelize: sessions, active run, and total count are independent
+        const [sessionsResult, runResult, totalCountResult] = await Promise.all([
+          supabase
+            .from('programme_sessions')
             .select('*')
-            .eq('user_id', userId!)
             .eq('programme_template_id', activeProgramme.programme_template_id)
-            .eq('status', 'active')
-            .single()
-          activeRun = (runData as ProgrammeRun) ?? null
-        } catch {
-          activeRun = null
-        }
+            .order('week')
+            .order('day_index'),
+          Promise.resolve(
+            supabase
+              .from('programme_runs')
+              .select('*')
+              .eq('user_id', userId!)
+              .eq('programme_template_id', activeProgramme.programme_template_id)
+              .eq('status', 'active')
+              .single()
+          ).catch(() => ({ data: null })),
+          supabase
+            .from('programme_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('programme_template_id', activeProgramme.programme_template_id),
+        ])
 
-        // Fetch progress
-        const { count: totalCount } = await supabase
-          .from('programme_sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('programme_template_id', activeProgramme.programme_template_id)
-
-        const totalSessions = totalCount ?? 0
+        sessions = sessionsResult.data as ProgrammeSession[]
+        activeRun = (runResult.data as ProgrammeRun) ?? null
+        const totalSessions = totalCountResult.count ?? 0
 
         if (activeRun && totalSessions > 0) {
           try {

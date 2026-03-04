@@ -23,18 +23,14 @@ export function useProfile(userId: string | undefined) {
     { revalidateOnFocus: false, dedupingInterval: 30000 }
   )
 
-  // Resolve avatar signed URL — cached separately with longer TTL
-  const { data: avatarUrl } = useSWR<string | null>(
-    profile?.avatar_path ? ['avatar-url', profile.avatar_path] : null,
-    async () => {
-      const { data, error } = await supabase.storage
-        .from('avatars')
-        .createSignedUrl(profile!.avatar_path!, 3600)
-      if (error || !data?.signedUrl) return null
-      return data.signedUrl
-    },
-    { revalidateOnFocus: false, dedupingInterval: 300000 }
-  )
+  // Resolve avatar public URL — no network request needed since the bucket is public
+  const avatarUrl = useMemo(() => {
+    if (!profile?.avatar_path) return null
+    const { data } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(profile.avatar_path)
+    return data?.publicUrl ?? null
+  }, [profile?.avatar_path, supabase])
 
   const updateProfile = useCallback(
     async (data: Partial<Profile>) => {

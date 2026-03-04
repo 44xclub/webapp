@@ -37,11 +37,10 @@ export function NutritionForm({ form }: NutritionFormProps) {
 
   const handleToggleMacros = () => {
     if (macrosExpanded) {
-      // Collapsing: clear all macro values to prevent NaN
-      setValue('payload.calories', undefined as any)
-      setValue('payload.protein', undefined as any)
-      setValue('payload.carbs', undefined as any)
-      setValue('payload.fat', undefined as any)
+      setValue('payload.calories', null as any)
+      setValue('payload.protein', null as any)
+      setValue('payload.carbs', null as any)
+      setValue('payload.fat', null as any)
     }
     setMacrosExpanded(!macrosExpanded)
   }

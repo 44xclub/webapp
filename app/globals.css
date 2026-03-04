@@ -156,6 +156,13 @@ body {
   overscroll-behavior-y: none; /* Prevent overscroll bounce resetting position */
 }
 
+/* Prevent pull-to-refresh in standalone PWA */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+  }
+}
+
 ::selection {
   background: rgba(59, 130, 246, 0.28);
   color: #FFFFFF;
@@ -274,8 +281,7 @@ input[type="time"] {
   The visual appearance stays the same because we use transform: scale().
 */
 @supports (-webkit-touch-callout: none) {
-  input[type="date"],
-  input[type="time"] {
+  input, select, textarea {
     font-size: 16px !important;
   }
 }

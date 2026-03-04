@@ -421,7 +421,7 @@ function VoiceTextInputSheet({
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
-              placeholder="e.g. Bench press 3x10 80kg tomorrow 7pm"
+              placeholder="Bench press 3x10 80kg tomorrow 7pm"
               disabled={isParsing}
               className="flex-1 px-3 py-2.5 rounded-[10px] text-[14px] text-[#eef2ff] placeholder-[rgba(238,242,255,0.30)] bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.10)] focus:border-[#3b82f6] focus:outline-none transition-colors"
             />

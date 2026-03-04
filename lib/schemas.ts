@@ -41,7 +41,7 @@ export const workoutSchema = baseBlockSchema.extend({
     exercise_matrix: z.array(exerciseEntrySchema).optional(),
     description: z.string().optional(),
     duration: z.number().positive().optional(),
-    rpe: z.number().min(1).max(10).optional(),
+    rpe: z.number().min(1).max(10).nullable().optional(),
     // Programme reference fields
     programme_template_id: z.string().optional(),
     programme_session_id: z.string().optional(),
@@ -68,10 +68,10 @@ export const nutritionSchema = baseBlockSchema.extend({
   payload: z.object({
     meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).default('breakfast'),
     meal_name: z.string().min(1, 'Meal name is required'),
-    calories: z.number().nonnegative().optional(),
-    protein: z.number().nonnegative().optional(),
-    carbs: z.number().nonnegative().optional(),
-    fat: z.number().nonnegative().optional(),
+    calories: z.number().nonnegative().nullable().optional(),
+    protein: z.number().nonnegative().nullable().optional(),
+    carbs: z.number().nonnegative().nullable().optional(),
+    fat: z.number().nonnegative().nullable().optional(),
   }),
   shared_to_feed: z.boolean().optional(),
 })
