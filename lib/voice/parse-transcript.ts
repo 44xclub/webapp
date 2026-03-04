@@ -4,13 +4,15 @@
 
 import { buildSystemPrompt } from './prompt'
 import { VOICE_LLM_MODEL, MIN_CONFIDENCE_THRESHOLD } from './config'
-import type { LLMAction, VoiceBlockType, VoiceMode } from './types'
+import type { LLMAction, LLMCreateBlock, VoiceBlockType, VoiceMode } from './types'
 
 const VALID_INTENTS = ['create_block', 'reschedule_block', 'cancel_block']
 const VALID_BLOCK_TYPES: VoiceBlockType[] = ['workout', 'habit', 'nutrition', 'checkin', 'personal']
 
 interface ParseResult {
   action: LLMAction
+  /** Additional actions for multi-block voice commands */
+  additionalActions?: LLMCreateBlock[]
   confidence: number
   needs_clarification: string[]
 }
@@ -70,7 +72,45 @@ export async function parseTranscript(
     throw new Error(`Failed to parse LLM JSON: ${jsonStr.slice(0, 200)}`)
   }
 
-  // Validate intent
+  // Check for multi-block response (actions array)
+  if (Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+    const actions = parsed.actions as Record<string, unknown>[]
+
+    // Validate each action
+    for (const action of actions) {
+      const block = action.block as Record<string, unknown> | null
+      if (!block) throw new Error('Multi-block action requires a block object')
+      const blockType = block.block_type as string
+      if (!VALID_BLOCK_TYPES.includes(blockType as VoiceBlockType)) {
+        throw new Error(`Unsupported block_type: ${blockType}`)
+      }
+    }
+
+    const overallConfidence = typeof parsed.overall_confidence === 'number' ? parsed.overall_confidence : 0.5
+    const needs_clarification = Array.isArray(parsed.needs_clarification)
+      ? (parsed.needs_clarification as string[])
+      : []
+
+    if (overallConfidence < MIN_CONFIDENCE_THRESHOLD && needs_clarification.length === 0) {
+      needs_clarification.push('Could you clarify what you meant?')
+    }
+
+    // First action is primary, rest are additional
+    const primaryAction = { ...actions[0], intent: 'create_block' as const } as unknown as LLMCreateBlock
+    const additionalActions = actions.slice(1).map(a => ({
+      ...a,
+      intent: 'create_block' as const,
+    })) as unknown as LLMCreateBlock[]
+
+    return {
+      action: primaryAction,
+      additionalActions: additionalActions.length > 0 ? additionalActions : undefined,
+      confidence: overallConfidence,
+      needs_clarification,
+    }
+  }
+
+  // Single action response
   const intent = parsed.intent as string
   if (!VALID_INTENTS.includes(intent)) {
     throw new Error(`Unknown intent: ${intent}`)

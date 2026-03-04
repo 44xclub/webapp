@@ -2,11 +2,8 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Loader2, ChevronRight, Target, Dumbbell } from 'lucide-react'
-import { useAuth, useProfile, useCommunityChallenge, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
-import { ChallengeCard } from '@/components/structure/ChallengeCard'
-import { ChallengeLogModal } from '@/components/structure/ChallengeLogModal'
+import { Loader2, ChevronRight, Target } from 'lucide-react'
+import { useAuth, useProfile, useFrameworks, useProgrammes, useRank } from '@/lib/hooks'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import { FrameworksSection } from '@/components/structure/FrameworksSection'
 import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
@@ -15,7 +12,7 @@ import { PersonalProgrammeCTA } from '@/components/structure/PersonalProgrammeCT
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
-import { SegmentedControl, SectionCard } from '@/components/ui'
+import { SegmentedControl } from '@/components/ui'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { StructureSkeleton, ProgrammeCardSkeleton } from '@/components/ui/Skeletons'
 
@@ -42,14 +39,11 @@ function StructurePageContent() {
   const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('discipline')
   const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
-  const [challengeModalOpen, setChallengeModalOpen] = useState(false)
-
   const searchParams = useSearchParams()
   const frameworksSectionRef = useRef<HTMLDivElement>(null)
 
   const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
-  const { challenge, todayBlock, loading: challengeLoading, refetch: refetchChallenge } = useCommunityChallenge(user?.id)
   const { frameworks, activeFramework, todaySubmission, todayItems, completionCount, loading: frameworksLoading, activateFramework, deactivateFramework, submitDailyStatus, toggleFrameworkItem, refetch: refetchFrameworks } = useFrameworks(user?.id)
   const { programmes, activeProgramme, sessions, progress, loading: programmesLoading, activateProgramme, deactivateProgramme, scheduleWeek, fetchProgrammeSessions, refetch: refetchProgrammes } = useProgrammes(user?.id)
 
@@ -65,11 +59,6 @@ function StructurePageContent() {
       return () => clearTimeout(timer)
     }
   }, [searchParams, frameworksLoading])
-
-  const handleChallengeLogSuccess = () => {
-    refetchChallenge()
-    setChallengeModalOpen(false)
-  }
 
   if (authLoading || !user) {
     return (
@@ -96,31 +85,14 @@ function StructurePageContent() {
       <main className="px-4 pt-2 pb-6 space-y-4" style={{ overflowAnchor: 'none' }}>
         {activeTab === 'discipline' ? (
           <>
-            {/* Framework + Challenge - compact side-by-side (matching Home) */}
-            {!frameworksLoading && !challengeLoading && (
-              <div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Framework</span>
-                    <ActiveFrameworkCard
-                      activeFramework={activeFramework}
-                      todaySubmission={todaySubmission}
-                      completionCount={completionCount}
-                      onOpenChecklist={() => setFrameworkModalOpen(true)}
-                      compact
-                    />
-                  </div>
-                  <div>
-                    <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)] mb-1">Challenge</span>
-                    <ChallengeCard
-                      challenge={challenge}
-                      todayBlock={todayBlock}
-                      onLogToday={() => setChallengeModalOpen(true)}
-                      variant="compact"
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* Active Framework card */}
+            {!frameworksLoading && (
+              <ActiveFrameworkCard
+                activeFramework={activeFramework}
+                todaySubmission={todaySubmission}
+                completionCount={completionCount}
+                onOpenChecklist={() => setFrameworkModalOpen(true)}
+              />
             )}
 
             {/* Personal Framework CTA — above available frameworks, matching programme CTA style */}
@@ -202,18 +174,6 @@ function StructurePageContent() {
         onDeactivate={deactivateFramework}
       />
 
-      {challenge && user && (
-        <ChallengeLogModal
-          isOpen={challengeModalOpen}
-          onClose={() => setChallengeModalOpen(false)}
-          challenge={challenge}
-          userId={user.id}
-          userProfile={profile}
-          userRank={rank}
-          avatarUrl={avatarUrl}
-          onSuccess={handleChallengeLogSuccess}
-        />
-      )}
     </div>
   )
 }

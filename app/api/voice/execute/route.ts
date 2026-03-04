@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { command_id, approved_action, mode, resolved_datetime } = body
+    const { command_id, approved_action, additional_actions, mode, resolved_datetime } = body
 
     // 3. Verify the command log exists and belongs to this user
     const { data: logRow, error: logError } = await db
@@ -97,6 +97,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 5b. Execute additional actions (multi-block)
+    const allBlockIds: string[] = blockId ? [blockId] : []
+    if (additional_actions && additional_actions.length > 0) {
+      for (const extraAction of additional_actions) {
+        try {
+          const { mode: extraMode } = await import('@/lib/voice/parse-transcript').then(m => {
+            const nowISO = new Date().toISOString()
+            return m.determineMode(extraAction, nowISO)
+          })
+          const extraResult = await executeCreate(db, user.id, command_id, extraAction, extraMode, null)
+          allBlockIds.push(extraResult.blockId)
+          resultSummary += ` | ${extraResult.summary}`
+        } catch (extraErr) {
+          console.error('[VoiceExecute] Additional action failed:', extraErr)
+          // Non-fatal — primary block was already created
+        }
+      }
+    }
+
     // 6. Update voice_commands_log to executed
     await db
       .from('voice_commands_log')
@@ -110,6 +129,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: 'executed',
       block_id: blockId,
+      block_ids: allBlockIds.length > 1 ? allBlockIds : undefined,
       result_summary: resultSummary,
     })
   } catch (err) {

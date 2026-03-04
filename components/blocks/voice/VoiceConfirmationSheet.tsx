@@ -83,10 +83,23 @@ export function VoiceConfirmationSheet({
     if (!proposal) return null
 
     const action = proposal.proposed_action
+    const additionalActions = proposal.additional_actions || []
 
     switch (action.intent) {
       case 'create_block':
-        return <CreateBlockPreview action={action} mode={proposal.mode} resolvedDatetime={proposal.resolved_datetime} />
+        return (
+          <div className="space-y-2">
+            <CreateBlockPreview action={action} mode={proposal.mode} resolvedDatetime={proposal.resolved_datetime} />
+            {additionalActions.map((extra, i) => (
+              <CreateBlockPreview key={i} action={extra} mode={proposal.mode} resolvedDatetime={null} />
+            ))}
+            {additionalActions.length > 0 && (
+              <p className="text-[11px] text-[rgba(238,242,255,0.40)] text-center pt-1">
+                {additionalActions.length + 1} blocks will be created
+              </p>
+            )}
+          </div>
+        )
       case 'reschedule_block':
         return <RescheduleBlockPreview action={action} />
       case 'cancel_block':

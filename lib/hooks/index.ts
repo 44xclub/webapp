@@ -1,7 +1,7 @@
 export { useAuth } from './useAuth'
 export { useBlocks, useBlockMedia } from './useBlocks'
 export { useProfile } from './useProfile'
-export { useCommunityChallenge, useFrameworks, useDailyScores } from './useDiscipline'
+export { useFrameworks, useDailyScores } from './useDiscipline'
 export { useProgrammes } from './useProgrammes'
 export { usePersonalProgrammes, usePersonalProgramme } from './usePersonalProgrammes'
 export { usePersonalFramework } from './usePersonalFramework'

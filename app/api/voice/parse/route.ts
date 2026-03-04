@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const nowISO = new Date().toLocaleString('sv-SE', { timeZone: timezone }).replace(' ', 'T')
 
     // 5. Call LLM to parse transcript
-    const { action, confidence, needs_clarification } = await parseTranscript(
+    const { action, additionalActions, confidence, needs_clarification } = await parseTranscript(
       transcript,
       timezone,
       nowISO
@@ -69,7 +69,15 @@ export async function POST(request: NextRequest) {
     // 6. Determine LOG vs SCHEDULE for create_block
     const { mode, resolvedDatetime } = determineMode(action, nowISO)
 
-    const summaryText = summarizeAction(action, action.intent === 'create_block' ? mode : null)
+    // Build summary text including additional actions
+    let summaryText = summarizeAction(action, action.intent === 'create_block' ? mode : null)
+    if (additionalActions && additionalActions.length > 0) {
+      const additionalSummaries = additionalActions.map(a => {
+        const { mode: aMode } = determineMode(a, nowISO)
+        return summarizeAction(a, aMode)
+      })
+      summaryText = `${summaryText}, ${additionalSummaries.join(', ')}`
+    }
 
     // 7. Log to voice_commands_log with status='proposed'
     const { data: logRow, error: logError } = await db
@@ -79,7 +87,10 @@ export async function POST(request: NextRequest) {
         input_type: 'text' as const,
         intent: action.intent,
         raw_transcript: transcript,
-        proposed_action: action as unknown as Record<string, unknown>,
+        proposed_action: {
+          primary: action,
+          additional: additionalActions || [],
+        } as unknown as Record<string, unknown>,
         confidence,
         needs_clarification,
         status: 'proposed',
@@ -99,6 +110,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       command_id: logRow.id,
       proposed_action: action,
+      additional_actions: additionalActions || undefined,
       mode: action.intent === 'create_block' ? mode : null,
       resolved_datetime: resolvedDatetime,
       summary_text: summaryText,

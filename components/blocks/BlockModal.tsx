@@ -162,7 +162,7 @@ function isFutureScheduled(dateStr: string, startTime: string, timezone: string 
 }
 
 // Block types eligible for sharing
-const SHARE_ELIGIBLE_TYPES: BlockType[] = ['workout', 'habit', 'nutrition', 'checkin', 'challenge']
+const SHARE_ELIGIBLE_TYPES: BlockType[] = ['workout', 'habit', 'nutrition', 'checkin']
 
 export function BlockModal({
   isOpen,

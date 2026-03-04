@@ -1,8 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { CheckSquare, ChevronRight, Lock } from 'lucide-react'
-import type { UserFramework, DailyFrameworkSubmission } from '@/lib/types'
+import type { UserFramework, DailyFrameworkSubmission, FrameworkCriteria, FrameworkCriteriaItem } from '@/lib/types'
 
 interface ActiveFrameworkCardProps {
   activeFramework: UserFramework | null
@@ -80,18 +81,26 @@ export function ActiveFrameworkCard({
     )
   }
 
+  // Extract criteria labels for preview
+  const criteriaLabels = useMemo(() => {
+    const criteria = activeFramework.framework_template!.criteria as FrameworkCriteria | FrameworkCriteriaItem[] | null
+    if (!criteria) return []
+    const items = Array.isArray(criteria) ? criteria : (criteria.items || [])
+    return items.map((item: FrameworkCriteriaItem) => item.label).slice(0, 4)
+  }, [activeFramework.framework_template.criteria])
+
   return (
     <button
       onClick={onOpenChecklist}
-      className="w-full text-left relative overflow-hidden rounded-[var(--radius-section)] h-[80px] transition-all hover:brightness-105 group"
+      className="w-full text-left relative overflow-hidden rounded-[var(--radius-section)] transition-all hover:brightness-105 group"
     >
       {imageUrl ? (
         <div className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.02]" style={{ backgroundImage: `url(${imageUrl})` }} />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-      <div className="absolute inset-0 p-3 flex flex-col justify-between">
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/30" />
+      <div className="relative p-3 flex flex-col gap-2">
         <div className="flex items-start justify-between">
           <p className="text-[14px] font-semibold text-white leading-tight">{activeFramework.framework_template.title}</p>
           <div className="flex items-center gap-1.5">
@@ -105,6 +114,21 @@ export function ActiveFrameworkCard({
             )}
           </div>
         </div>
+
+        {/* Criteria preview bullets */}
+        {criteriaLabels.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            {criteriaLabels.map((label, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-white/35 flex-shrink-0" />
+                <span className="text-[11px] text-white/55 truncate">{label}</span>
+              </div>
+            ))}
+            {total > 4 && (
+              <span className="text-[10px] text-white/35 pl-2.5">+{total - 4} more</span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           <div className="flex-1 h-[5px] bg-white/15 rounded-full overflow-hidden">
