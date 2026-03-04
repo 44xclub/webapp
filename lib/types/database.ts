@@ -1594,6 +1594,8 @@ export type NotificationType =
   | 'challenge_complete'
   | 'reflection_reminder'
   | 'team_update'
+  | 'respect_received'
+  | 'framework_completed'
 
 export interface Notification {
   id: string

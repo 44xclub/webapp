@@ -176,7 +176,7 @@ export default function VoiceCapturePage() {
   }, [returnUrl, sessionId])
 
   return (
-    <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-app bg-[#05070a] flex flex-col items-center justify-center p-6 text-center safe-top">
       <div className="max-w-sm w-full space-y-6">
         {/* Header */}
         <div>

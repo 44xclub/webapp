@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { Button } from '@/components/ui'
 import { Modal } from '@/components/ui/Modal'
 import { SectionHeader } from '@/components/ui/SectionHeader'
-import { SquareCard } from '@/components/ui/SquareCard'
 import { HorizontalCardRow } from '@/components/ui/HorizontalCardRow'
+import { FrameworkPreviewCard } from './FrameworkPreviewCard'
 import { FullScreenOverlay } from '@/components/ui/FullScreenOverlay'
 import { Loader2 } from 'lucide-react'
 import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus, FrameworkCriteria, FrameworkCriteriaItem } from '@/lib/types'
@@ -89,12 +89,11 @@ export function FrameworksSection({ frameworks, activeFramework, onActivateFrame
           <p className="text-[12px] text-[rgba(238,242,255,0.35)] py-4 w-full text-center">No frameworks available</p>
         ) : (
           frameworks.map((framework) => (
-            <SquareCard
+            <FrameworkPreviewCard
               key={framework.id}
-              title={framework.title}
+              framework={framework}
               imageUrl={getImageUrl(framework.image_path)}
               isActive={activeFramework?.framework_template_id === framework.id}
-              activeColor="#3b82f6"
               onClick={() => openDetail(framework)}
             />
           ))

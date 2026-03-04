@@ -37,29 +37,32 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Reset file input
+    // Reset file input so same file can be re-selected
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
 
-    // Validate file type
-    if (!isValidImageFile(file)) {
-      setError('Please select a valid image file (JPEG, PNG, WebP, or GIF)')
+    // Validate file type — also accept files with no type (iOS HEIC sometimes reports empty)
+    if (file.type && !isValidImageFile(file)) {
+      setError('Please select a valid image (JPEG, PNG, WebP, or GIF)')
       return
     }
 
     setError(null)
+    setImgFailed(false)
     setUploading(true)
+
+    let newPreviewUrl: string | null = null
 
     try {
       // Compress the image
       const compressed = await compressAvatar(file)
 
-      // Create preview
-      const preview = createPreviewUrl(compressed.blob)
-      setPreviewUrl(preview)
+      // Create preview immediately
+      newPreviewUrl = createPreviewUrl(compressed.blob)
+      setPreviewUrl(newPreviewUrl)
 
-      // Upload to Supabase storage
+      // Upload to Supabase storage — use timestamp to bust cache
       const storagePath = `${userId}/avatar.webp`
 
       const { error: uploadError } = await supabase.storage
@@ -77,30 +80,26 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
       // Update profile with the path
       onUploadComplete(storagePath)
 
-      // Clean up old preview after successful upload
-      setTimeout(() => {
-        if (previewUrl) revokePreviewUrl(previewUrl)
-      }, 1000)
-
     } catch (err) {
       console.error('Avatar upload failed:', err)
-      setError('Failed to upload avatar. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Upload failed: ${msg}`)
       // Clean up preview on error
-      if (previewUrl) {
-        revokePreviewUrl(previewUrl)
+      if (newPreviewUrl) {
+        revokePreviewUrl(newPreviewUrl)
         setPreviewUrl(null)
       }
     } finally {
       setUploading(false)
     }
-  }, [userId, supabase, onUploadComplete, previewUrl])
+  }, [userId, supabase, onUploadComplete])
 
   return (
     <div className="relative">
       <button
         onClick={handleClick}
         disabled={uploading}
-        className="relative h-20 w-20 rounded-[14px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] overflow-hidden group focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-2 focus:ring-offset-[#07090d]"
+        className="relative h-20 w-20 rounded-[14px] bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] overflow-hidden group focus:outline-none focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-2 focus:ring-offset-[#07090d] flex items-center justify-center"
       >
         {avatarUrl ? (
           <img
@@ -135,16 +134,17 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
         )}
       </button>
 
+      {/* Accept all image types including iOS camera formats */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />
 
       {error && (
-        <p className="absolute top-full left-0 right-0 mt-2 text-[11px] text-red-400 text-center">
+        <p className="absolute top-full left-0 right-0 mt-2 text-[11px] text-red-400 text-center whitespace-nowrap">
           {error}
         </p>
       )}

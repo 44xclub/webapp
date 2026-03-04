@@ -99,9 +99,9 @@ export default function ProgrammeEditorPage() {
 
   return (
     <div className="app-shell">
-      <div className="min-h-app bg-[#07090d] pb-6">
+      <div className="min-h-app bg-[#07090d]" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-[#07090d]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)]">
+        <header className="sticky top-0 z-20 bg-[#07090d]/95 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)] safe-top">
           <div className="px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
