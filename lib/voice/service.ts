@@ -99,7 +99,7 @@ export function detectInlineBlocked(): InlineFailureReason | null {
   const isWebView =
     (/(iPhone|iPad|iPod)/.test(ua) && !/Safari/i.test(ua)) ||
     /wv\)/.test(ua) ||
-    /FBAN|FBAV|Instagram|WhopApp/i.test(ua)
+    /FBAN|FBAV|Instagram/i.test(ua)
 
   if (isMobile && isWebView) return 'policy_block'
 
@@ -141,7 +141,7 @@ function failureMessage(reason: InlineFailureReason): string {
   switch (reason) {
     case 'policy_block':
     case 'instant_rejection':
-      return "Whop's embedded view doesn't support microphone access. Opening external recorder..."
+      return 'Microphone access is blocked in this view. Opening external recorder...'
     case 'not_supported':
       return 'Audio recording is not supported in this browser. Opening external recorder...'
     case 'insecure_context':

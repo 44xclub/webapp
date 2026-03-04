@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { PWARegister } from '@/components/PWARegister'
+import { InstallBanner } from '@/components/shared/InstallBanner'
+import { OfflineIndicator } from '@/components/shared/OfflineIndicator'
 import { ToastProvider } from '@/components/shared/Toast'
 import './globals.css'
 
@@ -11,6 +13,15 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: '44CLUB',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 }
 
@@ -32,10 +43,13 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body>
         <ToastProvider>
           <PWARegister />
+          <OfflineIndicator />
+          <InstallBanner />
           {children}
         </ToastProvider>
       </body>

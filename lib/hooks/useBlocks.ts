@@ -153,11 +153,8 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
   )
 
   // Toggle completion (optimistic update) + create feed post if shared
-  // When whopToken is provided and a workout block is being completed,
-  // the request goes through /api/workouts/{id}/complete which also
-  // posts a message to the Whop Elite Community Chat channel.
   const toggleComplete = useCallback(
-    async (block: Block, whopToken?: string | null) => {
+    async (block: Block) => {
       if (!userId) throw new Error('Not authenticated')
 
       const isCompleting = !block.completed_at
@@ -173,28 +170,13 @@ export function useBlocks(selectedDate: Date, userId: string | undefined) {
       )
 
       try {
-        // Route workout completions through the API when a Whop token is
-        // available so the backend can verify identity and post to Whop chat.
-        if (isCompleting && block.block_type === 'workout' && whopToken) {
-          const res = await fetch(`/api/workouts/${block.id}/complete`, {
-            method: 'POST',
-            headers: { 'x-whop-user-token': whopToken },
-          })
+        const { error } = await supabase
+          .from('blocks')
+          .update({ completed_at: newCompletedAt })
+          .eq('id', block.id)
+          .eq('user_id', userId)
 
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}))
-            throw new Error(body.error || `Completion API returned ${res.status}`)
-          }
-        } else {
-          // Direct Supabase update for non-workout blocks or un-completing
-          const { error } = await supabase
-            .from('blocks')
-            .update({ completed_at: newCompletedAt })
-            .eq('id', block.id)
-            .eq('user_id', userId)
-
-          if (error) throw error
-        }
+        if (error) throw error
 
         if (newCompletedAt && block.shared_to_feed && block.block_type !== 'personal') {
           try {

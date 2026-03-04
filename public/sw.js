@@ -1,55 +1,46 @@
-// 44CLUB Blocks Service Worker
-const CACHE_NAME = '44club-blocks-v6';
+// 44CLUB Blocks Service Worker - PWA v7
+const CACHE_NAME = '44club-blocks-v7';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache on install (minimal - only static assets)
+// Assets to precache on install
 const PRECACHE_ASSETS = [
   '/manifest.json',
+  '/offline.html',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
 ];
 
-// Install event - clear all caches and cache only minimal assets
+// Install event - precache essential assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    // Clear ALL caches first
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          console.log('Service Worker: Clearing cache:', cacheName);
-          return caches.delete(cacheName);
-        })
+        cacheNames.map((cacheName) => caches.delete(cacheName))
       );
     }).then(() => {
       return caches.open(CACHE_NAME).then((cache) => {
-        console.log('Service Worker: Caching minimal assets');
         return cache.addAll(PRECACHE_ASSETS);
       });
     })
   );
-  // Force immediate activation
   self.skipWaiting();
 });
 
-// Activate event - clean up and claim clients
+// Activate event - clean up old caches and claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    // Clear any remaining old caches
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => cacheName !== CACHE_NAME)
-          .map((cacheName) => {
-            console.log('Service Worker: Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
+          .map((cacheName) => caches.delete(cacheName))
       );
-    }).then(() => {
-      console.log('Service Worker: Claiming clients');
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// Fetch event - network only for JS bundles, network-first for others
+// Fetch event - network-first for pages, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
@@ -70,12 +61,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // NEVER cache Next.js JavaScript bundles - always fetch fresh
+  // Never cache Next.js bundles - always fetch fresh
   if (event.request.url.includes('/_next/')) {
     return;
   }
 
-  // For navigation requests, always go to network
+  // Navigation requests - network first, fall back to offline page
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -85,27 +76,54 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other requests, use network-first strategy
+  // Static assets (icons, images, fonts) - cache first, then network
+  const url = new URL(event.request.url);
+  const isStaticAsset =
+    url.pathname.startsWith('/icons/') ||
+    url.pathname === '/manifest.json' ||
+    url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|woff|woff2|ttf|eot)$/);
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) {
+          // Return cached but also update in background (stale-while-revalidate)
+          const fetchPromise = fetch(event.request).then((response) => {
+            if (response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return response;
+          }).catch(() => cached);
+
+          return cached;
+        }
+
+        return fetch(event.request).then((response) => {
+          if (response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // All other requests - network first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Only cache static assets (images, fonts, etc)
-        if (response.status === 200 &&
-            (event.request.url.includes('/icons/') ||
-             event.request.url.includes('/manifest.json'))) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+        if (response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       })
       .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return new Response('Offline', {
+        return caches.match(event.request).then((cached) => {
+          return cached || new Response('Offline', {
             status: 503,
             statusText: 'Service Unavailable',
           });
@@ -114,14 +132,14 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle push notifications (for future use)
+// Push notifications
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
       body: data.body || 'New notification from 44CLUB',
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-72.png',
+      badge: '/icons/icon-96.png',
       vibrate: [100, 50, 100],
       data: {
         url: data.url || '/app',
@@ -140,16 +158,27 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
-      // If a window is already open, focus it
       for (const client of clientList) {
         if (client.url === event.notification.data.url && 'focus' in client) {
           return client.focus();
         }
       }
-      // Otherwise, open a new window
       if (clients.openWindow) {
         return clients.openWindow(event.notification.data.url);
       }
     })
   );
+});
+
+// Background sync for offline data
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(
+      clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SYNC_DATA' });
+        });
+      })
+    );
+  }
 });

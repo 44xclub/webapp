@@ -333,7 +333,7 @@ export function useVoiceScheduling(
     const preBlock = detectInlineBlocked()
     if (preBlock) {
       startBreakoutFlow(
-        "Whop's embedded view doesn't support microphone access. Opening external recorder..."
+        'Microphone access is blocked. Opening external recorder...'
       )
       return
     }
@@ -408,7 +408,7 @@ export function useVoiceScheduling(
 
         if (isInstantReject || isPolicyBlock) {
           startBreakoutFlow(
-            "Whop's embedded view doesn't support microphone access. Opening external recorder..."
+            'Microphone access is blocked. Opening external recorder...'
           )
         } else if (captureErr.code === 'permission_denied') {
           // User explicitly denied after seeing prompt (>100ms) — show error

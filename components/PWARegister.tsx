@@ -1,6 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
 
 export function PWARegister() {
   // Set --app-dvh CSS var for browsers without proper dvh support (iOS < 15.4)
@@ -12,7 +17,6 @@ export function PWARegister() {
       )
     }
 
-    // Only install JS fallback if dvh isn't supported
     if (!CSS.supports('height', '100dvh')) {
       setVh()
       window.addEventListener('resize', setVh)
@@ -20,10 +24,7 @@ export function PWARegister() {
     }
   }, [])
 
-  // Set --app-height CSS var: always driven by window.innerHeight for maximum
-  // stability across iOS Safari, Whop in-app browser, and Android Chrome.
-  // Unlike 100dvh/100vh, window.innerHeight gives the *actual* visible area
-  // and doesn't snap when the keyboard opens/closes.
+  // Set --app-height CSS var for viewport stability
   useEffect(() => {
     const setAppHeight = () => {
       document.documentElement.style.setProperty(
@@ -35,8 +36,6 @@ export function PWARegister() {
     setAppHeight()
     window.addEventListener('resize', setAppHeight)
 
-    // orientationchange fires before resize on some iOS versions;
-    // delay the measurement to let the viewport settle.
     const handleOrientation = () => {
       setTimeout(setAppHeight, 120)
     }
@@ -48,25 +47,90 @@ export function PWARegister() {
     }
   }, [])
 
+  // Register service worker with update handling
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
           console.log('Service Worker registered:', registration.scope)
-          // Force update check on every page load
+
+          // Check for updates on page load
           registration.update()
+
+          // Listen for new service worker waiting
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing
+            if (!newWorker) return
+
+            newWorker.addEventListener('statechange', () => {
+              if (
+                newWorker.state === 'installed' &&
+                navigator.serviceWorker.controller
+              ) {
+                // New content available - auto-activate
+                newWorker.postMessage({ type: 'SKIP_WAITING' })
+              }
+            })
+          })
         })
         .catch((error) => {
           console.error('Service Worker registration failed:', error)
         })
 
-      // Listen for controller change and reload to get fresh content
+      // Reload when new service worker takes over
+      let refreshing = false
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('New service worker activated, reloading...')
+        if (!refreshing) {
+          refreshing = true
+          window.location.reload()
+        }
       })
     }
   }, [])
 
   return null
+}
+
+// Hook for install prompt - use in components that show install UI
+export function useInstallPrompt() {
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true)
+      return
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as BeforeInstallPromptEvent)
+    }
+
+    window.addEventListener('beforeinstallprompt', handler)
+
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true)
+      setInstallPrompt(null)
+    })
+
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const promptInstall = useCallback(async () => {
+    if (!installPrompt) return false
+    await installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    setInstallPrompt(null)
+    return outcome === 'accepted'
+  }, [installPrompt])
+
+  return {
+    canInstall: !!installPrompt && !isInstalled,
+    isInstalled,
+    promptInstall,
+  }
 }
