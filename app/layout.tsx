@@ -44,8 +44,9 @@ export default function RootLayout({
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        {/* Set --app-height before first paint to prevent layout flash on iOS PWA */}
-        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.style.setProperty('--app-height',window.innerHeight+'px')` }} />
+        {/* Set --app-height before first paint to prevent layout flash on iOS PWA.
+            In standalone mode use screen.height for true full-screen coverage. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var s=window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone;var h=s?screen.height:window.innerHeight;document.documentElement.style.setProperty('--app-height',h+'px')})()` }} />
       </head>
       <body>
         <ToastProvider>
