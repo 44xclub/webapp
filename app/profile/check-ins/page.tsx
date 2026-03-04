@@ -134,9 +134,9 @@ function CheckInsPageContent() {
   }
 
   return (
-    <div className="min-h-app bg-[#07090d] pb-20">
+    <div className="min-h-app bg-[#07090d]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)]">
+      <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
         <div className="flex items-center px-4 py-3">
           <button
             onClick={() => router.push('/profile')}

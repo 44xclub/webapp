@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, Trash2, X, Dumbbell, Target, Flame, Award, Trophy, FileText, Users } from 'lucide-react'
+import { Bell, Check, Trash2, X, Dumbbell, Target, Flame, Award, Trophy, FileText, Users, Heart } from 'lucide-react'
 import { useNotifications } from '@/lib/hooks/useNotifications'
 import type { Notification, NotificationType } from '@/lib/types'
 
@@ -19,6 +19,8 @@ const notificationIcons: Record<NotificationType, React.ComponentType<{ classNam
   challenge_complete: Trophy,
   reflection_reminder: FileText,
   team_update: Users,
+  respect_received: Heart,
+  framework_completed: Check,
 }
 
 const notificationColors: Record<NotificationType, string> = {
@@ -31,6 +33,8 @@ const notificationColors: Record<NotificationType, string> = {
   challenge_complete: 'text-purple-400 bg-purple-500/20',
   reflection_reminder: 'text-blue-400 bg-blue-500/20',
   team_update: 'text-cyan-400 bg-cyan-500/20',
+  respect_received: 'text-pink-400 bg-pink-500/20',
+  framework_completed: 'text-emerald-400 bg-emerald-500/20',
 }
 
 export function NotificationBell({ userId }: NotificationBellProps) {

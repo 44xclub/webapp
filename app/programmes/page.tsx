@@ -77,7 +77,7 @@ export default function PersonalProgrammesPage() {
 
   return (
     <div className="app-shell">
-      <div className="min-h-app bg-[#07090d] pb-20 animate-fadeIn">
+      <div className="min-h-app bg-[#07090d] animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
         <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">
