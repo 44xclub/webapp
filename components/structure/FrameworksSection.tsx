@@ -8,7 +8,7 @@ import { SquareCard } from '@/components/ui/SquareCard'
 import { HorizontalCardRow } from '@/components/ui/HorizontalCardRow'
 import { FullScreenOverlay } from '@/components/ui/FullScreenOverlay'
 import { Loader2 } from 'lucide-react'
-import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus } from '@/lib/types'
+import type { FrameworkTemplate, UserFramework, DailyFrameworkSubmission, FrameworkSubmissionStatus, FrameworkCriteria, FrameworkCriteriaItem } from '@/lib/types'
 
 interface FrameworksSectionProps {
   frameworks: FrameworkTemplate[]
@@ -118,28 +118,58 @@ export function FrameworksSection({ frameworks, activeFramework, onActivateFrame
               const isActive = activeFramework?.framework_template_id === framework.id
               const imageUrl = getImageUrl(framework.image_path)
 
+              // Extract criteria labels for preview
+              const criteria = framework.criteria as FrameworkCriteria | FrameworkCriteriaItem[] | null
+              const criteriaItems = criteria
+                ? (Array.isArray(criteria) ? criteria : (criteria.items || []))
+                : []
+              const previewLabels = criteriaItems.map((item: FrameworkCriteriaItem) => item.label).slice(0, 3)
+              const extraCount = criteriaItems.length - previewLabels.length
+
               return (
                 <button
                   key={framework.id}
                   onClick={() => { openDetail(framework); setSeeAllOpen(false); setSearchQuery('') }}
-                  className={`relative overflow-hidden rounded-[14px] aspect-square text-left transition-all duration-200 group ${
+                  className={`relative overflow-hidden rounded-[14px] text-left transition-all duration-200 group ${
                     isActive ? 'ring-[1.5px] ring-[#3b82f6]' : ''
                   }`}
                 >
-                  {imageUrl ? (
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-                      style={{ backgroundImage: `url(${imageUrl})` }}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-                  <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
+                  {/* Image section — reduced height */}
+                  <div className="relative h-[80px]">
+                    {imageUrl ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                        style={{ backgroundImage: `url(${imageUrl})` }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                     {isActive && (
                       <span className="absolute top-2 left-2 text-[9px] font-bold text-white bg-[#3b82f6] px-[6px] py-[2px] rounded-full">Active</span>
                     )}
-                    <p className="text-[12px] font-semibold text-white leading-tight line-clamp-2">{framework.title}</p>
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <p className="text-[12px] font-semibold text-white leading-tight line-clamp-1">{framework.title}</p>
+                    </div>
+                  </div>
+
+                  {/* Criteria preview */}
+                  <div className="px-2 py-2 bg-[rgba(255,255,255,0.02)]">
+                    {previewLabels.length > 0 ? (
+                      <div className="space-y-1">
+                        {previewLabels.map((label, i) => (
+                          <div key={i} className="flex items-start gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-[rgba(59,130,246,0.60)] mt-[5px] flex-shrink-0" />
+                            <span className="text-[10px] text-[rgba(238,242,255,0.60)] leading-tight line-clamp-1">{label}</span>
+                          </div>
+                        ))}
+                        {extraCount > 0 && (
+                          <span className="text-[9px] text-[rgba(238,242,255,0.35)] pl-2.5">+{extraCount} more</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[rgba(238,242,255,0.30)] italic">No criteria set</span>
+                    )}
                   </div>
                 </button>
               )

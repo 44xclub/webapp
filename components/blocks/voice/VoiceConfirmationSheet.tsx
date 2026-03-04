@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Check,
@@ -16,6 +16,8 @@ import {
   Trash2,
   Send,
   Keyboard,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatTime } from '@/lib/date'
@@ -29,6 +31,8 @@ interface VoiceConfirmationSheetProps {
   onConfirm: () => void
   onEdit: () => void
   onCancel: () => void
+  /** Edit a specific block by index (opens BlockModal with that block's data) */
+  onEditBlock?: (blockIndex: number) => void
   /** Submit a typed command (fallback when mic unavailable) */
   onTextSubmit?: (text: string) => void
 }
@@ -69,8 +73,20 @@ export function VoiceConfirmationSheet({
   onConfirm,
   onEdit,
   onCancel,
+  onEditBlock,
   onTextSubmit,
 }: VoiceConfirmationSheetProps) {
+  // Track which block indices have been deleted by user
+  const [deletedIndices, setDeletedIndices] = useState<Set<number>>(new Set())
+  // Track per-block errors during bulk save
+  const [blockErrors, setBlockErrors] = useState<Map<number, string>>(new Map())
+
+  // Reset deleted indices when proposal changes
+  useEffect(() => {
+    setDeletedIndices(new Set())
+    setBlockErrors(new Map())
+  }, [proposal?.command_id])
+
   // Track whether we entered text input mode (stays true through parsing/error)
   const wasTextInputRef = useRef(false)
   if (state === 'text_input') wasTextInputRef.current = true
@@ -79,6 +95,33 @@ export function VoiceConfirmationSheet({
   const isTextInput = state === 'text_input' || ((state === 'parsing' || state === 'error') && wasTextInputRef.current)
   const isOpen = state === 'confirming' || state === 'executing' || state === 'success' || isTextInput
 
+  // Count remaining blocks after deletions
+  const remainingCount = useMemo(() => {
+    if (!proposal) return 0
+    const action = proposal.proposed_action
+    if (action.intent !== 'create_block') return 1
+    const additionalActions = proposal.additional_actions || []
+    const totalBlocks = 1 + additionalActions.length
+    return totalBlocks - deletedIndices.size
+  }, [proposal, deletedIndices])
+
+  const handleDeleteBlock = useCallback((index: number) => {
+    setDeletedIndices(prev => {
+      const next = new Set(prev)
+      next.add(index)
+      return next
+    })
+  }, [])
+
+  const handleEditBlock = useCallback((index: number) => {
+    if (onEditBlock) {
+      onEditBlock(index)
+    } else {
+      // Fallback: edit the primary block (legacy behavior)
+      onEdit()
+    }
+  }, [onEditBlock, onEdit])
+
   const content = useMemo(() => {
     if (!proposal) return null
 
@@ -86,20 +129,46 @@ export function VoiceConfirmationSheet({
     const additionalActions = proposal.additional_actions || []
 
     switch (action.intent) {
-      case 'create_block':
+      case 'create_block': {
+        // Collect all blocks: primary (index 0) + additional (index 1, 2, ...)
+        const allBlocks: { action: LLMCreateBlock; index: number }[] = [
+          { action, index: 0 },
+          ...additionalActions.map((extra, i) => ({ action: extra, index: i + 1 })),
+        ]
+
+        const visibleBlocks = allBlocks.filter(b => !deletedIndices.has(b.index))
+
+        if (visibleBlocks.length === 0) {
+          return (
+            <div className="py-4 text-center">
+              <p className="text-[13px] text-[rgba(238,242,255,0.50)]">All blocks removed</p>
+            </div>
+          )
+        }
+
         return (
           <div className="space-y-2">
-            <CreateBlockPreview action={action} mode={proposal.mode} resolvedDatetime={proposal.resolved_datetime} />
-            {additionalActions.map((extra, i) => (
-              <CreateBlockPreview key={i} action={extra} mode={proposal.mode} resolvedDatetime={null} />
+            {visibleBlocks.map(({ action: blockAction, index }) => (
+              <CreateBlockPreview
+                key={index}
+                action={blockAction}
+                mode={proposal.mode}
+                resolvedDatetime={index === 0 ? proposal.resolved_datetime : null}
+                showControls={visibleBlocks.length > 0}
+                onEdit={() => handleEditBlock(index)}
+                onDelete={visibleBlocks.length > 1 ? () => handleDeleteBlock(index) : undefined}
+                error={blockErrors.get(index)}
+                isExecuting={state === 'executing'}
+              />
             ))}
-            {additionalActions.length > 0 && (
+            {visibleBlocks.length > 1 && (
               <p className="text-[11px] text-[rgba(238,242,255,0.40)] text-center pt-1">
-                {additionalActions.length + 1} blocks will be created
+                {visibleBlocks.length} blocks will be created
               </p>
             )}
           </div>
         )
+      }
       case 'reschedule_block':
         return <RescheduleBlockPreview action={action} />
       case 'cancel_block':
@@ -107,7 +176,7 @@ export function VoiceConfirmationSheet({
       default:
         return null
     }
-  }, [proposal])
+  }, [proposal, deletedIndices, blockErrors, state, handleEditBlock, handleDeleteBlock])
 
   // Text input fallback — shown when mic APIs aren't available (e.g. iOS WebView)
   if (isTextInput) {
@@ -122,6 +191,11 @@ export function VoiceConfirmationSheet({
     ? (isLog ? 'Logged' : 'Scheduled')
     : 'Confirm Voice Command'
 
+  const isMultiBlock = proposal.proposed_action.intent === 'create_block' && ((proposal.additional_actions?.length || 0) > 0)
+  const confirmLabel = isMultiBlock
+    ? `Schedule ${remainingCount} block${remainingCount !== 1 ? 's' : ''}`
+    : 'Confirm'
+
   return createPortal(
     <div className="fixed inset-x-0 bottom-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
@@ -131,14 +205,14 @@ export function VoiceConfirmationSheet({
       />
 
       {/* Sheet */}
-      <div className="relative z-10 w-full sm:max-w-lg bg-[#0d1014] border-t border-[rgba(255,255,255,0.10)] rounded-t-[16px] animate-slideUp">
+      <div className="relative z-10 w-full sm:max-w-lg bg-[#0d1014] border-t border-[rgba(255,255,255,0.10)] rounded-t-[16px] animate-slideUp max-h-[80vh] flex flex-col">
         {/* Handle */}
-        <div className="flex justify-center pt-2 pb-1">
+        <div className="flex justify-center pt-2 pb-1 flex-shrink-0">
           <div className="w-8 h-1 rounded-full bg-[rgba(255,255,255,0.12)]" />
         </div>
 
         {/* Header */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
             <h3 className="text-[15px] font-bold text-[#eef2ff]">
               {headerText}
@@ -160,28 +234,28 @@ export function VoiceConfirmationSheet({
 
         {/* Clarification warning */}
         {hasClarification && (
-          <div className="mx-4 mb-2 px-3 py-2 rounded-[10px] bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.15)]">
+          <div className="mx-4 mb-2 px-3 py-2 rounded-[10px] bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.15)] flex-shrink-0">
             <p className="text-[12px] text-[rgba(251,191,36,0.85)] font-medium">
               {proposal.needs_clarification[0]}
             </p>
           </div>
         )}
 
-        {/* Content */}
-        <div className="px-4 pb-3">
+        {/* Content — scrollable for multi-block */}
+        <div className="px-4 pb-3 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
           {content}
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mx-4 mb-2 px-3 py-2 rounded-[10px] bg-[rgba(255,80,80,0.08)] border border-[rgba(255,80,80,0.15)]">
+          <div className="mx-4 mb-2 px-3 py-2 rounded-[10px] bg-[rgba(255,80,80,0.08)] border border-[rgba(255,80,80,0.15)] flex-shrink-0">
             <p className="text-[12px] text-[rgba(255,80,80,0.85)]">{error}</p>
           </div>
         )}
 
         {/* Action buttons */}
         <div
-          className="px-4 pt-2 flex gap-2"
+          className="px-4 pt-2 flex gap-2 flex-shrink-0"
           style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
         >
           {state === 'success' ? (
@@ -203,23 +277,29 @@ export function VoiceConfirmationSheet({
                 <X className="h-4 w-4 mr-1.5" />
                 Cancel
               </Button>
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={onEdit}
-                disabled={state === 'executing'}
-              >
-                <Pencil className="h-4 w-4 mr-1.5" />
-                Edit
-              </Button>
+              {!isMultiBlock && (
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={onEdit}
+                  disabled={state === 'executing'}
+                >
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Button>
+              )}
               <Button
                 className="flex-1"
                 onClick={onConfirm}
                 loading={state === 'executing'}
-                disabled={hasClarification}
+                disabled={hasClarification || remainingCount === 0}
               >
-                <Check className="h-4 w-4 mr-1.5" />
-                Confirm
+                {state === 'executing' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                ) : (
+                  <Check className="h-4 w-4 mr-1.5" />
+                )}
+                {confirmLabel}
               </Button>
             </>
           )}
@@ -236,10 +316,20 @@ function CreateBlockPreview({
   action,
   mode,
   resolvedDatetime,
+  showControls,
+  onEdit,
+  onDelete,
+  error: blockError,
+  isExecuting,
 }: {
   action: LLMCreateBlock
   mode: VoiceMode | null
   resolvedDatetime: string | null
+  showControls?: boolean
+  onEdit?: () => void
+  onDelete?: () => void
+  error?: string
+  isExecuting?: boolean
 }) {
   const { block } = action
   const workoutData = block.payload?.workout as { items?: { name: string; sets?: number | null; reps?: number | null }[] } | undefined
@@ -251,13 +341,35 @@ function CreateBlockPreview({
   const timeStr = dt ? dt.slice(11, 16) : null
 
   return (
-    <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3 space-y-2">
-      {/* Block type badge + title */}
-      <div className="flex items-center gap-2">
-        <BlockTypeIcon type={block.block_type} className="h-4 w-4 text-[rgba(238,242,255,0.55)]" />
-        <span className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] uppercase tracking-wider">
-          {blockTypeLabel(block.block_type)}
-        </span>
+    <div className={`rounded-[12px] border ${blockError ? 'border-[rgba(255,80,80,0.20)]' : 'border-[rgba(255,255,255,0.06)]'} bg-[rgba(255,255,255,0.02)] p-3 space-y-2`}>
+      {/* Block type badge + title + controls */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <BlockTypeIcon type={block.block_type} className="h-4 w-4 text-[rgba(238,242,255,0.55)] flex-shrink-0" />
+          <span className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] uppercase tracking-wider">
+            {blockTypeLabel(block.block_type)}
+          </span>
+        </div>
+        {showControls && !isExecuting && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="p-1.5 rounded-[8px] text-[rgba(238,242,255,0.40)] hover:text-[rgba(238,242,255,0.80)] hover:bg-[rgba(255,255,255,0.06)] transition-all touch-manipulation"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="p-1.5 rounded-[8px] text-[rgba(238,242,255,0.40)] hover:text-[rgba(255,80,80,0.80)] hover:bg-[rgba(255,80,80,0.08)] transition-all touch-manipulation"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Title */}
@@ -318,6 +430,14 @@ function CreateBlockPreview({
       {mode === 'log' && block.block_type !== 'personal' && (
         <div className="text-[11px] text-[rgba(34,197,94,0.65)]">
           Will be shared to feed
+        </div>
+      )}
+
+      {/* Per-block error */}
+      {blockError && (
+        <div className="flex items-center gap-1.5 text-[11px] text-[rgba(255,80,80,0.85)]">
+          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+          <span>{blockError}</span>
         </div>
       )}
     </div>

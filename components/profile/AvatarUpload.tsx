@@ -18,13 +18,14 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [imgFailed, setImgFailed] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = useMemo(() => createClient(), [])
 
   const initials = displayName.slice(0, 2).toUpperCase()
 
   // Use preview (blob) URL first, then the pre-resolved signed URL from parent
-  const avatarUrl = previewUrl || resolvedAvatarUrl || null
+  const avatarUrl = imgFailed ? null : (previewUrl || resolvedAvatarUrl || null)
 
   const handleClick = () => {
     if (!uploading) {
@@ -106,6 +107,10 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
             src={avatarUrl}
             alt={displayName}
             className="h-full w-full object-cover"
+            onError={() => setImgFailed(true)}
+            loading="eager"
+            width={80}
+            height={80}
           />
         ) : (
           <span className="text-[18px] font-semibold text-[rgba(238,242,255,0.65)]">

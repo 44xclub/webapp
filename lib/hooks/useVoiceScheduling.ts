@@ -53,6 +53,10 @@ interface UseVoiceSchedulingReturn {
   dismiss: () => void
   /** Manual re-check for breakout session result ("I'm back" button) */
   checkBreakoutResult: () => void
+  /** Remove a block from the proposal by index (0 = primary, 1+ = additional) */
+  removeBlock: (index: number) => void
+  /** Update a block in the proposal after editing */
+  updateBlock: (index: number, updatedBlock: import('@/lib/voice/types').LLMCreateBlock) => void
 }
 
 export function useVoiceScheduling(
@@ -487,6 +491,46 @@ export function useVoiceScheduling(
     }
   }, [proposal, onSuccess, setVoiceState, getAuthHeaders])
 
+  // ---- Remove a block from the proposal (for multi-block confirmation) ----
+  const removeBlock = useCallback((index: number) => {
+    if (!proposal) return
+    if (proposal.proposed_action.intent !== 'create_block') return
+
+    const additionalActions = proposal.additional_actions || []
+    if (index === 0) {
+      // Remove the primary block — promote first additional to primary
+      if (additionalActions.length > 0) {
+        const [newPrimary, ...rest] = additionalActions
+        setProposal({
+          ...proposal,
+          proposed_action: newPrimary,
+          additional_actions: rest.length > 0 ? rest : undefined,
+        })
+      }
+      // If no additional blocks, do nothing (don't allow removing the last block)
+    } else {
+      // Remove from additional_actions
+      const newAdditional = additionalActions.filter((_, i) => i !== index - 1)
+      setProposal({
+        ...proposal,
+        additional_actions: newAdditional.length > 0 ? newAdditional : undefined,
+      })
+    }
+  }, [proposal])
+
+  // ---- Update a block in the proposal after editing ----
+  const updateBlock = useCallback((index: number, updatedBlock: import('@/lib/voice/types').LLMCreateBlock) => {
+    if (!proposal) return
+
+    if (index === 0) {
+      setProposal({ ...proposal, proposed_action: updatedBlock })
+    } else {
+      const additionalActions = [...(proposal.additional_actions || [])]
+      additionalActions[index - 1] = updatedBlock
+      setProposal({ ...proposal, additional_actions: additionalActions })
+    }
+  }, [proposal])
+
   // ---- Dismiss ----
   const dismiss = useCallback(() => {
     const recognition = recognitionRef.current
@@ -519,5 +563,7 @@ export function useVoiceScheduling(
     confirmAction,
     dismiss,
     checkBreakoutResult,
+    removeBlock,
+    updateBlock,
   }
 }

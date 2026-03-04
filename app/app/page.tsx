@@ -181,7 +181,10 @@ export default function AppPage() {
     }, [refetchBlocks])
   )
 
-  // Handle "Edit" from voice confirmation — open BlockModal at step 2 with voice data pre-filled
+  // Track which voice block index is being edited (for back-to-confirmation flow)
+  const [voiceEditIndex, setVoiceEditIndex] = useState<number | null>(null)
+
+  // Handle "Edit" from voice confirmation — open BlockModal at step 2 with voice data pre-filled (single block)
   const handleVoiceEdit = useCallback(() => {
     if (!voice.proposal?.proposed_action) return
     const action = voice.proposal.proposed_action
@@ -195,6 +198,23 @@ export default function AppPage() {
     voice.dismiss()
   }, [voice])
 
+  // Handle editing a specific block by index in multi-block confirmation
+  const handleVoiceEditBlock = useCallback((blockIndex: number) => {
+    if (!voice.proposal) return
+    const allBlocks: LLMCreateBlock[] = [
+      ...(voice.proposal.proposed_action.intent === 'create_block' ? [voice.proposal.proposed_action] : []),
+      ...(voice.proposal.additional_actions || []),
+    ]
+    const blockAction = allBlocks[blockIndex]
+    if (!blockAction) return
+
+    const draft = voiceProposalToFormData(blockAction, voice.proposal)
+    setVoiceDraft(draft)
+    setVoiceEditIndex(blockIndex)
+    setEditingBlock(null)
+    setAddingToDate(null)
+    setModalOpen(true)
+  }, [voice.proposal])
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
 
@@ -228,7 +248,13 @@ export default function AppPage() {
   const handleViewModeChange = useCallback((mode: ViewMode) => setViewMode(mode), [])
   const handleAddBlock = useCallback((date: Date) => { setAddingToDate(date); setEditingBlock(null); setModalOpen(true) }, [])
   const handleEditBlock = useCallback((block: Block) => { setEditingBlock(block); setAddingToDate(null); setModalOpen(true) }, [])
-  const handleCloseModal = useCallback(() => { setModalOpen(false); setEditingBlock(null); setAddingToDate(null); setVoiceDraft(null) }, [])
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false)
+    setEditingBlock(null)
+    setAddingToDate(null)
+    setVoiceDraft(null)
+    setVoiceEditIndex(null)
+  }, [])
   const handleSaveBlock = useCallback(async (data: BlockFormData, entryMode?: 'schedule' | 'log') => {
     if (editingBlock) {
       await updateBlock(editingBlock.id, data)
@@ -371,6 +397,7 @@ export default function AppPage() {
         error={voice.error}
         onConfirm={voice.confirmAction}
         onEdit={handleVoiceEdit}
+        onEditBlock={handleVoiceEditBlock}
         onCancel={voice.dismiss}
         onTextSubmit={voice.parseTranscript}
       />

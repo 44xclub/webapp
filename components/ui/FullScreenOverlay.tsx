@@ -98,20 +98,23 @@ export function FullScreenOverlay({
       className="fixed inset-x-0 top-0 z-50 flex flex-col bg-[#07090d]"
       style={{ height: 'var(--app-height, 100dvh)' }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)]">
-        <h2 className="text-[17px] font-semibold text-[#eef2ff]">{title}</h2>
+      {/* Header — respects iOS safe area (notch / dynamic island) */}
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.07)] flex-shrink-0"
+        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}
+      >
+        <h2 className="text-[17px] font-semibold text-[#eef2ff] flex-1 min-w-0 mr-2">{title}</h2>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-[10px] text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.05)] transition-all"
+          className="relative z-10 p-2.5 -m-1 rounded-[10px] text-[rgba(238,242,255,0.52)] hover:text-[rgba(238,242,255,0.92)] hover:bg-[rgba(255,255,255,0.05)] transition-all duration-[140ms] touch-manipulation flex-shrink-0"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Search */}
+      {/* Search — stays under header, above scrollable content */}
       {onSearchChange && (
-        <div className="px-4 py-2.5">
+        <div className="px-4 py-2.5 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[rgba(238,242,255,0.35)]" />
             <input
