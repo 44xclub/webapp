@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SquareCardProps {
@@ -13,6 +14,14 @@ interface SquareCardProps {
 }
 
 export function SquareCard({ title, imageUrl, isActive, activeColor = 'var(--accent-success)', daysPerWeek, onClick, className }: SquareCardProps) {
+  const [imgLoaded, setImgLoaded] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
+
+  const handleImgLoad = useCallback(() => setImgLoaded(true), [])
+  const handleImgError = useCallback(() => { setImgFailed(true); setImgLoaded(true) }, [])
+
+  const showImage = imageUrl && !imgFailed
+
   return (
     <button
       onClick={onClick}
@@ -24,14 +33,29 @@ export function SquareCard({ title, imageUrl, isActive, activeColor = 'var(--acc
       )}
       style={isActive ? { '--tw-ring-color': activeColor } as React.CSSProperties : undefined}
     >
-      {imageUrl ? (
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
-          style={{ backgroundImage: `url(${imageUrl})` }}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
+      {/* Gradient placeholder always behind */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f2e] to-[#0c0f16]" />
+
+      {/* Image with fade-in */}
+      {showImage && (
+        <>
+          {!imgLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-transparent animate-pulse" />
+          )}
+          <img
+            src={imageUrl}
+            alt={title}
+            className={cn(
+              'absolute inset-0 w-full h-full object-cover transition-opacity duration-200 group-hover:scale-105',
+              imgLoaded ? 'opacity-100' : 'opacity-0'
+            )}
+            onLoad={handleImgLoad}
+            onError={handleImgError}
+            loading="lazy"
+          />
+        </>
       )}
+
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       <div className="absolute inset-0 p-2.5 flex flex-col justify-between">
         <div className="flex items-start justify-between gap-1">

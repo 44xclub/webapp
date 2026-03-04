@@ -812,3 +812,22 @@ button, a, [role="button"] {
 .animate-slideUp {
   animation: slideUp 0.2s ease-out;
 }
+
+/* ============================================
+   IMAGE LOADING — FADE-IN + PLACEHOLDER
+   ============================================ */
+
+/* Smooth fade-in for images that load after paint */
+.img-fade {
+  opacity: 0;
+  transition: opacity 0.2s ease-in;
+}
+.img-fade.loaded {
+  opacity: 1;
+}
+
+/* Skeleton placeholder for image slots */
+.img-skeleton {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

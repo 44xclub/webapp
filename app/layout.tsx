@@ -44,6 +44,8 @@ export default function RootLayout({
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        {/* Set --app-height before first paint to prevent layout flash on iOS PWA */}
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.style.setProperty('--app-height',window.innerHeight+'px')` }} />
       </head>
       <body>
         <ToastProvider>

@@ -25,16 +25,27 @@ export function PWARegister() {
   }, [])
 
   // Set --app-height CSS var for viewport stability
+  // Must fire on load, resize, orientationchange, and visualViewport resize
   useEffect(() => {
     const setAppHeight = () => {
+      // Use visualViewport.height when available (more stable on iOS PWA)
+      const h = window.visualViewport?.height ?? window.innerHeight
       document.documentElement.style.setProperty(
         '--app-height',
-        `${window.innerHeight}px`
+        `${h}px`
       )
     }
 
+    // Run synchronously on mount to prevent flash
     setAppHeight()
+
     window.addEventListener('resize', setAppHeight)
+
+    // visualViewport resize for iOS keyboard and safe area changes
+    const vv = window.visualViewport
+    if (vv) {
+      vv.addEventListener('resize', setAppHeight)
+    }
 
     const handleOrientation = () => {
       setTimeout(setAppHeight, 120)
@@ -43,6 +54,7 @@ export function PWARegister() {
 
     return () => {
       window.removeEventListener('resize', setAppHeight)
+      if (vv) vv.removeEventListener('resize', setAppHeight)
       window.removeEventListener('orientationchange', handleOrientation)
     }
   }, [])
