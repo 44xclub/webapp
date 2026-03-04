@@ -7,7 +7,7 @@
 //   2. <input type="file" accept="audio/*" capture> (OS-level recording)
 //
 // Falls back automatically when a strategy fails (e.g. mic blocked by
-// iframe Permissions Policy inside Whop mobile).
+// iframe Permissions Policy).
 
 /** Detailed error info for diagnostics */
 export interface VoiceCaptureError {
@@ -398,7 +398,7 @@ export function shouldFallbackToFileCapture(error: VoiceCaptureError): boolean {
     error.code === 'blocked_by_policy' ||
     error.code === 'not_supported' ||
     error.code === 'insecure_context' ||
-    // On mobile inside Whop, NotAllowedError with no prior prompt = policy block
+    // On mobile in iframe, NotAllowedError with no prior prompt = policy block
     error.code === 'permission_denied'
   )
 }
@@ -457,7 +457,7 @@ export function shouldUseFileCaptureOnly(): boolean {
     // Android WebView identifier
     /wv\)/.test(ua) ||
     // Generic in-app browser markers
-    /FBAN|FBAV|Instagram|WhopApp/i.test(ua)
+    /FBAN|FBAV|Instagram/i.test(ua)
 
   // In a mobile webview iframe, mic access is almost never available
   if (isMobile && isWebView) return true

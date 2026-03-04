@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw } from 'lucide-react'
+import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw, WifiOff } from 'lucide-react'
 import { useAuth, useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { BottomNav } from '@/components/shared/BottomNav'
@@ -65,6 +65,7 @@ export default function CommunityPage() {
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
   const [feedLoaded, setFeedLoaded] = useState(false)
+  const [feedError, setFeedError] = useState<string | null>(null)
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -78,6 +79,7 @@ export default function CommunityPage() {
   const fetchFeedPosts = async () => {
     if (!user) return
     setFeedLoading(true)
+    setFeedError(null)
     try {
       const { data: postsData, error: postsError } = await supabase
         .from('feed_posts')
@@ -160,6 +162,7 @@ export default function CommunityPage() {
       setFeedLoaded(true)
     } catch (err) {
       console.error('Failed to fetch feed:', err)
+      setFeedError(navigator.onLine ? 'Failed to load feed. Tap to retry.' : 'You\'re offline. Connect to load the feed.')
     } finally {
       setFeedLoading(false)
     }
@@ -200,6 +203,7 @@ export default function CommunityPage() {
           <FeedView
             posts={feedPosts}
             loading={feedLoading}
+            error={feedError}
             userId={user?.id}
             supabase={supabase}
             onRefresh={fetchFeedPosts}
@@ -633,6 +637,7 @@ function DailyOverviewCard({
 function FeedView({
   posts,
   loading,
+  error,
   userId,
   supabase,
   onRefresh,
@@ -640,6 +645,7 @@ function FeedView({
 }: {
   posts: FeedPost[]
   loading: boolean
+  error: string | null
   userId: string | undefined
   supabase: any
   onRefresh: () => void
@@ -706,6 +712,16 @@ function FeedView({
 
   if (loading) {
     return <FeedSkeleton count={3} />
+  }
+
+  if (error) {
+    return (
+      <button onClick={onRefresh} className="section-card text-center py-8 w-full">
+        <WifiOff className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-2 opacity-50" />
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)] mb-1">Couldn&apos;t Load Feed</h3>
+        <p className="text-[12px] text-[var(--text-secondary)]">{error}</p>
+      </button>
+    )
   }
 
   if (posts.length === 0) {

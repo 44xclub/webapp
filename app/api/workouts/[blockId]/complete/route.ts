@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { verifyWhopToken } from '@/lib/whop/verify-token'
-import { postWorkoutCompletion } from '@/lib/whop/chat'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * POST /api/workouts/{blockId}/complete
  *
- * Marks a workout block as completed and posts a message to the
- * configured Whop Elite Community Chat channel.
+ * Marks a workout block as completed.
  *
- * Authentication: requires a valid Whop iframe JWT in the
- * x-whop-user-token header.
+ * Authentication: uses Supabase session (cookie-based).
  *
  * Idempotent: completing an already-completed block returns success
- * without posting a duplicate chat message.
+ * without duplicate side effects.
  */
 export async function POST(
   request: NextRequest,
@@ -21,51 +17,22 @@ export async function POST(
 ) {
   const { blockId } = params
 
-  // 1. Verify Whop JWT
-  const whopToken = request.headers.get('x-whop-user-token')
-  if (!whopToken) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
     return NextResponse.json(
-      { error: 'Missing x-whop-user-token header' },
+      { error: 'Not authenticated' },
       { status: 401 }
     )
   }
 
-  let whopUserId: string
-  try {
-    const payload = await verifyWhopToken(whopToken)
-    whopUserId = payload.sub
-    console.log('[WorkoutComplete] JWT verified for Whop user')
-  } catch (err) {
-    console.error('[WorkoutComplete] JWT verification failed:', err)
-    return NextResponse.json(
-      { error: 'Invalid or expired Whop token' },
-      { status: 401 }
-    )
-  }
+  const userId = user.id
 
-  const supabase = createAdminClient()
-
-  // 2. Look up internal user by whop_user_id
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, display_name')
-    .eq('whop_user_id', whopUserId)
-    .single()
-
-  if (profileError || !profile) {
-    console.error('[WorkoutComplete] Profile lookup failed:', profileError?.message)
-    return NextResponse.json(
-      { error: 'No linked profile found for this Whop account' },
-      { status: 404 }
-    )
-  }
-
-  const userId = profile.id
-
-  // 3. Fetch the block and validate ownership + type + status
+  // Fetch the block and validate ownership + type + status
   const { data: block, error: blockError } = await supabase
     .from('blocks')
-    .select('id, user_id, block_type, title, payload, completed_at, chat_message_sent_at, deleted_at')
+    .select('id, user_id, block_type, title, payload, completed_at, deleted_at')
     .eq('id', blockId)
     .single()
 
@@ -85,24 +52,20 @@ export async function POST(
     return NextResponse.json({ error: 'Block is not a workout type' }, { status: 422 })
   }
 
-  // 4. Idempotency: if already completed, return success without duplicate post
+  // Idempotency: if already completed, return success
   if (block.completed_at) {
     return NextResponse.json({
       success: true,
       already_completed: true,
       completed_at: block.completed_at,
-      chat_sent: !!block.chat_message_sent_at,
     })
   }
 
-  // 5. Mark as completed in DB
+  // Mark as completed in DB
   const now = new Date().toISOString()
   const { error: updateError } = await supabase
     .from('blocks')
-    .update({
-      completed_at: now,
-      chat_dispatch_status: 'pending',
-    })
+    .update({ completed_at: now })
     .eq('id', blockId)
     .eq('user_id', userId)
 
@@ -114,47 +77,8 @@ export async function POST(
     )
   }
 
-  console.log('[WorkoutComplete] Block marked completed:', blockId)
-
-  // 6. Post to Whop chat (non-blocking — do not fail the completion)
-  let chatSent = false
-  try {
-    await postWorkoutCompletion({
-      displayName: profile.display_name || 'A member',
-      workoutTitle: block.title,
-      payload: (block.payload as Record<string, unknown>) || {},
-    })
-
-    // Record success
-    await supabase
-      .from('blocks')
-      .update({
-        chat_message_sent_at: new Date().toISOString(),
-        chat_dispatch_status: 'sent',
-        chat_dispatch_error: null,
-      })
-      .eq('id', blockId)
-
-    chatSent = true
-    console.log('[WorkoutComplete] Chat message sent for block:', blockId)
-  } catch (chatErr) {
-    const errMsg = chatErr instanceof Error ? chatErr.message : 'Unknown chat error'
-    console.error('[WorkoutComplete] Chat dispatch failed:', errMsg)
-
-    // Record failure — completion still succeeds
-    await supabase
-      .from('blocks')
-      .update({
-        chat_dispatch_status: 'failed',
-        chat_dispatch_error: errMsg,
-      })
-      .eq('id', blockId)
-  }
-
-  // 7. Return success (completion is the primary concern)
   return NextResponse.json({
     success: true,
     completed_at: now,
-    chat_sent: chatSent,
   })
 }

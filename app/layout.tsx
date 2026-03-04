@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { PWARegister } from '@/components/PWARegister'
 import { InstallBanner } from '@/components/shared/InstallBanner'
+import { OfflineIndicator } from '@/components/shared/OfflineIndicator'
 import { ToastProvider } from '@/components/shared/Toast'
 import './globals.css'
 
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body>
         <ToastProvider>
           <PWARegister />
+          <OfflineIndicator />
           <InstallBanner />
           {children}
         </ToastProvider>
