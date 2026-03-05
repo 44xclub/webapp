@@ -13,14 +13,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full min-w-0 overflow-hidden">
         {label && (
-          <label htmlFor={id} className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label htmlFor={id} className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             {label}
           </label>
         )}
         <input
           type={type}
           className={cn(
-            'w-full min-w-0 max-w-full h-[44px] px-4 text-[15px] bg-[var(--surface-2)] text-[#eef2ff] border border-[rgba(255,255,255,0.10)] rounded-[12px] transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+            'w-full min-w-0 max-w-full h-[36px] px-3 text-[13px] bg-[var(--surface-2)] text-[#eef2ff] border border-[rgba(255,255,255,0.10)] rounded-[10px] transition-all duration-[140ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
             'shadow-[inset_0_1px_2px_rgba(0,0,0,0.2),0_1px_0_rgba(255,255,255,0.03)]',
             'placeholder:text-[rgba(238,242,255,0.40)]',
             'hover:border-[rgba(255,255,255,0.16)]',
@@ -33,7 +33,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           id={id}
           {...props}
         />
-        {error && <p className="mt-2 text-[12px] font-medium text-danger">{error}</p>}
+        {error && <p className="mt-1.5 text-[11px] font-medium text-danger">{error}</p>}
       </div>
     )
   }

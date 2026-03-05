@@ -48,12 +48,12 @@ export function DateTimeCard({
   const resolvedStartLabel = startLabel || (pointInTime ? 'Time' : 'Start')
 
   return (
-    <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+    <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
       {/* Date row */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
-        <Calendar className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
+      <div className="flex items-center gap-2 px-2.5 py-2 border-b border-[rgba(255,255,255,0.06)]">
+        <Calendar className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
         {mode === 'display' ? (
-          <span className="text-[13px] text-[#eef2ff] font-medium truncate min-w-0">
+          <span className="text-[11px] text-[#eef2ff] font-medium truncate min-w-0">
             {dateDisplay}
           </span>
         ) : (
@@ -61,26 +61,26 @@ export function DateTimeCard({
             <Input
               type="date"
               {...register('date')}
-              className="w-full text-[13px] !h-[36px] !px-2"
+              className="w-full text-[11px] !h-[30px] !px-2"
             />
           </div>
         )}
       </div>
 
       {/* Time row */}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <Clock className="h-4 w-4 text-[#60a5fa] flex-shrink-0" />
+      <div className="flex items-center gap-2 px-2.5 py-2">
+        <Clock className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
 
-        <div className="flex-1 min-w-0 flex items-end gap-3">
+        <div className="flex-1 min-w-0 flex items-end gap-2.5">
           {/* Start time — always editable */}
           <div className="flex-1 min-w-0">
-            <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
+            <label className="block text-[9px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
               {resolvedStartLabel}
             </label>
             <Input
               type="time"
               {...register('start_time')}
-              className="w-full text-[13px] !h-[36px] !px-2"
+              className="w-full text-[11px] !h-[30px] !px-2"
             />
           </div>
 
@@ -88,20 +88,20 @@ export function DateTimeCard({
           {!pointInTime && (
             <>
               {/* Thin vertical divider */}
-              <div className="w-px h-8 bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
+              <div className="w-px h-6 bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
 
               <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
+                <label className="block text-[9px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
                   End
                 </label>
                 {mode === 'edit' ? (
                   <Input
                     type="time"
                     {...register('end_time')}
-                    className="w-full text-[13px] !h-[36px] !px-2"
+                    className="w-full text-[11px] !h-[30px] !px-2"
                   />
                 ) : (
-                  <p className="text-[13px] text-[#eef2ff] font-semibold h-[36px] flex items-center">
+                  <p className="text-[11px] text-[#eef2ff] font-semibold h-[30px] flex items-center">
                     {endTimeDisplay || '—'}
                   </p>
                 )}
@@ -112,7 +112,7 @@ export function DateTimeCard({
 
         {/* Duration badge */}
         {durationLabel && (
-          <span className="text-[10px] text-[rgba(238,242,255,0.35)] font-medium whitespace-nowrap flex-shrink-0">
+          <span className="text-[9px] text-[rgba(238,242,255,0.35)] font-medium whitespace-nowrap flex-shrink-0">
             {durationLabel}
           </span>
         )}
