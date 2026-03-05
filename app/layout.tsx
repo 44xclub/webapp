@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { PWARegister } from '@/components/PWARegister'
 import { InstallBanner } from '@/components/shared/InstallBanner'
 import { OfflineIndicator } from '@/components/shared/OfflineIndicator'
+import { DebugOverlay } from '@/components/shared/DebugOverlay'
 import { ToastProvider } from '@/components/shared/Toast'
 import './globals.css'
 
@@ -53,6 +54,7 @@ export default function RootLayout({
           <OfflineIndicator />
           <InstallBanner />
           {children}
+          <DebugOverlay />
         </ToastProvider>
       </body>
     </html>
