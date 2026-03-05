@@ -10,7 +10,7 @@ import { ProgrammeSection } from '@/components/structure/ProgrammeSection'
 import { ProgrammeCatalogue } from '@/components/structure/ProgrammeCatalogue'
 import { PersonalProgrammeCTA } from '@/components/structure/PersonalProgrammeCTA'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { SegmentedControl } from '@/components/ui'
 import { SectionHeader } from '@/components/ui/SectionHeader'
@@ -26,9 +26,11 @@ const TABS = [
 export default function StructurePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-app flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
-      </div>
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
+        </div>
+      </AppShell>
     }>
       <StructurePageContent />
     </Suspense>
@@ -62,14 +64,17 @@ function StructurePageContent() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-app flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
-      </div>
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+    <div className="content-container animate-fadeIn min-h-full">
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading} avatarUrl={avatarUrl} />
 
       {/* Tab Navigation - sticky under header */}
@@ -162,8 +167,6 @@ function StructurePageContent() {
         )}
       </main>
 
-      <BottomNav />
-
       <FrameworkChecklistModal
         isOpen={frameworkModalOpen}
         onClose={() => setFrameworkModalOpen(false)}
@@ -175,5 +178,6 @@ function StructurePageContent() {
       />
 
     </div>
+    </AppShell>
   )
 }

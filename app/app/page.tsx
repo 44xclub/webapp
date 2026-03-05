@@ -20,7 +20,7 @@ import { Plus, Mic, Loader2 } from 'lucide-react'
 import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { DailyPopup } from '@/components/shared/DailyPopup'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
 import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import type { Block, BlockType } from '@/lib/types'
@@ -309,14 +309,17 @@ export default function AppPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-app flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-blue)]" />
-      </div>
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--accent-blue)]" />
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-app flex flex-col content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+    <div className="flex flex-col content-container animate-fadeIn min-h-full">
       <HeaderStrip profile={profile} rank={rank} loading={profileLoading || rankLoading} avatarUrl={avatarUrl} />
 
       <WeekStrip
@@ -402,8 +405,6 @@ export default function AppPage() {
         onTextSubmit={voice.parseTranscript}
       />
 
-      <BottomNav />
-
       <BlockModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
@@ -449,5 +450,6 @@ export default function AppPage() {
       {/* Voice diagnostics overlay — enabled via ?voice_debug=1 */}
       <VoiceDebugOverlay />
     </div>
+    </AppShell>
   )
 }

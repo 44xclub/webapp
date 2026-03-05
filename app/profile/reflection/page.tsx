@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { parseDateOnly } from '@/lib/date'
 import { Loader2, ChevronLeft, Check, FileText, Send } from 'lucide-react'
 import { useAuth, useReflection } from '@/lib/hooks'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { Modal, Button, Textarea } from '@/components/ui'
 import type { ReflectionCycleWithEntry, ReflectionAnswers, ReflectionStatus } from '@/lib/types'
 
@@ -230,14 +230,17 @@ export default function ReflectionPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-app flex items-center justify-center bg-[#07090d]">
-        <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
-      </div>
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.35)]" />
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-app bg-[#07090d] animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+    <div className="bg-[#07090d] animate-fadeIn min-h-full">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
         <div className="flex items-center px-4 py-3">
@@ -354,8 +357,6 @@ export default function ReflectionPage() {
         )}
       </main>
 
-      <BottomNav />
-
       {/* Reflection Modal */}
       <ReflectionModal
         isOpen={!!selectedCycle}
@@ -365,5 +366,6 @@ export default function ReflectionPage() {
         saving={saving}
       />
     </div>
+    </AppShell>
   )
 }

@@ -16,7 +16,7 @@ import {
 import { useAuth, useProfile } from '@/lib/hooks'
 import { usePersonalFramework } from '@/lib/hooks/usePersonalFramework'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { useToast } from '@/components/shared/Toast'
 import type { FrameworkCriteriaItem } from '@/lib/types'
 
@@ -89,17 +89,17 @@ export default function PersonalFrameworkPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="app-shell">
-        <div className="min-h-app flex items-center justify-center bg-[#07090d]">
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-[#3b82f6]" />
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="app-shell">
-      <div className="min-h-app bg-[#07090d]" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+      <div className="bg-[#07090d] min-h-full">
         <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
         <header className="px-4 pt-4 pb-2">
@@ -211,8 +211,6 @@ export default function PersonalFrameworkPage() {
           )}
         </main>
 
-        <BottomNav />
-
         {showEditor && (
           <FrameworkEditorModal
             existingFramework={personalFramework}
@@ -221,7 +219,7 @@ export default function PersonalFrameworkPage() {
           />
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }
 

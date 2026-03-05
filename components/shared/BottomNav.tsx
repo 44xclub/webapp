@@ -16,7 +16,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-t border-[rgba(255,255,255,0.07)]"
+      className="relative flex-shrink-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-t border-[rgba(255,255,255,0.07)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex h-16 safe-x">
@@ -45,8 +45,7 @@ export function BottomNav() {
           )
         })}
       </div>
-      {/* Extends nav background well below viewport to fill any iOS PWA gap
-          behind the home indicator where the webview may not reach */}
+      {/* Background extension for iOS PWA home indicator area */}
       <div className="absolute left-0 right-0 -bottom-[120px] h-[120px] bg-[#07090d]" />
     </nav>
   )

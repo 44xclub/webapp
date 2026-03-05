@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Loader2, Users, Activity, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronRight, Calendar, RefreshCw, WifiOff } from 'lucide-react'
 import { useAuth, useProfile } from '@/lib/hooks'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FeedPostCard, FeedPost } from '@/components/feed/FeedPostCard'
 import { FeedSkeleton, TeamCardSkeleton } from '@/components/ui/Skeletons'
@@ -173,16 +173,17 @@ export default function CommunityPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="app-shell">
-        <div className="min-h-app flex items-center justify-center">
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-[var(--accent-blue)]" />
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+    <div className="content-container animate-fadeIn min-h-full">
       {/* Header Strip */}
       <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
 
@@ -212,9 +213,8 @@ export default function CommunityPage() {
         )}
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav />
     </div>
+    </AppShell>
   )
 }
 
