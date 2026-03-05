@@ -138,10 +138,7 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
-  overscroll-behavior-y: none; /* Prevent scroll-to-top bounce/chain */
-  /* Fill entire screen including safe areas (viewport-fit: cover) */
-  height: 100%;
+  overscroll-behavior-y: none;
   background: var(--surface-0);
 }
 
@@ -154,10 +151,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
-  height: 100%;
-  /* Ensure background covers entire screen behind safe areas */
+  /* Fixed shell handles layout; body must not scroll */
   overflow: hidden;
-  overscroll-behavior-y: none; /* Prevent overscroll bounce resetting position */
+  overscroll-behavior-y: none;
 }
 
 /* Prevent pull-to-refresh in standalone PWA */
@@ -214,25 +210,21 @@ body {
   height: var(--app-height, 100dvh);
 }
 
-/* AppShell — flex column that fills the viewport exactly.
-   BottomNav sits as last flex child; content scrolls above it.
-   Eliminates position:fixed bugs on iOS caused by backdrop-filter.
-
-   IMPORTANT: Do NOT use var(--app-height) here. On iOS PWA standalone,
-   window.innerHeight / visualViewport.height can be smaller than the
-   actual viewport (100dvh), causing a gap below the nav. We use pure
-   CSS viewport units which iOS resolves correctly.
-
-   Keyboard handling: when the virtual keyboard opens, PWARegister sets
-   --app-shell-keyboard-height which overrides 100dvh. When the keyboard
-   closes, the variable is removed so 100dvh takes over again. */
+/* AppShell — fixed full-viewport flex column.
+   Uses position:fixed + inset:0 to fill the REAL viewport on every
+   platform including iOS PWA standalone, where 100dvh / 100vh /
+   window.innerHeight can all disagree with the actual screen bounds.
+   position:fixed with inset:0 always matches the true viewport. */
 .app-shell {
-  height: 100vh;
-  height: 100dvh;
-  height: var(--app-shell-keyboard-height, 100dvh);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  z-index: 0; /* establish stacking context without lifting above modals at z-[100] */
 }
 .app-shell-content {
   flex: 1 1 0%;

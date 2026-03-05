@@ -24,76 +24,24 @@ export function PWARegister() {
     }
   }, [])
 
-  // Set --app-height CSS var for viewport stability (used by .min-h-app, .h-app)
-  // AND --app-shell-keyboard-height for AppShell keyboard handling.
-  //
-  // Key insight: On iOS PWA standalone, window.innerHeight and
-  // visualViewport.height can be SMALLER than what 100dvh resolves to
-  // (CSS knows the true viewport; JS APIs may exclude safe areas).
-  // So AppShell uses 100dvh by default, and we only set the keyboard
-  // override when the viewport actually shrinks (keyboard open).
+  // Set --app-height CSS var for .min-h-app / .h-app consumers
+  // (NOT used by AppShell — it uses position:fixed;inset:0 instead)
   useEffect(() => {
-    // Capture initial height on mount — this is our "no keyboard" baseline.
-    // Use a small delay so the viewport is fully settled (PWA launch).
-    let initialHeight = 0
-
-    const captureInitial = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight
-      if (h > initialHeight) initialHeight = h
-    }
-
     const setAppHeight = () => {
       const h = window.visualViewport?.height ?? window.innerHeight
-      const root = document.documentElement
-
-      // Always update --app-height for .min-h-app / .h-app consumers
-      root.style.setProperty('--app-height', `${h}px`)
-
-      // Track max height seen (handles delayed viewport settling in PWA)
-      if (h > initialHeight) initialHeight = h
-
-      // Keyboard detection: if the visible height shrinks significantly
-      // below our baseline, the virtual keyboard is likely open.
-      // Threshold: 100px avoids false positives from toolbar changes.
-      const keyboardThreshold = 100
-      if (initialHeight > 0 && (initialHeight - h) > keyboardThreshold) {
-        root.style.setProperty('--app-shell-keyboard-height', `${h}px`)
-      } else {
-        // No keyboard — remove override so AppShell uses 100dvh
-        root.style.removeProperty('--app-shell-keyboard-height')
-      }
+      document.documentElement.style.setProperty('--app-height', `${h}px`)
     }
 
-    // Run synchronously on mount
-    captureInitial()
     setAppHeight()
 
-    // Also capture after a short delay to account for PWA viewport settling
-    const settleTimer = setTimeout(() => {
-      captureInitial()
-      setAppHeight()
-    }, 300)
-
     window.addEventListener('resize', setAppHeight)
-
-    // visualViewport resize for iOS keyboard and safe area changes
     const vv = window.visualViewport
-    if (vv) {
-      vv.addEventListener('resize', setAppHeight)
-    }
+    if (vv) vv.addEventListener('resize', setAppHeight)
 
-    const handleOrientation = () => {
-      // Reset baseline after orientation change
-      initialHeight = 0
-      setTimeout(() => {
-        captureInitial()
-        setAppHeight()
-      }, 120)
-    }
+    const handleOrientation = () => setTimeout(setAppHeight, 120)
     window.addEventListener('orientationchange', handleOrientation)
 
     return () => {
-      clearTimeout(settleTimer)
       window.removeEventListener('resize', setAppHeight)
       if (vv) vv.removeEventListener('resize', setAppHeight)
       window.removeEventListener('orientationchange', handleOrientation)
