@@ -161,27 +161,10 @@ body {
   overscroll-behavior-y: none; /* Prevent overscroll bounce resetting position */
 }
 
-/* Prevent pull-to-refresh in standalone PWA + lock viewport */
+/* Prevent pull-to-refresh in standalone PWA */
 @media (display-mode: standalone) {
   body {
     overscroll-behavior: none;
-    /* inset: 0 covers the ENTIRE viewport including safe areas
-       (viewport-fit: cover). This is more reliable than 100dvh which
-       may exclude the home-indicator region on iPhone. */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
-  }
-  /* The actual scrolling happens inside page containers */
-  body > div {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
   }
 }
 
