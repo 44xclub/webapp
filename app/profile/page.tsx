@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth, useProfile, useRank, useReflection } from '@/lib/hooks'
-import { BottomNav } from '@/components/shared/BottomNav'
+import { AppShell } from '@/components/shared/AppShell'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
@@ -183,9 +183,11 @@ export default function ProfilePage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-app flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
-      </div>
+      <AppShell>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--text-muted)]" />
+        </div>
+      </AppShell>
     )
   }
 
@@ -193,7 +195,8 @@ export default function ProfilePage() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-app content-container animate-fadeIn" style={{ paddingBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+    <AppShell>
+    <div className="content-container animate-fadeIn min-h-full">
       {/* Page Header */}
       <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[var(--border-subtle)] safe-top">
         <div className="flex items-center justify-between px-4 py-3">
@@ -428,8 +431,8 @@ export default function ProfilePage() {
         </Button>
       </main>
 
-      <BottomNav />
     </div>
+    </AppShell>
   )
 }
 
