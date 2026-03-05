@@ -1,5 +1,5 @@
 // 44CLUB Blocks Service Worker - PWA v7
-const CACHE_NAME = '44club-blocks-v7';
+const CACHE_NAME = '44club-blocks-v8';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to precache on install
