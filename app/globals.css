@@ -140,6 +140,8 @@ html {
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
   background: var(--surface-0);
+  /* Establish full-screen height for child chain */
+  height: 100%;
 }
 
 body {
@@ -151,7 +153,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
-  /* Fixed shell handles layout; body must not scroll */
+  /* Belt-and-suspenders full height: chain from html, plus WebKit fill */
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior-y: none;
 }
@@ -210,11 +216,13 @@ body {
   height: var(--app-height, 100dvh);
 }
 
-/* AppShell — fixed full-viewport flex column.
-   Uses position:fixed + inset:0 to fill the REAL viewport on every
-   platform including iOS PWA standalone, where 100dvh / 100vh /
-   window.innerHeight can all disagree with the actual screen bounds.
-   position:fixed with inset:0 always matches the true viewport. */
+/* AppShell — full-viewport flex column.
+   IMPORTANT: Do NOT add explicit height declarations here!
+   When a fixed element has top + bottom + height, CSS treats it as
+   over-constrained and IGNORES bottom. On iOS PWA standalone,
+   -webkit-fill-available / 100dvh can be smaller than the actual
+   screen (excludes home indicator), causing a gap at the bottom.
+   position:fixed + inset:0 alone correctly fills the true viewport. */
 .app-shell {
   position: fixed;
   top: 0;
@@ -223,8 +231,9 @@ body {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  z-index: 0; /* establish stacking context without lifting above modals at z-[100] */
+  /* No overflow:hidden here — body already has it, and we need the
+     nav's background extension div to paint below the shell edge */
+  z-index: 0;
 }
 .app-shell-content {
   flex: 1 1 0%;
