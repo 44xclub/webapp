@@ -216,11 +216,20 @@ body {
 
 /* AppShell — flex column that fills the viewport exactly.
    BottomNav sits as last flex child; content scrolls above it.
-   Eliminates position:fixed bugs on iOS caused by backdrop-filter. */
+   Eliminates position:fixed bugs on iOS caused by backdrop-filter.
+
+   IMPORTANT: Do NOT use var(--app-height) here. On iOS PWA standalone,
+   window.innerHeight / visualViewport.height can be smaller than the
+   actual viewport (100dvh), causing a gap below the nav. We use pure
+   CSS viewport units which iOS resolves correctly.
+
+   Keyboard handling: when the virtual keyboard opens, PWARegister sets
+   --app-shell-keyboard-height which overrides 100dvh. When the keyboard
+   closes, the variable is removed so 100dvh takes over again. */
 .app-shell {
   height: 100vh;
   height: 100dvh;
-  height: var(--app-height, 100dvh);
+  height: var(--app-shell-keyboard-height, 100dvh);
   display: flex;
   flex-direction: column;
   overflow: hidden;
