@@ -7,42 +7,41 @@ interface DebugMetrics {
   matchMediaStandalone: boolean
   windowInnerHeight: number
   windowOuterHeight: number
+  screenHeight: number
   visualViewportHeight: number | null
   visualViewportOffsetTop: number | null
   documentClientHeight: number
-  appShellHeight: string
-  appShellComputedHeight: string
-  appShellComputedMinHeight: string
-  appShellComputedPaddingBottom: string
-  navComputedMarginBottom: string
+  shellRect: string
+  shellOffsetHeight: string
+  shellComputedPosition: string
+  shellComputedInset: string
   navComputedPaddingBottom: string
-  navComputedTransform: string
   navComputedPosition: string
-  navGap: number | null
   navRectBottom: number | null
+  navGap: number | null
+  shellGapFromScreenBottom: number | null
   cssAppHeight: string
-  cssAppDvh: string
-  cssKeyboardHeight: string
-  cssSafeBottom: string
   hundredDvh: string
+  hundredVh: string
 }
 
 function getMetrics(): DebugMetrics {
   const shell = document.querySelector('.app-shell') as HTMLElement | null
   const nav = document.querySelector('nav[class*="flex-shrink-0"]') as HTMLElement | null
+  const shellRect = shell?.getBoundingClientRect() ?? null
   const navRect = nav?.getBoundingClientRect() ?? null
 
   const shellStyles = shell ? getComputedStyle(shell) : null
   const navStyles = nav ? getComputedStyle(nav) : null
-
-  // Read CSS custom properties from :root
   const rootStyles = getComputedStyle(document.documentElement)
 
-  // Measure what 100dvh actually resolves to
+  // Measure what 100dvh and 100vh actually resolve to
   const probe = document.createElement('div')
   probe.style.cssText = 'position:fixed;top:0;height:100dvh;width:0;pointer-events:none;visibility:hidden;'
   document.body.appendChild(probe)
   const hundredDvh = `${probe.offsetHeight}px`
+  probe.style.height = '100vh'
+  const hundredVh = `${probe.offsetHeight}px`
   document.body.removeChild(probe)
 
   return {
@@ -50,24 +49,22 @@ function getMetrics(): DebugMetrics {
     matchMediaStandalone: window.matchMedia('(display-mode: standalone)').matches,
     windowInnerHeight: window.innerHeight,
     windowOuterHeight: window.outerHeight,
+    screenHeight: window.screen.height,
     visualViewportHeight: window.visualViewport?.height ?? null,
     visualViewportOffsetTop: window.visualViewport?.offsetTop ?? null,
     documentClientHeight: document.documentElement.clientHeight,
-    appShellHeight: shell ? `${shell.offsetHeight}px` : 'N/A',
-    appShellComputedHeight: shellStyles?.height ?? 'N/A',
-    appShellComputedMinHeight: shellStyles?.minHeight ?? 'N/A',
-    appShellComputedPaddingBottom: shellStyles?.paddingBottom ?? 'N/A',
-    navComputedMarginBottom: navStyles?.marginBottom ?? 'N/A',
+    shellRect: shellRect ? `${Math.round(shellRect.top)},${Math.round(shellRect.left)} ${Math.round(shellRect.width)}x${Math.round(shellRect.height)}` : 'N/A',
+    shellOffsetHeight: shell ? `${shell.offsetHeight}px` : 'N/A',
+    shellComputedPosition: shellStyles?.position ?? 'N/A',
+    shellComputedInset: shellStyles ? `T:${shellStyles.top} R:${shellStyles.right} B:${shellStyles.bottom} L:${shellStyles.left}` : 'N/A',
     navComputedPaddingBottom: navStyles?.paddingBottom ?? 'N/A',
-    navComputedTransform: navStyles?.transform ?? 'N/A',
     navComputedPosition: navStyles?.position ?? 'N/A',
-    navGap: navRect ? Math.round(window.innerHeight - navRect.bottom) : null,
     navRectBottom: navRect ? Math.round(navRect.bottom) : null,
+    navGap: navRect ? Math.round(window.innerHeight - navRect.bottom) : null,
+    shellGapFromScreenBottom: shellRect ? Math.round(window.innerHeight - shellRect.bottom) : null,
     cssAppHeight: rootStyles.getPropertyValue('--app-height').trim() || 'unset',
-    cssAppDvh: rootStyles.getPropertyValue('--app-dvh').trim() || 'unset',
-    cssKeyboardHeight: rootStyles.getPropertyValue('--app-shell-keyboard-height').trim() || 'unset',
-    cssSafeBottom: rootStyles.getPropertyValue('--safe-bottom').trim() || 'unset',
     hundredDvh,
+    hundredVh,
   }
 }
 
@@ -76,26 +73,16 @@ export function DebugOverlay() {
   const [visible, setVisible] = useState(false)
   const [minimized, setMinimized] = useState(false)
 
-  const refresh = useCallback(() => {
-    setMetrics(getMetrics())
-  }, [])
+  const refresh = useCallback(() => setMetrics(getMetrics()), [])
 
   useEffect(() => {
-    // Check ?debug=1 or env var
     const params = new URLSearchParams(window.location.search)
-    const debugEnabled = params.get('debug') === '1' ||
-      process.env.NEXT_PUBLIC_DEBUG_UI === '1'
-
-    if (!debugEnabled) return
+    if (params.get('debug') !== '1' && process.env.NEXT_PUBLIC_DEBUG_UI !== '1') return
 
     setVisible(true)
-    // Small delay to let layout settle
     const t = setTimeout(refresh, 200)
-
     window.addEventListener('resize', refresh)
-    window.addEventListener('orientationchange', () => setTimeout(refresh, 200))
     window.visualViewport?.addEventListener('resize', refresh)
-
     return () => {
       clearTimeout(t)
       window.removeEventListener('resize', refresh)
@@ -123,6 +110,9 @@ export function DebugOverlay() {
 
   const gap = metrics.navGap
   const gapColor = gap !== null && Math.abs(gap) > 1 ? '#ff4444' : '#44ff44'
+  const L = (label: string, val: string | number | null, color = '#ff0') => (
+    <div>{label}: <span style={{ color }}>{val ?? 'N/A'}</span></div>
+  )
 
   return (
     <div style={{
@@ -131,54 +121,49 @@ export function DebugOverlay() {
       padding: 8, borderRadius: 8, fontSize: 10,
       fontFamily: 'monospace', lineHeight: 1.5,
       maxHeight: '60vh', overflowY: 'auto',
-      pointerEvents: 'auto',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <strong style={{ color: '#fff' }}>Layout Debug</strong>
+        <strong style={{ color: '#fff' }}>Layout Debug v3</strong>
         <div>
           <button onClick={refresh} style={{ background: '#333', color: '#0f0', border: 'none', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 10 }}>Refresh</button>
           <button onClick={() => setMinimized(true)} style={{ background: '#333', color: '#ff0', border: 'none', padding: '2px 6px', borderRadius: 4, fontSize: 10 }}>Min</button>
         </div>
       </div>
 
-      <div style={{ color: '#aaa' }}>--- PWA Status ---</div>
-      <div>navigator.standalone: <span style={{ color: '#ff0' }}>{String(metrics.standalone)}</span></div>
-      <div>matchMedia standalone: <span style={{ color: '#ff0' }}>{String(metrics.matchMediaStandalone)}</span></div>
+      <div style={{ color: '#aaa' }}>--- PWA ---</div>
+      {L('standalone', String(metrics.standalone))}
+      {L('matchMedia', String(metrics.matchMediaStandalone))}
 
       <div style={{ color: '#aaa', marginTop: 4 }}>--- Viewport ---</div>
-      <div>window.innerHeight: <span style={{ color: '#ff0' }}>{metrics.windowInnerHeight}</span></div>
-      <div>window.outerHeight: <span style={{ color: '#ff0' }}>{metrics.windowOuterHeight}</span></div>
-      <div>visualViewport.height: <span style={{ color: '#ff0' }}>{metrics.visualViewportHeight ?? 'N/A'}</span></div>
-      <div>visualViewport.offsetTop: <span style={{ color: '#ff0' }}>{metrics.visualViewportOffsetTop ?? 'N/A'}</span></div>
-      <div>document.clientHeight: <span style={{ color: '#ff0' }}>{metrics.documentClientHeight}</span></div>
-      <div>100dvh (measured): <span style={{ color: '#ff0' }}>{metrics.hundredDvh}</span></div>
+      {L('innerHeight', metrics.windowInnerHeight)}
+      {L('outerHeight', metrics.windowOuterHeight)}
+      {L('screen.height', metrics.screenHeight)}
+      {L('visualViewport.h', metrics.visualViewportHeight)}
+      {L('visualViewport.offT', metrics.visualViewportOffsetTop)}
+      {L('clientHeight', metrics.documentClientHeight)}
+      {L('100dvh', metrics.hundredDvh)}
+      {L('100vh', metrics.hundredVh)}
+      {L('--app-height', metrics.cssAppHeight)}
 
-      <div style={{ color: '#aaa', marginTop: 4 }}>--- CSS Variables ---</div>
-      <div>--app-height: <span style={{ color: '#ff0' }}>{metrics.cssAppHeight}</span></div>
-      <div>--app-dvh: <span style={{ color: '#ff0' }}>{metrics.cssAppDvh}</span></div>
-      <div>--app-shell-keyboard-height: <span style={{ color: '#ff0' }}>{metrics.cssKeyboardHeight}</span></div>
-      <div>--safe-bottom: <span style={{ color: '#ff0' }}>{metrics.cssSafeBottom}</span></div>
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- Shell ---</div>
+      {L('position', metrics.shellComputedPosition)}
+      {L('inset', metrics.shellComputedInset)}
+      {L('rect', metrics.shellRect)}
+      {L('offsetHeight', metrics.shellOffsetHeight)}
+      {L('shell gap', metrics.shellGapFromScreenBottom !== null ? `${metrics.shellGapFromScreenBottom}px` : 'N/A')}
 
-      <div style={{ color: '#aaa', marginTop: 4 }}>--- AppShell ---</div>
-      <div>offsetHeight: <span style={{ color: '#ff0' }}>{metrics.appShellHeight}</span></div>
-      <div>computed height: <span style={{ color: '#ff0' }}>{metrics.appShellComputedHeight}</span></div>
-      <div>computed minHeight: <span style={{ color: '#ff0' }}>{metrics.appShellComputedMinHeight}</span></div>
-      <div>computed paddingBottom: <span style={{ color: '#ff0' }}>{metrics.appShellComputedPaddingBottom}</span></div>
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- Nav ---</div>
+      {L('position', metrics.navComputedPosition)}
+      {L('paddingBottom', metrics.navComputedPaddingBottom)}
+      {L('rect.bottom', metrics.navRectBottom)}
 
-      <div style={{ color: '#aaa', marginTop: 4 }}>--- BottomNav ---</div>
-      <div>position: <span style={{ color: '#ff0' }}>{metrics.navComputedPosition}</span></div>
-      <div>marginBottom: <span style={{ color: '#ff0' }}>{metrics.navComputedMarginBottom}</span></div>
-      <div>paddingBottom: <span style={{ color: '#ff0' }}>{metrics.navComputedPaddingBottom}</span></div>
-      <div>transform: <span style={{ color: '#ff0' }}>{metrics.navComputedTransform}</span></div>
-      <div>nav rect.bottom: <span style={{ color: '#ff0' }}>{metrics.navRectBottom ?? 'N/A'}</span></div>
-
-      <div style={{ color: '#aaa', marginTop: 4 }}>--- GAP (key metric) ---</div>
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- GAP ---</div>
       <div style={{ fontSize: 14, fontWeight: 'bold', color: gapColor }}>
-        innerHeight - nav.bottom = {gap !== null ? `${gap}px` : 'N/A'}
+        innerH - nav.bottom = {gap !== null ? `${gap}px` : 'N/A'}
       </div>
       {gap !== null && Math.abs(gap) > 1 && (
-        <div style={{ color: '#ff4444', fontSize: 11, marginTop: 2 }}>
-          GAP DETECTED! Shell is {gap}px shorter than viewport.
+        <div style={{ color: '#ff4444', fontSize: 11 }}>
+          GAP: {gap}px below nav
         </div>
       )}
     </div>
