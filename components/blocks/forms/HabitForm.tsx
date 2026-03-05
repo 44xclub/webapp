@@ -51,16 +51,16 @@ export function HabitForm({ form }: HabitFormProps) {
       {/* Weekday selection for weekly */}
       {repeatPattern === 'weekly' && (
         <div>
-          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             Select Days
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {weekdayLabels.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => toggleWeekday(index)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                   selectedWeekdays.includes(index)
                     ? 'bg-[rgba(255,255,255,0.09)] text-[#eef2ff] border border-[rgba(255,255,255,0.14)]'
                     : 'text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.14)]'

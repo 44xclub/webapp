@@ -75,25 +75,25 @@ export function NutritionForm({ form }: NutritionFormProps) {
       />
 
       {/* Macros - Collapsible Section */}
-      <div className="border border-[rgba(255,255,255,0.06)] rounded-[10px] overflow-hidden">
+      <div className="border border-[rgba(255,255,255,0.06)] rounded-[8px] overflow-hidden">
         <button
           type="button"
           onClick={handleToggleMacros}
-          className="w-full flex items-center justify-between px-3 py-2.5 text-left bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
+          className="w-full flex items-center justify-between px-2.5 py-2 text-left bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-colors"
         >
-          <span className="text-[13px] font-medium text-[rgba(238,242,255,0.72)]">
+          <span className="text-[11px] font-medium text-[rgba(238,242,255,0.72)]">
             Add macros (optional)
           </span>
           {(macrosExpanded || hasMacros) ? (
-            <ChevronDown className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+            <ChevronDown className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-[rgba(238,242,255,0.45)]" />
+            <ChevronRight className="h-3.5 w-3.5 text-[rgba(238,242,255,0.45)]" />
           )}
         </button>
 
         {(macrosExpanded || hasMacros) && (
-          <div className="p-3 border-t border-[rgba(255,255,255,0.06)]">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="p-2.5 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="grid grid-cols-2 gap-2.5">
               <Input
                 type="number"
                 placeholder="Calories"
@@ -156,16 +156,16 @@ export function NutritionForm({ form }: NutritionFormProps) {
       {/* Weekday selection for weekly */}
       {repeatPattern === 'weekly' && (
         <div>
-          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             Select Days
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {weekdayLabels.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => toggleWeekday(index)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                   selectedWeekdays.includes(index)
                     ? 'bg-[rgba(255,255,255,0.09)] text-[#eef2ff] border border-[rgba(255,255,255,0.14)]'
                     : 'text-[rgba(238,242,255,0.45)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.14)]'

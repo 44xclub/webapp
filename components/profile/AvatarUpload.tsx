@@ -134,13 +134,16 @@ export function AvatarUpload({ userId, currentPath, displayName, onUploadComplet
         )}
       </button>
 
-      {/* Accept all image types including iOS camera formats */}
+      {/* Accept all image types including iOS camera formats.
+          Use opacity-0/absolute instead of hidden — display:none prevents
+          iOS standalone PWA from opening the photo picker. */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleFileChange}
-        className="hidden"
+        className="absolute w-0 h-0 opacity-0 overflow-hidden"
+        tabIndex={-1}
       />
 
       {error && (

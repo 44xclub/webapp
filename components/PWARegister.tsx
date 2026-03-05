@@ -27,15 +27,8 @@ export function PWARegister() {
   // Set --app-height CSS var for viewport stability
   // Must fire on load, resize, orientationchange, and visualViewport resize
   useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      || (window.navigator as any).standalone === true
-
     const setAppHeight = () => {
-      // In standalone PWA: use screen.height for true full-screen coverage.
-      // In browser: use visualViewport (more stable on iOS) or innerHeight.
-      const h = isStandalone
-        ? screen.height
-        : (window.visualViewport?.height ?? window.innerHeight)
+      const h = window.visualViewport?.height ?? window.innerHeight
       document.documentElement.style.setProperty(
         '--app-height',
         `${h}px`

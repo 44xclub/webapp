@@ -45,6 +45,9 @@ export function BottomNav() {
           )
         })}
       </div>
+      {/* Extends nav background well below viewport to fill any iOS PWA gap
+          behind the home indicator where the webview may not reach */}
+      <div className="absolute left-0 right-0 -bottom-[120px] h-[120px] bg-[#07090d]" />
     </nav>
   )
 }

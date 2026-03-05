@@ -33,11 +33,11 @@ export function ExerciseMatrix({ form }: ExerciseMatrixProps) {
 
   return (
     <div>
-      <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+      <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
         Exercises
       </label>
       {/* Level 1 Section Surface wrapper */}
-      <div className="bg-[var(--surface-1)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-2.5 pb-4">
+      <div className="bg-[var(--surface-1)] rounded-[var(--radius-card)] border border-[rgba(255,255,255,0.06)] p-2 pb-3">
         <div className="space-y-1.5">
           {exercises.map((field, exerciseIndex) => (
             <ExerciseRow
@@ -55,7 +55,7 @@ export function ExerciseMatrix({ form }: ExerciseMatrixProps) {
           <button
             type="button"
             onClick={addExercise}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-button)] border border-dashed border-[rgba(255,255,255,0.12)] text-[12px] font-medium text-[rgba(238,242,255,0.52)] hover:border-[rgba(255,255,255,0.24)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.02)] transition-all"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-[var(--radius-button)] border border-dashed border-[rgba(255,255,255,0.12)] text-[11px] font-medium text-[rgba(238,242,255,0.52)] hover:border-[rgba(255,255,255,0.24)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.02)] transition-all"
           >
             <Plus className="h-4 w-4" />
             Add Exercise
@@ -106,20 +106,20 @@ function ExerciseRow({
   return (
     <div className="bg-[var(--surface-2)] rounded-[var(--radius-button)] border border-[rgba(255,255,255,0.08)] overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_1px_3px_rgba(0,0,0,0.2)]">
       {/* Exercise Header — compact */}
-      <div className="flex items-center gap-1.5 px-2.5 py-2">
+      <div className="flex items-center gap-1.5 px-2 py-1.5">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
           className="p-0.5 rounded-[5px] text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)] hover:bg-[rgba(255,255,255,0.05)] transition-all"
         >
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
         <input
           {...register(`payload.exercise_matrix.${exerciseIndex}.exercise`)}
           placeholder="Exercise name"
-          className="flex-1 bg-transparent text-[13px] font-semibold text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.30)] outline-none"
+          className="flex-1 bg-transparent text-[11px] font-semibold text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.30)] outline-none"
         />
-        <span className="text-[10px] text-[rgba(238,242,255,0.40)] tabular-nums">
+        <span className="text-[9px] text-[rgba(238,242,255,0.40)] tabular-nums">
           {sets.length} {sets.length === 1 ? 'set' : 'sets'}
         </span>
         {canRemove && (
@@ -143,33 +143,33 @@ function ExerciseRow({
       {expanded && (
         <div className="border-t border-[rgba(255,255,255,0.06)]">
           {/* Table Header */}
-          <div className="grid grid-cols-[30px_1fr_1fr_28px] gap-1 px-2.5 py-1.5 bg-[rgba(0,0,0,0.15)]">
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Set</span>
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Reps</span>
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Weight</span>
+          <div className="grid grid-cols-[26px_1fr_1fr_24px] gap-1 px-2 py-1 bg-[rgba(0,0,0,0.15)]">
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Set</span>
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Reps</span>
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-[rgba(238,242,255,0.35)]">Weight</span>
             <span></span>
           </div>
 
-          {/* Set Rows — compact 40px height */}
+          {/* Set Rows — compact */}
           {sets.map((setField, setIndex) => (
             <div
               key={setField.id}
-              className="grid grid-cols-[30px_1fr_1fr_28px] gap-1 px-2.5 h-[40px] items-center border-t border-[rgba(255,255,255,0.04)]"
+              className="grid grid-cols-[26px_1fr_1fr_24px] gap-1 px-2 h-[32px] items-center border-t border-[rgba(255,255,255,0.04)]"
             >
-              <span className="text-[11px] font-medium text-[rgba(238,242,255,0.52)] tabular-nums text-center">
+              <span className="text-[10px] font-medium text-[rgba(238,242,255,0.52)] tabular-nums text-center">
                 {setIndex + 1}
               </span>
               <input
                 {...register(`payload.exercise_matrix.${exerciseIndex}.sets.${setIndex}.reps`)}
                 placeholder="—"
                 inputMode="numeric"
-                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2 py-1 text-[12px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
+                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[5px] px-1.5 py-0.5 text-[11px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
               />
               <input
                 {...register(`payload.exercise_matrix.${exerciseIndex}.sets.${setIndex}.weight`)}
                 placeholder="—"
                 inputMode="decimal"
-                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[6px] px-2 py-1 text-[12px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
+                className="w-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] rounded-[5px] px-1.5 py-0.5 text-[11px] text-[#eef2ff] placeholder:text-[rgba(238,242,255,0.25)] outline-none focus:border-[rgba(59,130,246,0.5)] focus:bg-[rgba(255,255,255,0.08)] transition-all tabular-nums"
               />
               {sets.length > 1 ? (
                 <button
@@ -186,19 +186,19 @@ function ExerciseRow({
           ))}
 
           {/* Add Set + Notes */}
-          <div className="px-2.5 py-2 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)]">
+          <div className="px-2 py-1.5 flex items-center justify-between border-t border-[rgba(255,255,255,0.06)]">
             <button
               type="button"
               onClick={addSet}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-[12px] font-medium text-[rgba(238,242,255,0.52)] hover:text-[#3b82f6] hover:bg-[rgba(59,130,246,0.08)] transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-[6px] text-[10px] font-medium text-[rgba(238,242,255,0.52)] hover:text-[#3b82f6] hover:bg-[rgba(59,130,246,0.08)] transition-all"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
               Add set
             </button>
             <input
               {...register(`payload.exercise_matrix.${exerciseIndex}.notes`)}
               placeholder="Notes..."
-              className="text-right bg-transparent text-[12px] text-[rgba(238,242,255,0.52)] placeholder:text-[rgba(238,242,255,0.25)] outline-none w-[140px] hover:text-[rgba(238,242,255,0.72)] transition-colors"
+              className="text-right bg-transparent text-[10px] text-[rgba(238,242,255,0.52)] placeholder:text-[rgba(238,242,255,0.25)] outline-none w-[120px] hover:text-[rgba(238,242,255,0.72)] transition-colors"
             />
           </div>
         </div>

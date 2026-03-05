@@ -271,7 +271,7 @@ export function WorkoutForm({
       {/* Programme/Custom Subtype Selector - only if user has active programme and not editing a programme block */}
       {hasProgramme && !(isEditing && subtype === 'programme') && (
         <div>
-          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             Workout Type
           </label>
           <div className="flex gap-2">
@@ -312,7 +312,7 @@ export function WorkoutForm({
       {/* Programme Session Selector - shown when Programme subtype is selected (not when editing) */}
       {subtype === 'programme' && hasProgramme && !isEditing && (
         <div>
-          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             Select Session <span className="text-[#ef4444]">*</span>
           </label>
           {programmeSessions.length > 0 ? (
@@ -369,7 +369,7 @@ export function WorkoutForm({
       {/* Workout Category (Custom only) */}
       {subtype === 'custom' && (
         <div>
-          <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+          <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             Category
           </label>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
@@ -391,7 +391,7 @@ export function WorkoutForm({
                   }
                 }}
                 className={cn(
-                  'px-3 py-1.5 rounded-[8px] text-[12px] font-medium whitespace-nowrap transition-all duration-150 border',
+                  'px-2.5 py-1 rounded-[6px] text-[11px] font-medium whitespace-nowrap transition-all duration-150 border',
                   category === cat.value
                     ? 'bg-[rgba(255,255,255,0.09)] text-[#eef2ff] border-[rgba(255,255,255,0.14)]'
                     : 'text-[rgba(238,242,255,0.45)] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.14)]'
@@ -447,7 +447,7 @@ export function WorkoutForm({
           {/* Optional metrics - ONLY for Running (not Sport/Other) */}
           {category === 'running' && (
             <div>
-              <label className="block text-[13px] font-medium text-[rgba(238,242,255,0.72)] mb-2">
+              <label className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
                 Metrics (optional)
               </label>
               <div className="grid grid-cols-2 gap-3">
