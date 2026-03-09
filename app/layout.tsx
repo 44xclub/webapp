@@ -46,8 +46,10 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         {/* Set --app-height before first paint to prevent layout flash.
-            Prefer visualViewport.height (accurate on iOS PWA) with innerHeight fallback. */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var h=window.visualViewport?window.visualViewport.height:window.innerHeight;document.documentElement.style.setProperty('--app-height',h+'px')})()` }} />
+            Always use innerHeight — it returns the full viewport including safe
+            areas when viewport-fit=cover. visualViewport.height can EXCLUDE safe
+            areas in iOS standalone PWA, making the shell too short. */}
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.style.setProperty('--app-height',window.innerHeight+'px')` }} />
       </head>
       <body>
         <ToastProvider>
