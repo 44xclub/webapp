@@ -534,33 +534,31 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     openLightbox(url)
   }
 
-  // Single image — compact 16:9 preview
+  // Single image — small thumbnail preview
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
       <>
-        <div className="rounded-[10px] overflow-hidden mb-3 cursor-pointer" onClick={handleTap(imageUrl)}>
-          <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-            <img src={imageUrl} alt="Post media" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-          </div>
+        <div className="rounded-[10px] overflow-hidden mb-3 cursor-pointer h-[160px]" onClick={handleTap(imageUrl)}>
+          <img src={imageUrl} alt="Post media" className="w-full h-full object-cover" loading="lazy" />
         </div>
         {lightboxElement}
       </>
     )
   }
 
-  // Two images — side by side squares, compact height
+  // Two images — side by side, compact fixed height
   if (allMedia.length === 2) {
     return (
       <>
-        <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3">
+        <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3 h-[120px]">
           {allMedia.map((item, idx) => {
             const imageUrl = getStorageUrl(item.path)
             if (!imageUrl) return null
             return (
-              <div key={idx} className="relative cursor-pointer" style={{ aspectRatio: '4/3' }} onClick={handleTap(imageUrl)}>
-                <img src={imageUrl} alt={`Post media ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              <div key={idx} className="relative cursor-pointer h-full" onClick={handleTap(imageUrl)}>
+                <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
               </div>
             )
           })}
@@ -570,13 +568,13 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     )
   }
 
-  // Three images — primary + two stacked
+  // Three images — primary + two stacked, compact
   if (allMedia.length === 3) {
     const urls = allMedia.map(m => getStorageUrl(m.path)).filter(Boolean) as string[]
     if (urls.length < 3) return null
     return (
       <>
-        <div className="grid grid-cols-3 gap-1 rounded-[10px] overflow-hidden mb-3 h-[140px]">
+        <div className="grid grid-cols-3 gap-1 rounded-[10px] overflow-hidden mb-3 h-[120px]">
           <div className="col-span-2 relative h-full cursor-pointer" onClick={handleTap(urls[0])}>
             <img src={urls[0]} alt="Post media 1" className="w-full h-full object-cover" loading="lazy" />
           </div>
@@ -594,20 +592,20 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     )
   }
 
-  // 4+ images — 2x2 grid with +N overlay
+  // 4+ images — row of small square thumbnails with +N overlay
   const displayMedia = allMedia.slice(0, 4)
   return (
     <>
-      <div className="grid grid-cols-4 gap-1 rounded-[10px] overflow-hidden mb-3">
+      <div className="grid grid-cols-4 gap-1 rounded-[10px] overflow-hidden mb-3 h-[80px]">
         {displayMedia.map((item, idx) => {
           const imageUrl = getStorageUrl(item.path)
           if (!imageUrl) return null
           return (
-            <div key={idx} className="relative cursor-pointer" style={{ aspectRatio: '1/1' }} onClick={handleTap(imageUrl)}>
-              <img src={imageUrl} alt={`Post media ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            <div key={idx} className="relative cursor-pointer h-full" onClick={handleTap(imageUrl)}>
+              <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
               {idx === 3 && allMedia.length > 4 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="text-white text-[16px] font-semibold">+{allMedia.length - 4}</span>
+                  <span className="text-white text-[14px] font-semibold">+{allMedia.length - 4}</span>
                 </div>
               )}
             </div>
