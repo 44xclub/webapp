@@ -78,27 +78,27 @@ export default function PersonalProgrammesPage() {
       <div className="bg-[#07090d] animate-fadeIn min-h-full">
         {/* Header — matches Reflection & Planning pattern */}
         <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center">
-              <button
-                onClick={() => router.push('/profile')}
-                className="p-2 -ml-2 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <h1 className="text-[20px] font-semibold text-[#eef2ff] ml-1">Personal Programmes</h1>
-            </div>
+          <div className="flex items-center px-4 py-3">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
+              onClick={() => router.push('/profile')}
+              className="p-2 -ml-2 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"
             >
-              <Plus className="h-4 w-4" />
-              Create
+              <ChevronLeft className="h-5 w-5" />
             </button>
+            <h1 className="text-[20px] font-semibold text-[#eef2ff] ml-1">Personal Programmes</h1>
           </div>
         </header>
 
         <main className="px-4 py-4 space-y-3">
+          {/* Create button — top-left */}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
+          >
+            <Plus className="h-4 w-4" />
+            Create
+          </button>
+
           {programmesLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-[rgba(238,242,255,0.45)]" />
