@@ -184,7 +184,7 @@ function EventsPageContent() {
         </div>
 
         {/* Event List */}
-        <main className="px-4 pt-2 pb-6 space-y-3">
+        <main className="px-4 pt-2 pb-6 space-y-2.5">
           {eventsLoading ? (
             <>
               <EventCardSkeleton />
@@ -290,8 +290,8 @@ function EventCard({
       onClick={onTap}
       className="section-card p-0 overflow-hidden cursor-pointer hover:border-[rgba(255,255,255,0.12)] transition-colors"
     >
-      {/* Banner */}
-      <div className="relative h-[120px] bg-[var(--surface-1)]">
+      {/* Banner — compact */}
+      <div className="relative h-[84px] bg-[var(--surface-1)]">
         <FadeImage
           src={bannerUrl || ''}
           alt={event.title}
@@ -299,71 +299,71 @@ function EventCard({
           wrapperClassName="w-full h-full"
         />
         {/* Type pill */}
-        <div className="absolute top-2.5 left-2.5">
-          <span className="px-2 py-1 rounded-[6px] bg-[rgba(0,0,0,0.65)] backdrop-blur-[8px] text-[11px] font-medium text-white">
+        <div className="absolute top-2 left-2">
+          <span className="px-2 py-0.5 rounded-[6px] bg-[rgba(0,0,0,0.65)] backdrop-blur-[8px] text-[10px] font-medium text-white">
             {event.event_type}
           </span>
         </div>
-        {/* Status badge */}
+        {/* Status badge — dark backing like type pill */}
         {statusBadge && (
-          <div className="absolute top-2.5 right-2.5">
-            <span className={`px-2 py-1 rounded-[6px] text-[11px] font-medium ${statusBadge.color}`}>
+          <div className="absolute top-2 right-2">
+            <span className="px-2 py-0.5 rounded-[6px] bg-[rgba(0,0,0,0.65)] backdrop-blur-[8px] text-[10px] font-medium text-emerald-400">
               {statusBadge.label}
             </span>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      <div className="px-3.5 py-3">
-        <h3 className="text-[15px] font-semibold text-[var(--text-primary)] leading-tight">
+      {/* Content — compact */}
+      <div className="px-3 py-2">
+        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight">
           {event.title}
         </h3>
         {event.subdescription && (
-          <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-2">
+          <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5 line-clamp-1">
             {event.subdescription}
           </p>
         )}
 
-        {/* Meta row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-[var(--text-secondary)]">
+        {/* Meta row — single line */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1.5 text-[11px] text-[var(--text-secondary)]">
           <span className="flex items-center gap-1">
-            <CalendarDays className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+            <CalendarDays className="h-3 w-3 text-[var(--text-muted)]" />
             {formatEventDate(event.starts_at, event.timezone)}
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+            <Clock className="h-3 w-3 text-[var(--text-muted)]" />
             {formatEventTime(event.starts_at, event.timezone)}
             {event.ends_at && ` – ${formatEventTime(event.ends_at, event.timezone)}`}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 mt-1.5 text-[12px] text-[var(--text-secondary)]">
+        <div className="flex items-center gap-2.5 mt-0.5 text-[11px] text-[var(--text-secondary)]">
           <span className="flex items-center gap-1">
             {event.location_type === 'online' ? (
-              <Video className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              <Video className="h-3 w-3 text-[var(--text-muted)]" />
             ) : (
-              <MapPin className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              <MapPin className="h-3 w-3 text-[var(--text-muted)]" />
             )}
             {event.location_text || event.city || (event.location_type === 'online' ? 'Online' : 'In Person')}
           </span>
           {event.rsvp_going_count > 0 && (
             <span className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+              <Users className="h-3 w-3 text-[var(--text-muted)]" />
               {event.rsvp_going_count} going
             </span>
           )}
         </div>
 
-        {/* RSVP CTA */}
-        <div className="mt-3">
+        {/* RSVP CTA — compact */}
+        <div className="mt-2">
           <button
             onClick={handleRsvp}
             disabled={rsvpLoading || ctaInfo.disabled}
-            className={`w-full py-2 rounded-[10px] text-[13px] font-medium transition-all flex items-center justify-center gap-1.5 ${ctaInfo.className}`}
+            className={`w-full py-1.5 rounded-[8px] text-[12px] font-medium transition-all flex items-center justify-center gap-1.5 ${ctaInfo.className}`}
           >
             {rsvpLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <>
                 {ctaInfo.icon}
@@ -461,125 +461,129 @@ function EventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)]">
-        {/* Header with close */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-[rgba(15,17,21,0.95)] backdrop-blur-[12px] border-b border-[rgba(255,255,255,0.06)]">
-          <h2 className="text-[16px] font-semibold text-[var(--text-primary)] truncate pr-4">Event Details</h2>
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(90vh - env(safe-area-inset-top, 0px))' }}>
+        {/* Fixed header with close */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+          <h2 className="text-[15px] font-semibold text-[var(--text-primary)] truncate pr-4">Event Details</h2>
           <button
             onClick={onClose}
-            className="p-2 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors touch-manipulation"
+            className="p-2.5 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors touch-manipulation"
           >
-            <X className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
+            <X className="h-5 w-5 text-[rgba(238,242,255,0.65)]" />
           </button>
         </div>
 
-        {/* Banner */}
-        <div className="relative aspect-[2/1] bg-[var(--surface-1)]">
-          <FadeImage
-            src={bannerUrl || ''}
-            alt={event.title}
-            className="w-full h-full object-cover"
-            wrapperClassName="w-full h-full"
-          />
-          <div className="absolute top-3 left-3">
-            <span className="px-2.5 py-1 rounded-[8px] bg-[rgba(0,0,0,0.65)] backdrop-blur-[8px] text-[12px] font-medium text-white">
-              {event.event_type}
-            </span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-4 py-4 space-y-4">
-          <div>
-            <h3 className="text-[20px] font-semibold text-[var(--text-primary)] leading-tight">
-              {event.title}
-            </h3>
-            {event.subdescription && (
-              <p className="text-[14px] text-[var(--text-secondary)] mt-2 leading-relaxed">
-                {event.subdescription}
-              </p>
-            )}
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Banner — compact */}
+          <div className="relative h-[140px] bg-[var(--surface-1)]">
+            <FadeImage
+              src={bannerUrl || ''}
+              alt={event.title}
+              className="w-full h-full object-cover"
+              wrapperClassName="w-full h-full"
+            />
+            <div className="absolute top-2.5 left-2.5">
+              <span className="px-2 py-0.5 rounded-[6px] bg-[rgba(0,0,0,0.65)] backdrop-blur-[8px] text-[11px] font-medium text-white">
+                {event.event_type}
+              </span>
+            </div>
           </div>
 
-          {/* Details rows */}
-          <div className="space-y-2.5">
-            <DetailRow
-              icon={<CalendarDays className="h-4 w-4" />}
-              label="Date"
-              value={formatEventDate(event.starts_at, event.timezone)}
-            />
-            <DetailRow
-              icon={<Clock className="h-4 w-4" />}
-              label="Time"
-              value={`${formatEventTime(event.starts_at, event.timezone)}${
-                event.ends_at ? ` – ${formatEventTime(event.ends_at, event.timezone)}` : ''
-              } (${event.timezone})`}
-            />
-            <DetailRow
-              icon={event.location_type === 'online' ? <Video className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
-              label="Location"
-              value={event.location_text || event.city || (event.location_type === 'online' ? 'Online Webinar' : 'In Person')}
-            />
-            {event.city && event.location_type === 'in_person' && (
+          {/* Content — compact */}
+          <div className="px-4 py-3 space-y-3">
+            <div>
+              <h3 className="text-[17px] font-semibold text-[var(--text-primary)] leading-tight">
+                {event.title}
+              </h3>
+              {event.subdescription && (
+                <p className="text-[12px] text-[var(--text-secondary)] mt-1 leading-relaxed">
+                  {event.subdescription}
+                </p>
+              )}
+            </div>
+
+            {/* Details — compact inline rows */}
+            <div className="space-y-1">
               <DetailRow
-                icon={<Building2 className="h-4 w-4" />}
-                label="City"
-                value={event.city}
+                icon={<CalendarDays className="h-3.5 w-3.5" />}
+                label="Date"
+                value={formatEventDate(event.starts_at, event.timezone)}
               />
-            )}
+              <DetailRow
+                icon={<Clock className="h-3.5 w-3.5" />}
+                label="Time"
+                value={`${formatEventTime(event.starts_at, event.timezone)}${
+                  event.ends_at ? ` – ${formatEventTime(event.ends_at, event.timezone)}` : ''
+                } (${event.timezone})`}
+              />
+              <DetailRow
+                icon={event.location_type === 'online' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+                label="Location"
+                value={event.location_text || event.city || (event.location_type === 'online' ? 'Online Webinar' : 'In Person')}
+              />
+              {event.city && event.location_type === 'in_person' && (
+                <DetailRow
+                  icon={<Building2 className="h-3.5 w-3.5" />}
+                  label="City"
+                  value={event.city}
+                />
+              )}
 
-            {/* Meeting URL for online events */}
-            {event.location_type === 'online' && event.meeting_url && (
-              <div className="flex items-start gap-3 py-2">
-                <Globe className="h-4 w-4 text-[var(--text-muted)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--text-tertiary)]">Meeting Link</p>
+              {/* Meeting URL for online events */}
+              {event.location_type === 'online' && event.meeting_url && (
+                <div className="flex items-center gap-2.5 py-0.5">
+                  <Globe className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
                   <a
                     href={event.meeting_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[13px] text-[#3b82f6] hover:underline break-all"
+                    className="text-[12px] text-[#3b82f6] hover:underline break-all truncate"
                   >
                     {event.meeting_url}
                   </a>
                 </div>
+              )}
+            </div>
+
+            {/* Capacity info — compact two-column */}
+            {event.capacity != null && (
+              <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] px-3 py-2">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Capacity</span>
+                    <span className="text-[var(--text-primary)] font-medium">{event.capacity}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-secondary)]">Going</span>
+                    <span className="text-[var(--text-primary)] font-medium">{event.rsvp_going_count}</span>
+                  </div>
+                  {statusBadge && (
+                    <div className="flex justify-between col-span-2">
+                      <span className="text-[var(--text-secondary)]">Status</span>
+                      <span className="font-medium px-1.5 py-0 rounded-[5px] bg-[rgba(0,0,0,0.4)] text-emerald-400 text-[11px]">
+                        {statusBadge.label}
+                      </span>
+                    </div>
+                  )}
+                  {isFull && event.waitlist_enabled && event.rsvp_waitlist_count > 0 && (
+                    <div className="flex justify-between col-span-2">
+                      <span className="text-[var(--text-secondary)]">Waitlisted</span>
+                      <span className="text-amber-400 font-medium">{event.rsvp_waitlist_count}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Capacity info */}
-          {event.capacity != null && (
-            <div className="bg-[rgba(255,255,255,0.03)] rounded-[12px] border border-[rgba(255,255,255,0.06)] p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[var(--text-secondary)]">Capacity</span>
-                <span className="text-[13px] text-[var(--text-primary)] font-medium">{event.capacity}</span>
-              </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[13px] text-[var(--text-secondary)]">Going</span>
-                <span className="text-[13px] text-[var(--text-primary)] font-medium">{event.rsvp_going_count}</span>
-              </div>
-              {statusBadge && (
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[13px] text-[var(--text-secondary)]">Status</span>
-                  <span className={`text-[12px] font-medium px-2 py-0.5 rounded-[6px] ${statusBadge.color}`}>
-                    {statusBadge.label}
-                  </span>
-                </div>
-              )}
-              {isFull && event.waitlist_enabled && event.rsvp_waitlist_count > 0 && (
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[13px] text-[var(--text-secondary)]">Waitlisted</span>
-                  <span className="text-[13px] text-amber-400 font-medium">{event.rsvp_waitlist_count}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* RSVP button */}
+        {/* Sticky RSVP footer */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-[rgba(255,255,255,0.06)] safe-bottom">
           <button
             onClick={handleRsvp}
             disabled={rsvpLoading || ctaInfo.disabled}
-            className={`w-full py-3 rounded-[12px] text-[14px] font-medium transition-all flex items-center justify-center gap-2 ${ctaInfo.className}`}
+            className={`w-full py-2.5 rounded-[10px] text-[13px] font-medium transition-all flex items-center justify-center gap-2 ${ctaInfo.className}`}
           >
             {rsvpLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -590,10 +594,8 @@ function EventDetailModal({
               </>
             )}
           </button>
-
-          {/* Cancel RSVP hint */}
           {(rsvp?.response === 'going' || rsvp?.response === 'waitlist') && (
-            <p className="text-center text-[11px] text-[var(--text-tertiary)]">
+            <p className="text-center text-[10px] text-[var(--text-tertiary)] mt-1">
               Tap to cancel your RSVP
             </p>
           )}
@@ -605,12 +607,10 @@ function EventDetailModal({
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 py-1">
-      <div className="text-[var(--text-muted)] mt-0.5 flex-shrink-0">{icon}</div>
-      <div>
-        <p className="text-[11px] text-[var(--text-tertiary)]">{label}</p>
-        <p className="text-[13px] text-[var(--text-primary)]">{value}</p>
-      </div>
+    <div className="flex items-center gap-2.5 py-0.5">
+      <div className="text-[var(--text-muted)] flex-shrink-0">{icon}</div>
+      <span className="text-[11px] text-[var(--text-tertiary)] w-14 flex-shrink-0">{label}</span>
+      <span className="text-[12px] text-[var(--text-primary)]">{value}</span>
     </div>
   )
 }
@@ -639,115 +639,122 @@ function FilterSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">Filters</h2>
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(70vh - env(safe-area-inset-bottom, 0px))' }}>
+        {/* Fixed header */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Filters</h2>
           <div className="flex items-center gap-2">
             <button onClick={handleReset} className="text-[12px] text-[var(--accent-blue)]">
               Reset
             </button>
-            <button onClick={onClose} className="p-2 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)]">
-              <X className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
+            <button onClick={onClose} className="p-2.5 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] touch-manipulation">
+              <X className="h-5 w-5 text-[rgba(238,242,255,0.65)]" />
             </button>
           </div>
         </div>
 
-        <div className="space-y-5">
-          {/* Event Type */}
-          {eventTypes.length > 0 && (
+        {/* Scrollable filter body */}
+        <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3">
+          <div className="space-y-3">
+            {/* Event Type */}
+            {eventTypes.length > 0 && (
+              <div>
+                <p className="text-[11px] text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider font-medium">Event Type</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip
+                    label="All"
+                    active={!local.eventType}
+                    onClick={() => setLocal({ ...local, eventType: null })}
+                  />
+                  {eventTypes.map((t) => (
+                    <FilterChip
+                      key={t}
+                      label={t}
+                      active={local.eventType === t}
+                      onClick={() => setLocal({ ...local, eventType: local.eventType === t ? null : t })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Location Type */}
             <div>
-              <p className="text-[12px] text-[var(--text-tertiary)] mb-2">Event Type</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[11px] text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider font-medium">Location</p>
+              <div className="flex flex-wrap gap-1.5">
                 <FilterChip
                   label="All"
-                  active={!local.eventType}
-                  onClick={() => setLocal({ ...local, eventType: null })}
+                  active={!local.locationType}
+                  onClick={() => setLocal({ ...local, locationType: null })}
                 />
-                {eventTypes.map((t) => (
+                <FilterChip
+                  label="Online"
+                  active={local.locationType === 'online'}
+                  onClick={() => setLocal({ ...local, locationType: local.locationType === 'online' ? null : 'online' })}
+                />
+                <FilterChip
+                  label="In Person"
+                  active={local.locationType === 'in_person'}
+                  onClick={() =>
+                    setLocal({ ...local, locationType: local.locationType === 'in_person' ? null : 'in_person' })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* City */}
+            {cities.length > 0 && (
+              <div>
+                <p className="text-[11px] text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider font-medium">City</p>
+                <div className="flex flex-wrap gap-1.5">
                   <FilterChip
-                    key={t}
-                    label={t}
-                    active={local.eventType === t}
-                    onClick={() => setLocal({ ...local, eventType: local.eventType === t ? null : t })}
+                    label="All"
+                    active={!local.city}
+                    onClick={() => setLocal({ ...local, city: null })}
+                  />
+                  {cities.map((c) => (
+                    <FilterChip
+                      key={c}
+                      label={c}
+                      active={local.city === c}
+                      onClick={() => setLocal({ ...local, city: local.city === c ? null : c })}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* RSVP State */}
+            <div>
+              <p className="text-[11px] text-[var(--text-tertiary)] mb-1.5 uppercase tracking-wider font-medium">RSVP Status</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  ['all', 'All'],
+                  ['going', 'Going'],
+                  ['waitlist', 'Waitlisted'],
+                  ['not_responded', 'Not Responded'],
+                ] as [RsvpFilter, string][]).map(([val, label]) => (
+                  <FilterChip
+                    key={val}
+                    label={label}
+                    active={local.rsvpFilter === val}
+                    onClick={() => setLocal({ ...local, rsvpFilter: val })}
                   />
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Location Type */}
-          <div>
-            <p className="text-[12px] text-[var(--text-tertiary)] mb-2">Location</p>
-            <div className="flex flex-wrap gap-2">
-              <FilterChip
-                label="All"
-                active={!local.locationType}
-                onClick={() => setLocal({ ...local, locationType: null })}
-              />
-              <FilterChip
-                label="Online"
-                active={local.locationType === 'online'}
-                onClick={() => setLocal({ ...local, locationType: local.locationType === 'online' ? null : 'online' })}
-              />
-              <FilterChip
-                label="In Person"
-                active={local.locationType === 'in_person'}
-                onClick={() =>
-                  setLocal({ ...local, locationType: local.locationType === 'in_person' ? null : 'in_person' })
-                }
-              />
-            </div>
-          </div>
-
-          {/* City */}
-          {cities.length > 0 && (
-            <div>
-              <p className="text-[12px] text-[var(--text-tertiary)] mb-2">City</p>
-              <div className="flex flex-wrap gap-2">
-                <FilterChip
-                  label="All"
-                  active={!local.city}
-                  onClick={() => setLocal({ ...local, city: null })}
-                />
-                {cities.map((c) => (
-                  <FilterChip
-                    key={c}
-                    label={c}
-                    active={local.city === c}
-                    onClick={() => setLocal({ ...local, city: local.city === c ? null : c })}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* RSVP State */}
-          <div>
-            <p className="text-[12px] text-[var(--text-tertiary)] mb-2">RSVP Status</p>
-            <div className="flex flex-wrap gap-2">
-              {([
-                ['all', 'All'],
-                ['going', 'Going'],
-                ['waitlist', 'Waitlisted'],
-                ['not_responded', 'Not Responded'],
-              ] as [RsvpFilter, string][]).map(([val, label]) => (
-                <FilterChip
-                  key={val}
-                  label={label}
-                  active={local.rsvpFilter === val}
-                  onClick={() => setLocal({ ...local, rsvpFilter: val })}
-                />
-              ))}
             </div>
           </div>
         </div>
 
-        <button
-          onClick={() => onApply(local)}
-          className="w-full mt-5 py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[14px] font-medium"
-        >
-          Apply Filters
-        </button>
+        {/* Sticky footer */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-[rgba(255,255,255,0.06)] safe-bottom">
+          <button
+            onClick={() => onApply(local)}
+            className="w-full py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
+          >
+            Apply Filters
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -757,7 +764,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors ${
+      className={`px-2.5 py-1 rounded-[7px] text-[12px] font-medium transition-colors ${
         active
           ? 'bg-[#3b82f6] text-white'
           : 'bg-[rgba(255,255,255,0.06)] text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.10)]'
@@ -791,19 +798,19 @@ function SortSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">Sort</h2>
-          <button onClick={onClose} className="p-2 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)]">
-            <X className="h-5 w-5 text-[rgba(238,242,255,0.52)]" />
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] safe-bottom">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Sort</h2>
+          <button onClick={onClose} className="p-2.5 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] touch-manipulation">
+            <X className="h-5 w-5 text-[rgba(238,242,255,0.65)]" />
           </button>
         </div>
-        <div className="space-y-1">
+        <div className="px-3 py-2 space-y-0.5">
           {options.map((opt) => (
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className={`w-full text-left px-3 py-2.5 rounded-[10px] text-[14px] transition-colors flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2 rounded-[8px] text-[13px] transition-colors flex items-center justify-between ${
                 sortBy === opt.value
                   ? 'bg-[rgba(59,130,246,0.12)] text-[#3b82f6] font-medium'
                   : 'text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.04)]'
@@ -824,12 +831,11 @@ function SortSheet({
 function EventCardSkeleton() {
   return (
     <div className="section-card p-0 overflow-hidden">
-      <div className="h-[120px] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)] animate-pulse" />
-      <div className="px-3.5 py-3 space-y-2">
+      <div className="h-[84px] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)] animate-pulse" />
+      <div className="px-3 py-2 space-y-1.5">
         <div className="h-4 w-3/4 bg-[rgba(255,255,255,0.06)] rounded animate-pulse" />
         <div className="h-3 w-1/2 bg-[rgba(255,255,255,0.04)] rounded animate-pulse" />
-        <div className="h-3 w-2/3 bg-[rgba(255,255,255,0.04)] rounded animate-pulse" />
-        <div className="h-9 w-full bg-[rgba(255,255,255,0.04)] rounded-[10px] animate-pulse mt-3" />
+        <div className="h-7 w-full bg-[rgba(255,255,255,0.04)] rounded-[8px] animate-pulse mt-1.5" />
       </div>
     </div>
   )

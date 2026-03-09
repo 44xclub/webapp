@@ -238,15 +238,18 @@ export function MyFrameworkCard({
         <div className="-space-y-0.5">
           {editCriteria.map((criterion, index) => (
             <div key={criterion.key} className="flex items-center gap-3 py-1">
-              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-[rgba(255,255,255,0.12)] bg-transparent" />
-              <input
-                type="text"
-                value={criterion.label}
-                onChange={(e) => handleUpdateLabel(index, e.target.value)}
-                placeholder="e.g. 30 min walk"
-                className="flex-1 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] border-b border-[rgba(255,255,255,0.12)] focus:border-[rgba(255,255,255,0.30)] focus:outline-none placeholder:text-[var(--text-muted)] py-0.5"
-                autoFocus={index === editCriteria.length - 1 && !criterion.label}
-              />
+              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-[rgba(255,255,255,0.15)] bg-transparent" />
+              <div className="flex-1 min-w-0 relative">
+                <input
+                  type="text"
+                  value={criterion.label}
+                  onChange={(e) => handleUpdateLabel(index, e.target.value)}
+                  placeholder="Type criteria..."
+                  className="w-full text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] py-0 m-0 border-0"
+                  autoFocus={index === editCriteria.length - 1 && !criterion.label}
+                />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-[rgba(255,255,255,0.10)]" />
+              </div>
               {editCriteria.length > 1 && (
                 <button
                   onClick={() => handleRemoveCriteria(index)}
@@ -260,9 +263,9 @@ export function MyFrameworkCard({
           {editCriteria.length < 5 && (
             <button
               onClick={handleAddCriteria}
-              className="flex items-center gap-3 py-1 mt-1"
+              className="flex items-center gap-3 py-1 mt-0.5"
             >
-              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-dashed border-[rgba(255,255,255,0.12)] flex items-center justify-center">
+              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-dashed border-[rgba(255,255,255,0.10)] flex items-center justify-center">
                 <Plus className="h-3 w-3 text-[var(--text-muted)]" />
               </div>
               <span className="text-[12px] text-[var(--accent-blue)]">
