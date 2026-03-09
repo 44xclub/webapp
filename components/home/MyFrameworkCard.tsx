@@ -196,7 +196,7 @@ export function MyFrameworkCard({
 
       {/* Criteria list - check mode */}
       {!editing && (
-        <div className="space-y-1">
+        <div className="-space-y-0.5">
           {criteriaItems.map((item) => {
             const isChecked = getItemStatus(item.key)
             const isToggling = togglingKey === item.key
@@ -205,19 +205,19 @@ export function MyFrameworkCard({
                 key={item.key}
                 onClick={() => handleToggle(item.key, isChecked)}
                 disabled={isToggling}
-                className="w-full flex items-center gap-2.5 py-1.5 text-left group"
+                className="w-full flex items-center gap-3 py-1 text-left group"
               >
                 <div
-                  className={`flex-shrink-0 w-5 h-5 rounded-[5px] flex items-center justify-center transition-all ${
+                  className={`flex-shrink-0 w-6 h-6 rounded-[6px] flex items-center justify-center transition-all ${
                     isChecked
                       ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
-                      : 'border border-[rgba(255,255,255,0.20)] bg-transparent group-hover:border-[rgba(255,255,255,0.35)]'
+                      : 'border-2 border-[rgba(255,255,255,0.20)] bg-transparent group-hover:border-[rgba(255,255,255,0.35)]'
                   }`}
                 >
                   {isToggling ? (
-                    <Loader2 className="h-3 w-3 animate-spin text-white" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                   ) : isChecked ? (
-                    <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                    <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
                   ) : null}
                 </div>
                 <span
@@ -235,21 +235,22 @@ export function MyFrameworkCard({
 
       {/* Edit mode */}
       {editing && (
-        <div className="space-y-2">
+        <div className="-space-y-0.5">
           {editCriteria.map((criterion, index) => (
-            <div key={criterion.key} className="flex items-center gap-2">
+            <div key={criterion.key} className="flex items-center gap-3 py-1">
+              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-[rgba(255,255,255,0.12)] bg-transparent" />
               <input
                 type="text"
                 value={criterion.label}
                 onChange={(e) => handleUpdateLabel(index, e.target.value)}
                 placeholder="e.g. 30 min walk"
-                className="flex-1 px-2.5 py-1.5 text-[13px] bg-[rgba(255,255,255,0.04)] text-[var(--text-primary)] rounded-[8px] border border-[rgba(255,255,255,0.08)] focus:border-[rgba(255,255,255,0.20)] focus:outline-none placeholder:text-[var(--text-muted)]"
+                className="flex-1 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] border-b border-[rgba(255,255,255,0.12)] focus:border-[rgba(255,255,255,0.30)] focus:outline-none placeholder:text-[var(--text-muted)] py-0.5"
                 autoFocus={index === editCriteria.length - 1 && !criterion.label}
               />
               {editCriteria.length > 1 && (
                 <button
                   onClick={() => handleRemoveCriteria(index)}
-                  className="p-1 text-[var(--text-muted)] hover:text-rose-400 transition-colors"
+                  className="p-1 text-[var(--text-muted)] hover:text-rose-400 transition-colors flex-shrink-0"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -259,10 +260,14 @@ export function MyFrameworkCard({
           {editCriteria.length < 5 && (
             <button
               onClick={handleAddCriteria}
-              className="flex items-center gap-1.5 text-[12px] text-[var(--accent-blue)] hover:underline py-1"
+              className="flex items-center gap-3 py-1 mt-1"
             >
-              <Plus className="h-3.5 w-3.5" />
-              Add criteria ({editCriteria.length}/5)
+              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-dashed border-[rgba(255,255,255,0.12)] flex items-center justify-center">
+                <Plus className="h-3 w-3 text-[var(--text-muted)]" />
+              </div>
+              <span className="text-[12px] text-[var(--accent-blue)]">
+                Add ({editCriteria.length}/5)
+              </span>
             </button>
           )}
         </div>
