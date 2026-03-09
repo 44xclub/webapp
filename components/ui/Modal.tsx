@@ -116,10 +116,13 @@ export function Modal({
   }, [isOpen, handleEscape])
 
   // ── Visual-viewport pinning (iOS keyboard stability) ──
-  // Runs for ALL modals so bottom-sheet modals also stay stable when the
-  // keyboard opens.  On desktop (no visualViewport resize) this is a no-op.
+  // For bottom-sheet (non-fullscreen) modals, pin to the visual viewport
+  // so the modal stays above the keyboard.
+  // For fullscreen modals, SKIP viewport pinning — the modal should keep
+  // its full height and let the keyboard overlay the bottom. This prevents
+  // the footer (Cancel / Create Block) from floating above the keyboard.
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || fullScreen) return
 
     const vv = window.visualViewport
     if (!vv) return
@@ -146,7 +149,7 @@ export function Modal({
         wrapperRef.current.style.top = ''
       }
     }
-  }, [isOpen])
+  }, [isOpen, fullScreen])
 
   // ── Prevent backdrop touch-move from scrolling body ──
   useEffect(() => {
@@ -196,13 +199,21 @@ export function Modal({
           window.scrollTo(0, 0)
         }
 
-        // Scroll the modal body to reveal the focused input
+        // Scroll the modal body to reveal the focused input.
+        // For fullscreen modals the wrapper keeps its full height so the
+        // keyboard overlays the bottom — use visualViewport.height as the
+        // effective visible bottom edge.
         const bodyRect = scrollBody.getBoundingClientRect()
         const inputRect = target.getBoundingClientRect()
+        const vv = window.visualViewport
+        const visibleBottom = vv ? vv.offsetTop + vv.height : bodyRect.bottom
 
-        // If the input is below the visible area of the modal body
-        if (inputRect.bottom > bodyRect.bottom) {
-          scrollBody.scrollTop += inputRect.bottom - bodyRect.bottom + 20
+        // Use whichever is smaller: modal body bottom or visual viewport bottom
+        const effectiveBottom = Math.min(bodyRect.bottom, visibleBottom)
+
+        // If the input is below the visible area
+        if (inputRect.bottom > effectiveBottom) {
+          scrollBody.scrollTop += inputRect.bottom - effectiveBottom + 20
         }
         // If the input is above the visible area
         else if (inputRect.top < bodyRect.top) {
