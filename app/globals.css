@@ -220,21 +220,26 @@ body {
 }
 
 /* AppShell — full-viewport flex column.
-   Uses inset:0 to guarantee the shell always fills the entire screen,
-   regardless of what --app-height resolves to. With viewport-fit=cover
-   in the meta tag, bottom:0 goes to the true screen edge (not the
-   safe-area boundary). --app-height is still set by JS for other
-   consumers (.min-h-app, modals, etc). */
+   Browser mode:  100dvh sits above the Safari toolbar.
+   Standalone PWA: 100vh covers the FULL physical screen (852px on iPhone).
+     100dvh/innerHeight only return 793 (screen − safe-area-inset-top),
+     leaving a 59px gap at the bottom. 100vh = screen.height = 852.
+   The nav handles the home indicator via padding-bottom: env(safe-area-inset-bottom). */
 .app-shell {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 0;
+}
+@media (display-mode: standalone) {
+  .app-shell {
+    height: 100vh;
+  }
 }
 .app-shell-content {
   flex: 1 1 auto;
