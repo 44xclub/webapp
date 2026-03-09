@@ -11,11 +11,13 @@ interface DebugMetrics {
   visualViewportHeight: number | null
   visualViewportOffsetTop: number | null
   documentClientHeight: number
+  bodyClientHeight: number
   shellRect: string
   shellOffsetHeight: string
   shellComputedPosition: string
   shellComputedInset: string
   shellComputedHeight: string
+  shellCssVarShellH: string
   navComputedPaddingBottom: string
   navComputedPosition: string
   navRectBottom: number | null
@@ -24,7 +26,12 @@ interface DebugMetrics {
   cssAppHeight: string
   hundredDvh: string
   hundredVh: string
+  safeTop: string
+  safeBottom: string
+  safeLeft: string
+  safeRight: string
   bodyOverflow: string
+  viewportMeta: string
 }
 
 function getMetrics(): DebugMetrics {
@@ -47,6 +54,28 @@ function getMetrics(): DebugMetrics {
   const hundredVh = `${probe.offsetHeight}px`
   document.body.removeChild(probe)
 
+  // Measure safe area insets via a probe element
+  const safeProbe = document.createElement('div')
+  safeProbe.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);left:0;width:0;height:0;visibility:hidden;'
+  document.body.appendChild(safeProbe)
+  const safeTop = safeProbe.getBoundingClientRect().top
+  safeProbe.style.top = '0'
+  safeProbe.style.paddingTop = 'env(safe-area-inset-top,0px)'
+  const safeTopPx = `${safeProbe.offsetHeight}px`
+  document.body.removeChild(safeProbe)
+
+  // Read safe area CSS vars (set in :root)
+  const safeBottom = rootStyles.getPropertyValue('--safe-bottom').trim() || 'unset'
+  const safeLeft = rootStyles.getPropertyValue('--safe-left').trim() || 'unset'
+  const safeRight = rootStyles.getPropertyValue('--safe-right').trim() || 'unset'
+
+  // Read --shell-h from the shell element itself
+  const shellCssVarShellH = shell ? shell.style.getPropertyValue('--shell-h') || 'unset' : 'N/A'
+
+  // Read viewport meta
+  const vpMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null
+  const viewportMeta = vpMeta?.content || 'MISSING'
+
   return {
     standalone: !!(navigator as any).standalone,
     matchMediaStandalone: window.matchMedia('(display-mode: standalone)').matches,
@@ -56,11 +85,13 @@ function getMetrics(): DebugMetrics {
     visualViewportHeight: window.visualViewport?.height ?? null,
     visualViewportOffsetTop: window.visualViewport?.offsetTop ?? null,
     documentClientHeight: document.documentElement.clientHeight,
+    bodyClientHeight: document.body.clientHeight,
     shellRect: shellRect ? `${Math.round(shellRect.top)},${Math.round(shellRect.left)} ${Math.round(shellRect.width)}x${Math.round(shellRect.height)}` : 'N/A',
     shellOffsetHeight: shell ? `${shell.offsetHeight}px` : 'N/A',
     shellComputedPosition: shellStyles?.position ?? 'N/A',
     shellComputedInset: shellStyles ? `T:${shellStyles.top} R:${shellStyles.right} B:${shellStyles.bottom} L:${shellStyles.left}` : 'N/A',
     shellComputedHeight: shellStyles?.height ?? 'N/A',
+    shellCssVarShellH,
     navComputedPaddingBottom: navStyles?.paddingBottom ?? 'N/A',
     navComputedPosition: navStyles?.position ?? 'N/A',
     navRectBottom: navRect ? Math.round(navRect.bottom) : null,
@@ -69,7 +100,12 @@ function getMetrics(): DebugMetrics {
     cssAppHeight: rootStyles.getPropertyValue('--app-height').trim() || 'unset',
     hundredDvh,
     hundredVh,
+    safeTop: safeTopPx,
+    safeBottom,
+    safeLeft,
+    safeRight,
     bodyOverflow: bodyStyles.overflow,
+    viewportMeta,
   }
 }
 
@@ -172,7 +208,7 @@ export function DebugOverlay() {
       maxHeight: '60vh', overflowY: 'auto',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <strong style={{ color: '#fff' }}>Layout Debug v4</strong>
+        <strong style={{ color: '#fff' }}>Layout Debug v5</strong>
         <div>
           <button onClick={refresh} style={{ background: '#333', color: '#0f0', border: 'none', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 10 }}>Refresh</button>
           <button onClick={() => setMinimized(true)} style={{ background: '#333', color: '#ff0', border: 'none', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 10 }}>Min</button>
@@ -188,17 +224,26 @@ export function DebugOverlay() {
       {L('innerHeight', metrics.windowInnerHeight)}
       {L('outerHeight', metrics.windowOuterHeight)}
       {L('screen.height', metrics.screenHeight)}
-      {L('visualViewport.h', metrics.visualViewportHeight)}
-      {L('visualViewport.offT', metrics.visualViewportOffsetTop)}
-      {L('clientHeight', metrics.documentClientHeight)}
+      {L('visualVP.h', metrics.visualViewportHeight)}
+      {L('visualVP.offT', metrics.visualViewportOffsetTop)}
+      {L('doc.clientH', metrics.documentClientHeight)}
+      {L('body.clientH', metrics.bodyClientHeight)}
       {L('100dvh', metrics.hundredDvh)}
       {L('100vh', metrics.hundredVh)}
       {L('--app-height', metrics.cssAppHeight)}
+      {L('viewport meta', metrics.viewportMeta, '#0ff')}
+
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- Safe Areas ---</div>
+      {L('safe-top', metrics.safeTop)}
+      {L('safe-bottom', metrics.safeBottom)}
+      {L('safe-left', metrics.safeLeft)}
+      {L('safe-right', metrics.safeRight)}
 
       <div style={{ color: '#aaa', marginTop: 4 }}>--- Shell ---</div>
       {L('position', metrics.shellComputedPosition)}
       {L('inset', metrics.shellComputedInset)}
       {L('computedH', metrics.shellComputedHeight)}
+      {L('--shell-h', metrics.shellCssVarShellH)}
       {L('rect', metrics.shellRect)}
       {L('offsetHeight', metrics.shellOffsetHeight)}
       {L('shell gap', metrics.shellGapFromScreenBottom !== null ? `${metrics.shellGapFromScreenBottom}px` : 'N/A')}
