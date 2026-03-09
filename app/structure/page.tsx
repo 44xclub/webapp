@@ -291,7 +291,7 @@ function EventCard({
       className="section-card p-0 overflow-hidden cursor-pointer hover:border-[rgba(255,255,255,0.12)] transition-colors"
     >
       {/* Banner */}
-      <div className="relative aspect-[2.2/1] bg-[var(--surface-1)]">
+      <div className="relative h-[120px] bg-[var(--surface-1)]">
         <FadeImage
           src={bannerUrl || ''}
           alt={event.title}
@@ -824,7 +824,7 @@ function SortSheet({
 function EventCardSkeleton() {
   return (
     <div className="section-card p-0 overflow-hidden">
-      <div className="aspect-[2.2/1] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)] animate-pulse" />
+      <div className="h-[120px] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)] animate-pulse" />
       <div className="px-3.5 py-3 space-y-2">
         <div className="h-4 w-3/4 bg-[rgba(255,255,255,0.06)] rounded animate-pulse" />
         <div className="h-3 w-1/2 bg-[rgba(255,255,255,0.04)] rounded animate-pulse" />
