@@ -25,24 +25,30 @@ export function PWARegister() {
   }, [])
 
   // Set --app-height CSS var — used by AppShell, .min-h-app, .h-app
+  // Always use innerHeight: it returns the full viewport INCLUDING safe areas
+  // when viewport-fit=cover. visualViewport.height can EXCLUDE safe areas in
+  // iOS standalone PWA mode, making the shell shorter than the screen.
   useEffect(() => {
     const setAppHeight = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight
-      document.documentElement.style.setProperty('--app-height', `${h}px`)
+      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`)
     }
 
     setAppHeight()
 
     window.addEventListener('resize', setAppHeight)
-    const vv = window.visualViewport
-    if (vv) vv.addEventListener('resize', setAppHeight)
+    // visualViewport resize fires when keyboard opens/closes or zoom changes
+    window.visualViewport?.addEventListener('resize', () => {
+      // Still use innerHeight (not visualViewport.height) — the shell should
+      // stay full-screen; the keyboard overlaps the nav, which is standard iOS behavior.
+      setAppHeight()
+    })
 
     const handleOrientation = () => setTimeout(setAppHeight, 120)
     window.addEventListener('orientationchange', handleOrientation)
 
     return () => {
       window.removeEventListener('resize', setAppHeight)
-      if (vv) vv.removeEventListener('resize', setAppHeight)
+      window.visualViewport?.removeEventListener('resize', setAppHeight)
       window.removeEventListener('orientationchange', handleOrientation)
     }
   }, [])
