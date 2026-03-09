@@ -106,7 +106,7 @@ export default function PersonalFrameworkPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Discipline Framework</h1>
             <button
-              onClick={() => router.push('/structure')}
+              onClick={() => router.push('/profile')}
               className="p-2 -mr-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
             >
               <X className="h-5 w-5 text-[rgba(238,242,255,0.72)]" />
