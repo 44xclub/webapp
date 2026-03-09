@@ -14,7 +14,10 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useAuth, useBlocks, useBlockMedia, useProfile, useProgrammes, useRank, useVoiceScheduling } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useProgrammes, useRank, useFrameworks, useVoiceScheduling } from '@/lib/hooks'
+import { usePersonalFramework } from '@/lib/hooks/usePersonalFramework'
+import { MyFrameworkCard } from '@/components/home/MyFrameworkCard'
+import { NextSessionCard } from '@/components/home/NextSessionCard'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Mic, Loader2 } from 'lucide-react'
 import { BlockListSkeleton } from '@/components/ui/Skeletons'
@@ -165,9 +168,21 @@ export default function AppPage() {
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight, avatarUrl } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
-  const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
+  const { activeProgramme, sessions: programmeSessions, progress: programmeProgress } = useProgrammes(user?.id)
+  const {
+    activeFramework,
+    todayItems,
+    completionCount: frameworkCompletionCount,
+    toggleFrameworkItem,
+    loading: frameworkLoading,
+  } = useFrameworks(user?.id)
+  const { personalFramework, updatePersonalFramework } = usePersonalFramework({ userId: user?.id })
 
-
+  // Handle updating framework criteria from inline edit
+  const handleUpdateFrameworkCriteria = useCallback(async (criteria: import('@/lib/types').FrameworkCriteriaItem[]) => {
+    if (!personalFramework) return false
+    return await updatePersonalFramework(personalFramework.id, { criteria })
+  }, [personalFramework, updatePersonalFramework])
 
   // Voice scheduling
   const voice = useVoiceScheduling(
@@ -326,6 +341,23 @@ export default function AppPage() {
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
       />
+
+      {/* Framework + Next Session cards */}
+      <div className="px-4 pt-2 space-y-2">
+        <MyFrameworkCard
+          activeFramework={activeFramework}
+          todayItems={todayItems}
+          completionCount={frameworkCompletionCount}
+          onToggleItem={toggleFrameworkItem}
+          onUpdateCriteria={personalFramework && activeFramework?.framework_template_id === personalFramework.id ? handleUpdateFrameworkCriteria : undefined}
+          loading={frameworkLoading}
+        />
+        <NextSessionCard
+          activeProgramme={activeProgramme}
+          sessions={programmeSessions}
+          progress={programmeProgress}
+        />
+      </div>
 
       <main className="flex-1 pb-4">
         {blocksLoading ? (

@@ -210,16 +210,57 @@ export function useEvents(userId?: string): UseEventsReturn {
     return filtered
   }, [allEvents, pastMode, filters, sortBy, rsvpMap])
 
-  // RSVP action
+  // RSVP action with optimistic updates
   const rsvpAction = useCallback(
     async (eventId: string, response: 'going' | 'not_going' | 'waitlist' | 'cancelled'): Promise<boolean> => {
       if (!userId) return false
 
-      try {
-        const existing = rsvpMap.get(eventId)
+      const existing = rsvpMap.get(eventId)
+      const previousRsvpMap = new Map(rsvpMap)
+      const previousEvents = [...allEvents]
 
+      // Optimistic update: update RSVP map immediately
+      const optimisticRsvp: EventRsvp = existing
+        ? { ...existing, response, updated_at: new Date().toISOString() }
+        : {
+            id: `optimistic_${Date.now()}`,
+            event_id: eventId,
+            user_id: userId,
+            response,
+            waitlist_position: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+
+      const newRsvpMap = new Map(rsvpMap)
+      newRsvpMap.set(eventId, optimisticRsvp)
+      setRsvpMap(newRsvpMap)
+
+      // Optimistic update: adjust going/waitlist counts on the event
+      setAllEvents((prev) =>
+        prev.map((event) => {
+          if (event.id !== eventId) return event
+          let goingDelta = 0
+          let waitlistDelta = 0
+
+          // Remove previous response count
+          if (existing?.response === 'going') goingDelta -= 1
+          if (existing?.response === 'waitlist') waitlistDelta -= 1
+
+          // Add new response count
+          if (response === 'going') goingDelta += 1
+          if (response === 'waitlist') waitlistDelta += 1
+
+          return {
+            ...event,
+            rsvp_going_count: Math.max(0, event.rsvp_going_count + goingDelta),
+            rsvp_waitlist_count: Math.max(0, event.rsvp_waitlist_count + waitlistDelta),
+          }
+        })
+      )
+
+      try {
         if (existing) {
-          // Update existing RSVP
           const { error } = await supabase
             .from('event_rsvps')
             .update({
@@ -230,7 +271,6 @@ export function useEvents(userId?: string): UseEventsReturn {
 
           if (error) throw error
         } else {
-          // Create new RSVP
           const { error } = await supabase
             .from('event_rsvps')
             .insert({
@@ -242,16 +282,19 @@ export function useEvents(userId?: string): UseEventsReturn {
           if (error) throw error
         }
 
-        // Refetch to get updated counts
-        await fetchData()
+        // Background reconcile with server data
+        fetchData()
         return true
       } catch (err) {
+        // Rollback on failure
         console.error('[useEvents] RSVP error:', err)
+        setRsvpMap(previousRsvpMap)
+        setAllEvents(previousEvents)
         setError(err instanceof Error ? err.message : 'Failed to update RSVP')
         return false
       }
     },
-    [userId, supabase, rsvpMap, fetchData]
+    [userId, supabase, rsvpMap, allEvents, fetchData]
   )
 
   return {
