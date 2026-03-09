@@ -532,8 +532,8 @@ function EventDetailModal({
                 />
               )}
 
-              {/* Meeting URL for online events */}
-              {event.location_type === 'online' && event.meeting_url && (
+              {/* Meeting URL — only visible when user has RSVP'd going */}
+              {event.location_type === 'online' && event.meeting_url && rsvp?.response === 'going' && (
                 <div className="flex items-center gap-2.5 py-0.5">
                   <Globe className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
                   <a
@@ -544,6 +544,12 @@ function EventDetailModal({
                   >
                     {event.meeting_url}
                   </a>
+                </div>
+              )}
+              {event.location_type === 'online' && event.meeting_url && rsvp?.response !== 'going' && (
+                <div className="flex items-center gap-2.5 py-0.5">
+                  <Globe className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
+                  <span className="text-[12px] text-[var(--text-tertiary)] italic">RSVP to get the meeting link</span>
                 </div>
               )}
             </div>

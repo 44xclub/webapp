@@ -380,7 +380,7 @@ export default function AppPage() {
         <div
           className="fixed z-30 flex items-end gap-3"
           style={{
-            bottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px)',
+            bottom: 'calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px)',
             right: 'calc(16px + env(safe-area-inset-right, 0px))',
           }}
         >
