@@ -1,58 +1,69 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { BottomNav } from './BottomNav'
 
 /**
  * AppShell — single layout contract for all routes with bottom navigation.
  *
  * Structure:
- *   ┌─────────────────────────┐  ← position:fixed, height = --shell-h
+ *   ┌─────────────────────────┐  ← position:fixed, height = var(--app-height)
  *   │  flex-1 overflow-y-auto │  ← scrollable content area
  *   │  (children rendered here)│
  *   ├─────────────────────────┤
- *   │  BottomNav (flex child) │  ← pinned at bottom via flex, not fixed
+ *   │  BottomNav (flex child) │  ← flex-shrink:0, padding-bottom: env(safe-area-inset-bottom)
  *   └─────────────────────────┘
  *
- * Height strategy (CSS variable cascade):
- *   --shell-h   (set here via window.innerHeight — most accurate)
- *   --app-height (set by inline <script> in layout.tsx — before React mount)
- *   100dvh      (pure-CSS fallback)
+ * --app-height is set by:
+ *   1. Inline <script> in layout.tsx (before first paint, prevents flash)
+ *   2. PWARegister.tsx (on resize, orientationchange, visualViewport.resize)
+ * Both use: visualViewport?.height ?? innerHeight
  *
- * We use window.innerHeight because on iOS PWA standalone with
- * viewport-fit:cover it returns the true full-screen height including
- * safe areas — unlike 100dvh which may exclude the home indicator.
+ * BottomNav is the ONLY element that applies env(safe-area-inset-bottom).
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-
+  // Debug logging for standalone PWA — prints viewport metrics to console
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as any).standalone === true
 
-    const sync = () => {
-      el.style.setProperty('--shell-h', `${window.innerHeight}px`)
+    if (!isStandalone && !localStorage.getItem('44club-debug')) return
+
+    const logMetrics = () => {
+      const shell = document.querySelector('.app-shell') as HTMLElement | null
+      const nav = document.querySelector('.app-shell nav') as HTMLElement | null
+      const navRect = nav?.getBoundingClientRect()
+      const viewportH = window.visualViewport?.height ?? window.innerHeight
+
+      console.log('[AppShell Debug]', {
+        visualViewportHeight: window.visualViewport?.height ?? 'N/A',
+        innerHeight: window.innerHeight,
+        appHeight_css: getComputedStyle(document.documentElement).getPropertyValue('--app-height'),
+        shellHeight: shell?.offsetHeight,
+        shellBoundingHeight: shell?.getBoundingClientRect().height,
+        navBottom: navRect?.bottom,
+        navPaddingBottom: nav ? getComputedStyle(nav).paddingBottom : 'N/A',
+        gapBelowNav: navRect ? Math.round(viewportH - navRect.bottom) : 'N/A',
+        standalone: isStandalone,
+      })
     }
 
-    // Set immediately
-    sync()
-
-    // Update on viewport changes
-    window.addEventListener('resize', sync)
-    window.addEventListener('orientationchange', () => setTimeout(sync, 150))
-
-    // iOS standalone can fire a delayed resize after app becomes active
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') setTimeout(sync, 100)
-    })
+    // Log after initial render
+    const t = setTimeout(logMetrics, 500)
+    // Log on resize
+    window.addEventListener('resize', logMetrics)
+    window.visualViewport?.addEventListener('resize', logMetrics)
 
     return () => {
-      window.removeEventListener('resize', sync)
+      clearTimeout(t)
+      window.removeEventListener('resize', logMetrics)
+      window.visualViewport?.removeEventListener('resize', logMetrics)
     }
   }, [])
 
   return (
-    <div ref={ref} className="app-shell">
+    <div className="app-shell">
       <div className="app-shell-content">
         {children}
       </div>

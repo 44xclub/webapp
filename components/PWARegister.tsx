@@ -24,8 +24,7 @@ export function PWARegister() {
     }
   }, [])
 
-  // Set --app-height CSS var for .min-h-app / .h-app consumers
-  // (NOT used by AppShell — it uses position:fixed;inset:0 instead)
+  // Set --app-height CSS var — used by AppShell, .min-h-app, .h-app
   useEffect(() => {
     const setAppHeight = () => {
       const h = window.visualViewport?.height ?? window.innerHeight
