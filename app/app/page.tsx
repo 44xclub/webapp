@@ -17,7 +17,6 @@ import { Button } from '@/components/ui'
 import { useAuth, useBlocks, useBlockMedia, useProfile, useProgrammes, useRank, useFrameworks, useVoiceScheduling } from '@/lib/hooks'
 import { usePersonalFramework } from '@/lib/hooks/usePersonalFramework'
 import { MyFrameworkCard } from '@/components/home/MyFrameworkCard'
-import { NextSessionCard } from '@/components/home/NextSessionCard'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Mic, Loader2 } from 'lucide-react'
 import { BlockListSkeleton } from '@/components/ui/Skeletons'
@@ -168,7 +167,7 @@ export default function AppPage() {
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight, avatarUrl } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
-  const { activeProgramme, sessions: programmeSessions, progress: programmeProgress } = useProgrammes(user?.id)
+  const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
   const {
     activeFramework,
     todayItems,
@@ -342,8 +341,8 @@ export default function AppPage() {
         onViewModeChange={handleViewModeChange}
       />
 
-      {/* Framework + Next Session cards */}
-      <div className="px-4 pt-2 space-y-2">
+      {/* Framework card */}
+      <div className="px-4 pt-2">
         <MyFrameworkCard
           activeFramework={activeFramework}
           todayItems={todayItems}
@@ -351,11 +350,6 @@ export default function AppPage() {
           onToggleItem={toggleFrameworkItem}
           onUpdateCriteria={personalFramework && activeFramework?.framework_template_id === personalFramework.id ? handleUpdateFrameworkCriteria : undefined}
           loading={frameworkLoading}
-        />
-        <NextSessionCard
-          activeProgramme={activeProgramme}
-          sessions={programmeSessions}
-          progress={programmeProgress}
         />
       </div>
 
