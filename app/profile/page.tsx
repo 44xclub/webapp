@@ -290,47 +290,8 @@ export default function ProfilePage() {
           variant="strip"
         />
 
-        {/* Personal Frameworks */}
-        <Link
-          href="/personal-framework"
-          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
-        >
-          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <Target className="h-4 w-4 text-[#3b82f6]" />
-              </div>
-              <div>
-                <h3 className="text-label">Personal Frameworks</h3>
-                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
-                  Build and manage your own discipline systems
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
-
-        {/* Personal Programmes */}
-        <Link
-          href="/programmes"
-          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
-        >
-          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(139,92,246,0.12)] flex items-center justify-center">
-                <Dumbbell className="h-4 w-4 text-[#8b5cf6]" />
-              </div>
-              <div>
-                <h3 className="text-label">Personal Programmes</h3>
-                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
-                  Build and manage your own training plans
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
+        {/* My Resources Section */}
+        <h3 className="text-[13px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider px-1 pt-2">My Resources</h3>
 
         {/* Reflection & Planning - Link to dedicated page */}
         <Link
@@ -443,6 +404,48 @@ export default function ProfilePage() {
                 )
               })
             )}
+          </div>
+        </Link>
+
+        {/* Personal Frameworks */}
+        <Link
+          href="/personal-framework"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
+        >
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
+                <Target className="h-4 w-4 text-[#3b82f6]" />
+              </div>
+              <div>
+                <h3 className="text-label">Personal Frameworks</h3>
+                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
+                  Build and manage your own discipline systems
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
+          </div>
+        </Link>
+
+        {/* Fitness Programmes */}
+        <Link
+          href="/programmes"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
+        >
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(139,92,246,0.12)] flex items-center justify-center">
+                <Dumbbell className="h-4 w-4 text-[#8b5cf6]" />
+              </div>
+              <div>
+                <h3 className="text-label">Fitness Programmes</h3>
+                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
+                  Build and manage your own training plans
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
           </div>
         </Link>
 
