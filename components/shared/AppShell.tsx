@@ -1,7 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { BottomNav } from './BottomNav'
+
+// ── Scroll position store ────────────────────────────────────────────
+// Persists across re-renders; keyed by pathname.
+const scrollPositions = new Map<string, number>()
 
 /**
  * AppShell — single layout contract for all routes with bottom navigation.
@@ -20,6 +25,36 @@ import { BottomNav } from './BottomNav'
  * BottomNav is the ONLY element that applies env(safe-area-inset-bottom).
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const prevPathname = useRef(pathname)
+
+  // Save scroll position when navigating away; restore when coming back.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    // If the pathname changed, save the old position and restore the new one
+    if (prevPathname.current !== pathname) {
+      // Save previous page's scroll position
+      scrollPositions.set(prevPathname.current, el.scrollTop)
+      prevPathname.current = pathname
+
+      // Restore this page's scroll position (0 if never visited)
+      const saved = scrollPositions.get(pathname)
+      el.scrollTop = saved ?? 0
+    }
+  }, [pathname])
+
+  // Also save on unmount / before navigating away
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    return () => {
+      scrollPositions.set(pathname, el.scrollTop)
+    }
+  }, [pathname])
+
   // Debug logging for standalone PWA — prints viewport metrics to console
   useEffect(() => {
     const isStandalone =
@@ -62,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell">
-      <div className="app-shell-content">
+      <div ref={scrollRef} className="app-shell-content">
         {children}
       </div>
       <BottomNav />

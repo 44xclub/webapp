@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { parseDateOnly } from '@/lib/date'
 import {
   Loader2,
   LogOut,
@@ -19,9 +18,6 @@ import {
   X,
   ChevronRight,
   BookOpen,
-  TrendingDown,
-  TrendingUp,
-  Image as ImageIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth, useProfile, useRank, useReflection } from '@/lib/hooks'
@@ -31,12 +27,7 @@ import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
 import { Button } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
-import type { DisciplineBadge, Block, BlockMedia } from '@/lib/types'
-
-// Extended Block type with media
-interface BlockWithMedia extends Block {
-  block_media: BlockMedia[]
-}
+import type { DisciplineBadge } from '@/lib/types'
 
 const TIMEZONES = [
   'Europe/London',
@@ -68,8 +59,6 @@ export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [checkinBlocks, setCheckinBlocks] = useState<BlockWithMedia[]>([])
-  const [checkinsLoading, setCheckinsLoading] = useState(true)
 
   const [formData, setFormData] = useState({
     display_name: '',
@@ -82,35 +71,9 @@ export default function ProfilePage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  const { profile, loading: profileLoading, updateProfile, avatarUrl } = useProfile(user?.id)
+  const { profile, updateProfile, avatarUrl } = useProfile(user?.id)
   const { rank } = useRank(user?.id)
   const { cycles, currentCycle } = useReflection(user?.id)
-
-  useEffect(() => {
-    async function fetchCheckins() {
-      if (!user?.id) return
-      setCheckinsLoading(true)
-      try {
-        // Fetch last 2 check-ins for preview, ordered by performed_at then created_at
-        const { data, error } = await supabase
-          .from('blocks')
-          .select('*, block_media(*)')
-          .eq('user_id', user.id)
-          .eq('block_type', 'checkin')
-          .is('deleted_at', null)
-          .order('performed_at', { ascending: false, nullsFirst: false })
-          .order('created_at', { ascending: false })
-          .limit(2)
-        if (error) throw error
-        setCheckinBlocks(data as BlockWithMedia[] || [])
-      } catch (err) {
-        console.error('Failed to fetch check-ins:', err)
-      } finally {
-        setCheckinsLoading(false)
-      }
-    }
-    fetchCheckins()
-  }, [user?.id, supabase])
 
   useEffect(() => {
     if (profile) {
@@ -305,7 +268,49 @@ export default function ProfilePage() {
         {/* My Resources Section */}
         <h3 className="text-[13px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider px-1 pt-2">My Resources</h3>
 
-        {/* Reflection & Planning - Link to dedicated page */}
+        {/* Fitness Programmes — first */}
+        <Link
+          href="/programmes"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
+        >
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(139,92,246,0.12)] flex items-center justify-center">
+                <Dumbbell className="h-4 w-4 text-[#8b5cf6]" />
+              </div>
+              <div>
+                <h3 className="text-label">Fitness Programmes</h3>
+                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
+                  Build and manage your own training plans
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
+          </div>
+        </Link>
+
+        {/* Check-ins */}
+        <Link
+          href="/profile/check-ins"
+          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
+        >
+          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[var(--accent-green-muted)] flex items-center justify-center">
+                <Scale className="h-4 w-4 text-[var(--accent-green)]" />
+              </div>
+              <div>
+                <h3 className="text-label">Check-ins</h3>
+                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
+                  Track your weight & progress
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
+          </div>
+        </Link>
+
+        {/* Reflection & Planning */}
         <Link
           href="/profile/reflection"
           className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
@@ -330,110 +335,6 @@ export default function ProfilePage() {
                     </span>
                   </p>
                 )}
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
-
-        {/* Check-ins - Link to dedicated page */}
-        <Link
-          href="/profile/check-ins"
-          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors overflow-hidden"
-        >
-          <div className="px-[var(--space-card)] py-3 flex items-center justify-between border-b border-[var(--border-subtle)]">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[var(--accent-green-muted)] flex items-center justify-center">
-                <Scale className="h-4 w-4 text-[var(--accent-green)]" />
-              </div>
-              <div>
-                <h3 className="text-label">Check-ins</h3>
-                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
-                  Track your weight & progress
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-          </div>
-
-          {/* Last 2 check-ins preview */}
-          <div className="divide-y divide-[var(--border-subtle)]">
-            {checkinsLoading ? (
-              <div className="p-[var(--space-card)] flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin text-[var(--text-muted)]" />
-              </div>
-            ) : checkinBlocks.length === 0 ? (
-              <div className="p-[var(--space-card)] text-center text-meta">
-                No check-ins yet. Tap to add one.
-              </div>
-            ) : (
-              checkinBlocks.map((block, index) => {
-                const payload = block.payload as { weight?: number; body_fat_percent?: number }
-                const media = block.block_media || []
-
-                // Calculate delta from previous (next in array since sorted desc)
-                let delta: number | null = null
-                if (index === 0 && checkinBlocks.length > 1) {
-                  const prevPayload = checkinBlocks[1].payload as { weight?: number }
-                  if (payload?.weight && prevPayload?.weight) {
-                    delta = payload.weight - prevPayload.weight
-                  }
-                }
-
-                return (
-                  <div
-                    key={block.id}
-                    className="px-[var(--space-card)] py-3 flex items-center justify-between"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      router.push(`/profile/check-ins?open=${block.id}`)
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-meta w-12">
-                        {parseDateOnly(block.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-label">
-                          {payload?.weight ? `${payload.weight} kg` : '—'}
-                        </span>
-                        {delta !== null && delta !== 0 && (
-                          <span className={`text-micro normal-case flex items-center gap-0.5 ${delta < 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {delta < 0 ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-                            {Math.abs(delta).toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {media.length > 0 && (
-                        <span className="text-micro flex items-center gap-1">
-                          <ImageIcon className="h-3 w-3" /> {media.length}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </Link>
-
-        {/* Fitness Programmes */}
-        <Link
-          href="/programmes"
-          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
-        >
-          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(139,92,246,0.12)] flex items-center justify-center">
-                <Dumbbell className="h-4 w-4 text-[#8b5cf6]" />
-              </div>
-              <div>
-                <h3 className="text-label">Fitness Programmes</h3>
-                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
-                  Build and manage your own training plans
-                </p>
               </div>
             </div>
             <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Heart, Trash2, Loader2, MoreHorizontal, Shield, Target, Flame, Swords, Award, Anvil, Rocket, Crown, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
+import { useImageLightbox } from '@/components/ui/ImageLightbox'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge } from '@/lib/types'
 
@@ -286,65 +287,7 @@ function detectPostType(payload: any): string {
   return 'habit'
 }
 
-/** Format a reps value - handle number, string, or range */
-function formatValue(val: any): string {
-  if (val == null || val === '' || val === 0) return '\u2014'
-  return String(val)
-}
-
-// Compact micro-table for one exercise: columns Set | Reps | Kg
-function ExerciseMicroTable({
-  name,
-  sets,
-  defaultExpanded = true,
-}: {
-  name: string
-  sets: Array<{ reps?: any; weight?: any }>
-  defaultExpanded?: boolean
-}) {
-  const [showAll, setShowAll] = useState(defaultExpanded)
-  const validSets = sets.filter((s: any) => s.reps || s.weight)
-  const hasWeight = validSets.some((s: any) => s.weight)
-  const collapsedCount = 6
-  const needsCollapse = validSets.length > collapsedCount
-  const displaySets = showAll ? validSets : validSets.slice(0, collapsedCount)
-
-  return (
-    <div>
-      <p className="text-[13px] font-semibold text-[#eef2ff] mb-1 truncate">{name}</p>
-      <div
-        className="grid text-[12px] tabular-nums"
-        style={{
-          gridTemplateColumns: hasWeight ? '32px 1fr 1fr' : '32px 1fr',
-        }}
-      >
-        {/* Header */}
-        <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Set</span>
-        <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Reps</span>
-        {hasWeight && <span className="text-[rgba(238,242,255,0.30)] font-medium py-0.5">Kg</span>}
-
-        {/* Rows */}
-        {displaySets.map((s: any, si: number) => (
-          <>
-            <span key={`s${si}`} className="text-[rgba(238,242,255,0.45)] py-px">{si + 1}</span>
-            <span key={`r${si}`} className="text-[rgba(238,242,255,0.72)] py-px">{formatValue(s.reps)}</span>
-            {hasWeight && <span key={`w${si}`} className="text-[rgba(238,242,255,0.72)] py-px">{formatValue(s.weight)}</span>}
-          </>
-        ))}
-      </div>
-      {needsCollapse && !showAll && (
-        <button
-          onClick={() => setShowAll(true)}
-          className="text-[11px] text-[#3b82f6] mt-0.5"
-        >
-          + {validSets.length - collapsedCount} more set{validSets.length - collapsedCount !== 1 ? 's' : ''}
-        </button>
-      )}
-    </div>
-  )
-}
-
-// Workout Data Panel — redesigned with compact micro-tables
+// Workout Data Panel — compact exercise + set count summary for feed
 function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   const workout = payload?.workout
   const legacyMatrix = (payload as any)?.workout_matrix || (payload as any)?.exercises
@@ -353,25 +296,16 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
   const isDetailsType = ['running', 'sport', 'other'].includes(kind)
   const details = workout?.details || {}
 
-  const [exercisesExpanded, setExercisesExpanded] = useState(false)
-
-  // For running/sport/other, show session details instead of exercise matrix
+  // For running/sport/other, show session details
   if (isDetailsType || (exercises.length === 0 && details?.description)) {
     return (
       <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 mb-3">
         {workout?.session_title && (
           <p className="text-[12px] font-medium text-[#3b82f6] mb-2">{workout.session_title}</p>
         )}
-        <p className="text-[11px] font-medium text-[rgba(238,242,255,0.45)] mb-2 uppercase tracking-wide">
-          {kind === 'running' ? 'Run' : kind === 'sport' ? 'Sport' : 'Workout'} Details
-        </p>
-
-        {/* Description */}
         {details?.description && (
-          <p className="text-[13px] text-[rgba(238,242,255,0.72)] mb-3">{details.description}</p>
+          <p className="text-[13px] text-[rgba(238,242,255,0.72)] mb-2">{details.description}</p>
         )}
-
-        {/* Tags row */}
         <div className="flex items-center gap-2 flex-wrap">
           {details?.distance_km && (
             <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
@@ -388,11 +322,6 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
               {workout?.duration_min || (payload as any)?.duration} min
             </span>
           )}
-          {(workout?.rpe || (payload as any)?.rpe) && (
-            <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
-              RPE {workout?.rpe || (payload as any)?.rpe}
-            </span>
-          )}
           <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)] capitalize">
             {kind.replace('_', ' ')}
           </span>
@@ -401,13 +330,12 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
     )
   }
 
-  // Matrix-based workout (weight_lifting, hyrox, hybrid)
   if (exercises.length === 0) return null
 
-  // In feed: show first 3 exercises, then collapse
-  const previewCount = 3
-  const hasMore = exercises.length > previewCount
-  const visibleExercises = exercisesExpanded ? exercises : exercises.slice(0, previewCount)
+  // Compact: show first 5 exercises as "Exercise — N sets", then +X more
+  const previewCount = 5
+  const visibleExercises = exercises.slice(0, previewCount)
+  const remainingCount = exercises.length - previewCount
 
   return (
     <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] p-3 mb-3">
@@ -415,52 +343,30 @@ function WorkoutDataPanel({ payload }: { payload: FeedPostPayload }) {
         <p className="text-[12px] font-medium text-[#3b82f6] mb-2">{workout.session_title}</p>
       )}
 
-      {/* Exercise micro-tables */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         {visibleExercises.map((exercise: any, idx: number) => {
           const name = exercise.name || exercise.exercise || 'Exercise'
           const sets = exercise.sets || []
-          const hasStructuredSets = Array.isArray(sets) && sets.length > 0 && sets.some((s: any) => s.reps || s.weight)
-
-          if (!hasStructuredSets) {
-            // Legacy fallback - single line
-            const legacyStr = formatSetsLegacy(exercise)
-            return (
-              <div key={idx}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-semibold text-[#eef2ff] truncate">{name}</span>
-                  {legacyStr && <span className="text-[11px] text-[rgba(238,242,255,0.45)] flex-shrink-0">{legacyStr}</span>}
-                </div>
-              </div>
-            )
-          }
-
+          const setCount = Array.isArray(sets) ? sets.filter((s: any) => s.reps || s.weight).length : (exercise.sets_count || 0)
           return (
-            <ExerciseMicroTable
-              key={idx}
-              name={name}
-              sets={sets}
-            />
+            <div key={idx} className="flex items-center justify-between gap-2">
+              <span className="text-[13px] text-[#eef2ff] truncate">{name}</span>
+              <span className="text-[12px] text-[rgba(238,242,255,0.45)] flex-shrink-0 tabular-nums">
+                {setCount > 0 ? `${setCount} set${setCount !== 1 ? 's' : ''}` : formatSetsLegacy(exercise)}
+              </span>
+            </div>
           )
         })}
       </div>
 
-      {/* Expand / collapse for long sessions */}
-      {hasMore && (
-        <button
-          onClick={() => setExercisesExpanded(!exercisesExpanded)}
-          className="text-[12px] text-[#3b82f6] mt-2 flex items-center gap-1"
-        >
-          {exercisesExpanded ? (
-            <>Show less <ChevronUp className="h-3 w-3" /></>
-          ) : (
-            <>View full session ({exercises.length - previewCount} more) <ChevronDown className="h-3 w-3" /></>
-          )}
-        </button>
+      {remainingCount > 0 && (
+        <p className="text-[12px] text-[rgba(238,242,255,0.35)] mt-1">
+          +{remainingCount} more exercise{remainingCount !== 1 ? 's' : ''}
+        </p>
       )}
 
       {/* Tags row */}
-      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
         {(workout?.duration_min || (payload as any)?.duration) && (
           <span className="px-2 py-0.5 bg-[rgba(255,255,255,0.05)] rounded text-[11px] text-[rgba(238,242,255,0.52)]">
             {workout?.duration_min || (payload as any)?.duration} min
@@ -606,8 +512,9 @@ function normalizeMediaItem(item: any): { path: string; type: 'image' | 'video' 
   return { path, type }
 }
 
-// Media Display Component - Responsive layouts for 1/2/3 images
+// Media Display Component — compact previews with tap-to-enlarge
 function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaPath: string | null }) {
+  const { openLightbox, lightboxElement } = useImageLightbox()
   const rawMedia = payload?.media || []
 
   // Normalize all media items and filter out invalid ones
@@ -622,113 +529,92 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
 
   if (allMedia.length === 0) return null
 
-  // Single image - max 420px
+  const handleTap = (url: string) => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    openLightbox(url)
+  }
+
+  // Single image — compact 16:9 preview
   if (allMedia.length === 1) {
     const imageUrl = getStorageUrl(allMedia[0].path)
     if (!imageUrl) return null
     return (
-      <div className="rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
-        <div className="relative w-full" style={{ aspectRatio: '4/5' }}>
-          <img
-            src={imageUrl}
-            alt="Post media"
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-          />
+      <>
+        <div className="rounded-[10px] overflow-hidden mb-3 cursor-pointer" onClick={handleTap(imageUrl)}>
+          <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+            <img src={imageUrl} alt="Post media" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+          </div>
         </div>
-      </div>
+        {lightboxElement}
+      </>
     )
   }
 
-  // Two images - side by side, max 420px
+  // Two images — side by side squares, compact height
   if (allMedia.length === 2) {
     return (
-      <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
-        {allMedia.map((item, idx) => {
+      <>
+        <div className="grid grid-cols-2 gap-1 rounded-[10px] overflow-hidden mb-3">
+          {allMedia.map((item, idx) => {
+            const imageUrl = getStorageUrl(item.path)
+            if (!imageUrl) return null
+            return (
+              <div key={idx} className="relative cursor-pointer" style={{ aspectRatio: '4/3' }} onClick={handleTap(imageUrl)}>
+                <img src={imageUrl} alt={`Post media ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              </div>
+            )
+          })}
+        </div>
+        {lightboxElement}
+      </>
+    )
+  }
+
+  // Three images — primary + two stacked
+  if (allMedia.length === 3) {
+    const urls = allMedia.map(m => getStorageUrl(m.path)).filter(Boolean) as string[]
+    if (urls.length < 3) return null
+    return (
+      <>
+        <div className="grid grid-cols-3 gap-1 rounded-[10px] overflow-hidden mb-3 h-[140px]">
+          <div className="col-span-2 relative h-full cursor-pointer" onClick={handleTap(urls[0])}>
+            <img src={urls[0]} alt="Post media 1" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+          <div className="flex flex-col gap-1 h-full">
+            <div className="relative flex-1 cursor-pointer" onClick={handleTap(urls[1])}>
+              <img src={urls[1]} alt="Post media 2" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <div className="relative flex-1 cursor-pointer" onClick={handleTap(urls[2])}>
+              <img src={urls[2]} alt="Post media 3" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+        {lightboxElement}
+      </>
+    )
+  }
+
+  // 4+ images — 2x2 grid with +N overlay
+  const displayMedia = allMedia.slice(0, 4)
+  return (
+    <>
+      <div className="grid grid-cols-4 gap-1 rounded-[10px] overflow-hidden mb-3">
+        {displayMedia.map((item, idx) => {
           const imageUrl = getStorageUrl(item.path)
           if (!imageUrl) return null
           return (
-            <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
-              <img
-                src={imageUrl}
-                alt={`Post media ${idx + 1}`}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="lazy"
-              />
+            <div key={idx} className="relative cursor-pointer" style={{ aspectRatio: '1/1' }} onClick={handleTap(imageUrl)}>
+              <img src={imageUrl} alt={`Post media ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+              {idx === 3 && allMedia.length > 4 && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <span className="text-white text-[16px] font-semibold">+{allMedia.length - 4}</span>
+                </div>
+              )}
             </div>
           )
         })}
       </div>
-    )
-  }
-
-  // Three images - Primary (2/3 width) + two stacked (1/3 width)
-  if (allMedia.length === 3) {
-    const [primary, secondary, tertiary] = allMedia
-    const primaryUrl = getStorageUrl(primary.path)
-    const secondaryUrl = getStorageUrl(secondary.path)
-    const tertiaryUrl = getStorageUrl(tertiary.path)
-
-    if (!primaryUrl || !secondaryUrl || !tertiaryUrl) return null
-
-    return (
-      <div className="grid grid-cols-3 gap-[6px] rounded-[10px] overflow-hidden mb-3 h-[180px] sm:h-[200px] max-w-[420px]">
-        {/* Primary image - spans 2 columns */}
-        <div className="col-span-2 relative h-full">
-          <img
-            src={primaryUrl}
-            alt="Post media 1"
-            className="w-full h-full object-cover rounded-l-[10px]"
-            loading="lazy"
-          />
-        </div>
-
-        {/* Secondary images - stacked in 1 column */}
-        <div className="flex flex-col gap-[6px] h-full">
-          <div className="relative flex-1">
-            <img
-              src={secondaryUrl}
-              alt="Post media 2"
-              className="w-full h-full object-cover rounded-tr-[10px]"
-              loading="lazy"
-            />
-          </div>
-          <div className="relative flex-1">
-            <img
-              src={tertiaryUrl}
-              alt="Post media 3"
-              className="w-full h-full object-cover rounded-br-[10px]"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // 4+ images - 2x2 grid with +N overlay
-  const displayMedia = allMedia.slice(0, 4)
-  return (
-    <div className="grid grid-cols-2 gap-[6px] rounded-[10px] overflow-hidden mb-3 max-w-[420px]">
-      {displayMedia.map((item, idx) => {
-        const imageUrl = getStorageUrl(item.path)
-        if (!imageUrl) return null
-        return (
-          <div key={idx} className="relative" style={{ aspectRatio: '1/1' }}>
-            <img
-              src={imageUrl}
-              alt={`Post media ${idx + 1}`}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-            />
-            {idx === 3 && allMedia.length > 4 && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span className="text-white text-[18px] font-semibold">+{allMedia.length - 4}</span>
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
+      {lightboxElement}
+    </>
   )
 }
