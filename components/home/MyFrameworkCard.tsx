@@ -239,24 +239,22 @@ export function MyFrameworkCard({
           {editCriteria.map((criterion, index) => (
             <div key={criterion.key} className="flex items-center gap-3 py-1">
               <div className="flex-shrink-0 w-7 h-7 rounded-[7px] border-2 border-[rgba(255,255,255,0.15)] bg-transparent" />
-              <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-[8px] border border-[rgba(255,255,255,0.12)] px-2.5 py-1">
-                <input
-                  type="text"
-                  value={criterion.label}
-                  onChange={(e) => handleUpdateLabel(index, e.target.value)}
-                  placeholder="Type criteria..."
-                  className="flex-1 min-w-0 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)]"
-                  autoFocus={index === editCriteria.length - 1 && !criterion.label}
-                />
-                {editCriteria.length > 1 && (
-                  <button
-                    onClick={() => handleRemoveCriteria(index)}
-                    className="flex-shrink-0 text-[var(--text-muted)] hover:text-rose-400 transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
+              <input
+                type="text"
+                value={criterion.label}
+                onChange={(e) => handleUpdateLabel(index, e.target.value)}
+                placeholder="Type criteria..."
+                className="flex-1 min-w-0 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors"
+                autoFocus={index === editCriteria.length - 1 && !criterion.label}
+              />
+              {editCriteria.length > 1 && (
+                <button
+                  onClick={() => handleRemoveCriteria(index)}
+                  className="flex-shrink-0 text-[var(--text-muted)] hover:text-rose-400 transition-colors ml-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           ))}
           {editCriteria.length < 5 && (

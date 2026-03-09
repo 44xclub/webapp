@@ -459,9 +459,11 @@ function EventDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(100vh - var(--bottom-nav-height) - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))', marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="absolute inset-x-0 flex justify-center" style={{ bottom: 'calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))', top: 0 }}>
+        <div className="w-full max-w-lg flex flex-col justify-end h-full pointer-events-none">
+          <div className="relative bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col max-h-full pointer-events-auto">
         {/* Fixed header with close */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)] truncate pr-4">Event Details</h2>
@@ -590,6 +592,8 @@ function EventDetailModal({
             </p>
           )}
         </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -627,9 +631,11 @@ function FilterSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(100vh - var(--bottom-nav-height) - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))', marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="absolute inset-x-0 flex justify-center" style={{ bottom: 'calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))', top: 0 }}>
+        <div className="w-full max-w-lg flex flex-col justify-end h-full pointer-events-none">
+          <div className="relative bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col max-h-full pointer-events-auto">
         {/* Fixed header */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Filters</h2>
@@ -745,6 +751,8 @@ function FilterSheet({
             Apply Filters
           </button>
         </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -786,9 +794,11 @@ function SortSheet({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)]" style={{ marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="absolute inset-x-0 flex justify-center" style={{ bottom: 'calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px))', top: 0 }}>
+        <div className="w-full max-w-lg flex flex-col justify-end h-full pointer-events-none">
+          <div className="relative bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] pointer-events-auto">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Sort</h2>
           <button onClick={onClose} className="p-2.5 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] touch-manipulation">
@@ -810,6 +820,8 @@ function SortSheet({
               {sortBy === opt.value && <Check className="h-4 w-4" />}
             </button>
           ))}
+        </div>
+          </div>
         </div>
       </div>
     </div>
