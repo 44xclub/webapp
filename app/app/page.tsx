@@ -14,15 +14,13 @@ import {
 } from '@/components/blocks'
 import type { ViewMode } from '@/components/blocks'
 import { Button } from '@/components/ui'
-import { useAuth, useBlocks, useBlockMedia, useProfile, useFrameworks, useProgrammes, useRank, useVoiceScheduling } from '@/lib/hooks'
+import { useAuth, useBlocks, useBlockMedia, useProfile, useProgrammes, useRank, useVoiceScheduling } from '@/lib/hooks'
 import { getWeekDays, formatDateForApi } from '@/lib/date'
 import { Plus, Mic, Loader2 } from 'lucide-react'
-import { BlockListSkeleton, CompactCardSkeleton } from '@/components/ui/Skeletons'
+import { BlockListSkeleton } from '@/components/ui/Skeletons'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { DailyPopup } from '@/components/shared/DailyPopup'
 import { AppShell } from '@/components/shared/AppShell'
-import { FrameworkChecklistModal } from '@/components/shared/FrameworkChecklistModal'
-import { ActiveFrameworkCard } from '@/components/structure/ActiveFrameworkCard'
 import type { Block, BlockType } from '@/lib/types'
 import type { BlockFormData } from '@/lib/schemas'
 import type { LLMCreateBlock, VoiceParseResponse } from '@/lib/voice/types'
@@ -160,7 +158,6 @@ export default function AppPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const [addingToDate, setAddingToDate] = useState<Date | null>(null)
-  const [frameworkModalOpen, setFrameworkModalOpen] = useState(false)
   const [sharePromptBlock, setSharePromptBlock] = useState<Block | null>(null)
   const [voiceDraft, setVoiceDraft] = useState<BlockFormData | null>(null)
 
@@ -168,7 +165,6 @@ export default function AppPage() {
   const { uploadMedia, deleteMedia } = useBlockMedia(user?.id)
   const { profile, loading: profileLoading, hasHeight, avatarUrl } = useProfile(user?.id)
   const { rank, loading: rankLoading } = useRank(user?.id)
-  const { activeFramework, todayItems, completionCount, loading: frameworkLoading, toggleFrameworkItem, deactivateFramework } = useFrameworks(user?.id)
   const { activeProgramme, sessions: programmeSessions } = useProgrammes(user?.id)
 
 
@@ -331,23 +327,6 @@ export default function AppPage() {
         onViewModeChange={handleViewModeChange}
       />
 
-      {/* Framework card */}
-      {viewMode === 'day' && (
-        <div className="px-4 pt-2">
-          {frameworkLoading ? (
-            <CompactCardSkeleton />
-          ) : (
-            <ActiveFrameworkCard
-              activeFramework={activeFramework}
-              todaySubmission={null}
-              completionCount={completionCount}
-              onOpenChecklist={() => setFrameworkModalOpen(true)}
-              compact
-            />
-          )}
-        </div>
-      )}
-
       <main className="flex-1 pb-4">
         {blocksLoading ? (
           <div className="pt-2">
@@ -423,8 +402,6 @@ export default function AppPage() {
         userTimezone={profile?.timezone}
         onTaskToggle={handleTaskToggle}
       />
-
-      <FrameworkChecklistModal isOpen={frameworkModalOpen} onClose={() => setFrameworkModalOpen(false)} framework={activeFramework?.framework_template} todayItems={todayItems} completionCount={completionCount} onToggleItem={toggleFrameworkItem} onDeactivate={deactivateFramework} />
 
       <SharePromptModal
         isOpen={!!sharePromptBlock}
