@@ -23,6 +23,9 @@ interface DebugMetrics {
   navRectBottom: number | null
   navGap: number | null
   shellGapFromScreenBottom: number | null
+  domTree: string
+  shellSelector: string
+  navSelector: string
   cssAppHeight: string
   hundredDvh: string
   hundredVh: string
@@ -35,8 +38,17 @@ interface DebugMetrics {
 }
 
 function getMetrics(): DebugMetrics {
-  const shell = document.querySelector('.app-shell') as HTMLElement | null
-  const nav = document.querySelector('nav[class*="flex-shrink-0"]') as HTMLElement | null
+  // Try multiple selectors to find shell and nav elements
+  const shell = (
+    document.querySelector('.app-shell') ||
+    document.querySelector('[class*="app-shell"]') ||
+    document.querySelector('body > div > div > div') // fallback: walk DOM
+  ) as HTMLElement | null
+  const nav = (
+    document.querySelector('.app-shell nav') ||
+    document.querySelector('nav[class*="flex-shrink"]') ||
+    document.querySelector('nav') // any nav element
+  ) as HTMLElement | null
   const shellRect = shell?.getBoundingClientRect() ?? null
   const navRect = nav?.getBoundingClientRect() ?? null
 
@@ -76,6 +88,24 @@ function getMetrics(): DebugMetrics {
   const vpMeta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null
   const viewportMeta = vpMeta?.content || 'MISSING'
 
+  // DOM tree dump — first 3 levels of body children
+  const dumpDOM = (el: Element, depth: number): string => {
+    if (depth > 3) return ''
+    const tag = el.tagName.toLowerCase()
+    const cls = el.className ? `.${String(el.className).split(' ').slice(0, 2).join('.')}` : ''
+    const kids = Array.from(el.children).map(c => dumpDOM(c, depth + 1)).filter(Boolean).join(' > ')
+    return `${tag}${cls}${kids ? ` [${kids}]` : ''}`
+  }
+  const domTree = Array.from(document.body.children).map(c => dumpDOM(c, 0)).join(' | ')
+
+  // Which selector matched
+  const shellSelector = document.querySelector('.app-shell') ? '.app-shell' :
+    document.querySelector('[class*="app-shell"]') ? '[class*=app-shell]' :
+    shell ? 'fallback' : 'NONE'
+  const navSelector = document.querySelector('.app-shell nav') ? '.app-shell nav' :
+    document.querySelector('nav[class*="flex-shrink"]') ? 'nav[flex-shrink]' :
+    document.querySelector('nav') ? 'nav' : 'NONE'
+
   return {
     standalone: !!(navigator as any).standalone,
     matchMediaStandalone: window.matchMedia('(display-mode: standalone)').matches,
@@ -97,6 +127,9 @@ function getMetrics(): DebugMetrics {
     navRectBottom: navRect ? Math.round(navRect.bottom) : null,
     navGap: navRect ? Math.round(window.innerHeight - navRect.bottom) : null,
     shellGapFromScreenBottom: shellRect ? Math.round(window.innerHeight - shellRect.bottom) : null,
+    domTree,
+    shellSelector,
+    navSelector,
     cssAppHeight: rootStyles.getPropertyValue('--app-height').trim() || 'unset',
     hundredDvh,
     hundredVh,
@@ -214,7 +247,7 @@ export function DebugOverlay() {
       maxHeight: '60vh', overflowY: 'auto',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <strong style={{ color: '#fff' }}>Layout Debug v5</strong>
+        <strong style={{ color: '#fff' }}>Layout Debug v6</strong>
         <div>
           <button onClick={refresh} style={{ background: '#333', color: '#0f0', border: 'none', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 10 }}>Refresh</button>
           <button onClick={() => setMinimized(true)} style={{ background: '#333', color: '#ff0', border: 'none', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 10 }}>Min</button>
@@ -244,6 +277,13 @@ export function DebugOverlay() {
       {L('safe-bottom', metrics.safeBottom)}
       {L('safe-left', metrics.safeLeft)}
       {L('safe-right', metrics.safeRight)}
+
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- Selectors ---</div>
+      {L('shell found via', metrics.shellSelector, metrics.shellSelector === 'NONE' ? '#f44' : '#0f0')}
+      {L('nav found via', metrics.navSelector, metrics.navSelector === 'NONE' ? '#f44' : '#0f0')}
+
+      <div style={{ color: '#aaa', marginTop: 4 }}>--- DOM (body children) ---</div>
+      <div style={{ fontSize: 8, wordBreak: 'break-all', color: '#888' }}>{metrics.domTree}</div>
 
       <div style={{ color: '#aaa', marginTop: 4 }}>--- Shell ---</div>
       {L('position', metrics.shellComputedPosition)}
