@@ -461,7 +461,7 @@ function EventDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(90vh - env(safe-area-inset-top, 0px))' }}>
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(100vh - var(--bottom-nav-height) - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))', marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
         {/* Fixed header with close */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)] truncate pr-4">Event Details</h2>
@@ -476,7 +476,7 @@ function EventDetailModal({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Banner — compact */}
-          <div className="relative h-[140px] bg-[var(--surface-1)]">
+          <div className="relative h-[130px] bg-[var(--surface-1)]">
             <FadeImage
               src={bannerUrl || ''}
               alt={event.title}
@@ -491,7 +491,7 @@ function EventDetailModal({
           </div>
 
           {/* Content — compact */}
-          <div className="px-4 py-3 space-y-3">
+          <div className="px-4 py-3 space-y-2.5">
             <div>
               <h3 className="text-[17px] font-semibold text-[var(--text-primary)] leading-tight">
                 {event.title}
@@ -546,40 +546,30 @@ function EventDetailModal({
               )}
             </div>
 
-            {/* Capacity info — compact two-column */}
+            {/* Capacity — single line with status pill */}
             {event.capacity != null && (
-              <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] px-3 py-2">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Capacity</span>
-                    <span className="text-[var(--text-primary)] font-medium">{event.capacity}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Going</span>
-                    <span className="text-[var(--text-primary)] font-medium">{event.rsvp_going_count}</span>
-                  </div>
-                  {statusBadge && (
-                    <div className="flex justify-between col-span-2">
-                      <span className="text-[var(--text-secondary)]">Status</span>
-                      <span className="font-medium px-1.5 py-0 rounded-[5px] bg-[rgba(0,0,0,0.4)] text-emerald-400 text-[11px]">
-                        {statusBadge.label}
-                      </span>
-                    </div>
-                  )}
-                  {isFull && event.waitlist_enabled && event.rsvp_waitlist_count > 0 && (
-                    <div className="flex justify-between col-span-2">
-                      <span className="text-[var(--text-secondary)]">Waitlisted</span>
-                      <span className="text-amber-400 font-medium">{event.rsvp_waitlist_count}</span>
-                    </div>
-                  )}
+              <div className="flex items-center justify-between text-[12px]">
+                <div className="flex items-center gap-3 text-[var(--text-secondary)]">
+                  <span>Capacity <span className="text-[var(--text-primary)] font-medium">{event.capacity}</span></span>
+                  <span>Going <span className="text-[var(--text-primary)] font-medium">{event.rsvp_going_count}</span></span>
                 </div>
+                {statusBadge && (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[rgba(0,0,0,0.45)] text-emerald-400">
+                    {statusBadge.label}
+                  </span>
+                )}
+              </div>
+            )}
+            {isFull && event.waitlist_enabled && event.rsvp_waitlist_count > 0 && (
+              <div className="text-[12px] text-[var(--text-secondary)]">
+                Waitlisted <span className="text-amber-400 font-medium">{event.rsvp_waitlist_count}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Sticky RSVP footer */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-[rgba(255,255,255,0.06)] safe-bottom">
+        <div className="flex-shrink-0 px-4 py-2.5 border-t border-[rgba(255,255,255,0.06)]">
           <button
             onClick={handleRsvp}
             disabled={rsvpLoading || ctaInfo.disabled}
@@ -639,7 +629,7 @@ function FilterSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(70vh - env(safe-area-inset-bottom, 0px))' }}>
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] flex flex-col" style={{ maxHeight: 'calc(100vh - var(--bottom-nav-height) - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))', marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
         {/* Fixed header */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Filters</h2>
@@ -747,7 +737,7 @@ function FilterSheet({
         </div>
 
         {/* Sticky footer */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-[rgba(255,255,255,0.06)] safe-bottom">
+        <div className="flex-shrink-0 px-4 py-2.5 border-t border-[rgba(255,255,255,0.06)]">
           <button
             onClick={() => onApply(local)}
             className="w-full py-2.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
@@ -798,7 +788,7 @@ function SortSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)] safe-bottom">
+      <div className="relative w-full max-w-lg bg-[#0f1115] rounded-t-[20px] border-t border-[rgba(255,255,255,0.08)]" style={{ marginBottom: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Sort</h2>
           <button onClick={onClose} className="p-2.5 -m-1 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] touch-manipulation">

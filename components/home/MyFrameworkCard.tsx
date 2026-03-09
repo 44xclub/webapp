@@ -143,26 +143,28 @@ export function MyFrameworkCard({
 
   return (
     <div className="section-card">
-      {/* Header */}
+      {/* Header — always the same */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">
             {activeFramework.framework_template.title}
           </h3>
-          {isComplete && (
+          {!editing && isComplete && (
             <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
               Done
             </span>
           )}
         </div>
         {!editing ? (
-          <button
-            onClick={handleStartEdit}
-            className="text-[12px] text-[var(--accent-blue)] hover:underline flex items-center gap-1"
-          >
-            <Pencil className="h-3 w-3" />
-            Edit
-          </button>
+          onUpdateCriteria && (
+            <button
+              onClick={handleStartEdit}
+              className="text-[12px] text-[var(--accent-blue)] hover:underline flex items-center gap-1"
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
+            </button>
+          )
         ) : (
           <div className="flex items-center gap-2">
             <button onClick={handleCancelEdit} className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
@@ -179,24 +181,22 @@ export function MyFrameworkCard({
         )}
       </div>
 
-      {/* Progress bar */}
-      {!editing && (
-        <div className="flex items-center gap-2 mb-2.5">
-          <div className="flex-1 h-1 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 ${isComplete ? 'bg-emerald-400' : completed > 0 ? 'bg-[var(--accent-blue)]' : ''}`}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <span className="text-[11px] font-medium text-[var(--text-tertiary)]">
-            {completed}/{total}
-          </span>
+      {/* Progress bar — always visible */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <div className="flex-1 h-1 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all duration-500 ${isComplete ? 'bg-emerald-400' : completed > 0 ? 'bg-[var(--accent-blue)]' : ''}`}
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
-      )}
+        <span className="text-[11px] font-medium text-[var(--text-tertiary)]">
+          {completed}/{total}
+        </span>
+      </div>
 
-      {/* Criteria list - check mode */}
+      {/* Criteria list — check mode */}
       {!editing && (
-        <div className="-space-y-0.5">
+        <div className="space-y-1">
           {criteriaItems.map((item) => {
             const isChecked = getItemStatus(item.key)
             const isToggling = togglingKey === item.key
@@ -208,16 +208,16 @@ export function MyFrameworkCard({
                 className="w-full flex items-center gap-3 py-1 text-left group"
               >
                 <div
-                  className={`flex-shrink-0 w-6 h-6 rounded-[6px] flex items-center justify-center transition-all ${
+                  className={`flex-shrink-0 w-7 h-7 rounded-[7px] flex items-center justify-center transition-all ${
                     isChecked
                       ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
-                      : 'border-2 border-[rgba(255,255,255,0.20)] bg-transparent group-hover:border-[rgba(255,255,255,0.35)]'
+                      : 'border-2 border-[rgba(255,255,255,0.22)] bg-transparent group-hover:border-[rgba(255,255,255,0.40)]'
                   }`}
                 >
                   {isToggling ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
                   ) : isChecked ? (
-                    <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                    <Check className="h-4 w-4 text-white" strokeWidth={3} />
                   ) : null}
                 </div>
                 <span
@@ -233,39 +233,38 @@ export function MyFrameworkCard({
         </div>
       )}
 
-      {/* Edit mode */}
+      {/* Edit mode — same layout, criteria have editable border */}
       {editing && (
-        <div className="-space-y-0.5">
+        <div className="space-y-1">
           {editCriteria.map((criterion, index) => (
             <div key={criterion.key} className="flex items-center gap-3 py-1">
-              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-[rgba(255,255,255,0.15)] bg-transparent" />
-              <div className="flex-1 min-w-0 relative">
+              <div className="flex-shrink-0 w-7 h-7 rounded-[7px] border-2 border-[rgba(255,255,255,0.15)] bg-transparent" />
+              <div className="flex-1 min-w-0 flex items-center gap-1.5 rounded-[8px] border border-[rgba(255,255,255,0.12)] px-2.5 py-1">
                 <input
                   type="text"
                   value={criterion.label}
                   onChange={(e) => handleUpdateLabel(index, e.target.value)}
                   placeholder="Type criteria..."
-                  className="w-full text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] py-0 m-0 border-0"
+                  className="flex-1 min-w-0 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)]"
                   autoFocus={index === editCriteria.length - 1 && !criterion.label}
                 />
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-[rgba(255,255,255,0.10)]" />
+                {editCriteria.length > 1 && (
+                  <button
+                    onClick={() => handleRemoveCriteria(index)}
+                    className="flex-shrink-0 text-[var(--text-muted)] hover:text-rose-400 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
-              {editCriteria.length > 1 && (
-                <button
-                  onClick={() => handleRemoveCriteria(index)}
-                  className="p-1 text-[var(--text-muted)] hover:text-rose-400 transition-colors flex-shrink-0"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
             </div>
           ))}
           {editCriteria.length < 5 && (
             <button
               onClick={handleAddCriteria}
-              className="flex items-center gap-3 py-1 mt-0.5"
+              className="flex items-center gap-3 py-1"
             >
-              <div className="flex-shrink-0 w-6 h-6 rounded-[6px] border-2 border-dashed border-[rgba(255,255,255,0.10)] flex items-center justify-center">
+              <div className="flex-shrink-0 w-7 h-7 rounded-[7px] border-2 border-dashed border-[rgba(255,255,255,0.10)] flex items-center justify-center">
                 <Plus className="h-3 w-3 text-[var(--text-muted)]" />
               </div>
               <span className="text-[12px] text-[var(--accent-blue)]">
