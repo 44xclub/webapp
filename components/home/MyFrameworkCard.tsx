@@ -244,7 +244,7 @@ export function MyFrameworkCard({
                 value={criterion.label}
                 onChange={(e) => handleUpdateLabel(index, e.target.value)}
                 placeholder="Type criteria..."
-                className="flex-1 min-w-0 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors"
+                className="flex-1 min-w-0 text-[13px] leading-tight bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] transition-colors"
                 autoFocus={index === editCriteria.length - 1 && !criterion.label}
               />
               {editCriteria.length > 1 && (

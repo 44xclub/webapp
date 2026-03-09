@@ -6,16 +6,15 @@ import {
   Loader2,
   Plus,
   Dumbbell,
+  ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   Trash2,
   Edit,
   Play,
-  X,
 } from 'lucide-react'
-import { useAuth, useProfile } from '@/lib/hooks'
+import { useAuth } from '@/lib/hooks'
 import { usePersonalProgrammes } from '@/lib/hooks/usePersonalProgrammes'
-import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { AppShell } from '@/components/shared/AppShell'
 import { useToast } from '@/components/shared/Toast'
 import type { PersonalProgramme, ProgrammeFocus } from '@/lib/types'
@@ -40,7 +39,6 @@ export default function PersonalProgrammesPage() {
 
   const router = useRouter()
 
-  const { profile, loading: profileLoading, avatarUrl } = useProfile(user?.id)
   const { showToast } = useToast()
   const {
     programmes,
@@ -78,30 +76,26 @@ export default function PersonalProgrammesPage() {
   return (
     <AppShell>
       <div className="bg-[#07090d] animate-fadeIn min-h-full">
-        <HeaderStrip profile={profile} loading={profileLoading} avatarUrl={avatarUrl} />
-
-        <header className="px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between">
-            <h1 className="text-[20px] font-semibold text-[#eef2ff]">Personal Programmes</h1>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
-              >
-                <Plus className="h-4 w-4" />
-                Create
-              </button>
+        {/* Header — matches Reflection & Planning pattern */}
+        <header className="sticky top-0 z-50 bg-[rgba(7,9,13,0.92)] backdrop-blur-[16px] border-b border-[rgba(255,255,255,0.07)] safe-top">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center">
               <button
                 onClick={() => router.push('/profile')}
-                className="p-2 -mr-2 rounded-[10px] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                className="p-2 -ml-2 text-[rgba(238,242,255,0.45)] hover:text-[rgba(238,242,255,0.72)]"
               >
-                <X className="h-5 w-5 text-[rgba(238,242,255,0.72)]" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
+              <h1 className="text-[20px] font-semibold text-[#eef2ff] ml-1">Personal Programmes</h1>
             </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#3b82f6] text-white text-[13px] font-medium"
+            >
+              <Plus className="h-4 w-4" />
+              Create
+            </button>
           </div>
-          <p className="text-[13px] text-[rgba(238,242,255,0.52)] mt-1">
-            Build your own workout programmes
-          </p>
         </header>
 
         <main className="px-4 py-4 space-y-3">

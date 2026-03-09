@@ -22,7 +22,6 @@ import {
   TrendingDown,
   TrendingUp,
   Image as ImageIcon,
-  Target,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth, useProfile, useRank, useReflection } from '@/lib/hooks'
@@ -30,7 +29,7 @@ import { AppShell } from '@/components/shared/AppShell'
 import { StreakCard } from '@/components/shared/StreakCard'
 import { DisciplineScoreModule } from '@/components/shared/DisciplineScoreModule'
 import { AvatarUpload } from '@/components/profile/AvatarUpload'
-import { Button, Input, Select } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { calculateDisciplineLevel } from '@/lib/types'
 import type { DisciplineBadge, Block, BlockMedia } from '@/lib/types'
 
@@ -259,16 +258,29 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className={editing ? "space-y-4" : ""}>
+          <div>
             {editing ? (
               <>
-                <Input label="Display Name" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Enter your display name" />
-                <Input label="Birth Date" type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input label="Height (cm)" type="number" value={formData.height_cm} onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })} placeholder="180" />
-                  <Input label="Weight (kg)" type="number" step="0.1" value={formData.weight_kg} onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })} placeholder="75.0" />
-                </div>
-                <Select label="Timezone" value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} options={TIMEZONES.map((tz) => ({ value: tz, label: tz }))} />
+                <EditableRow icon={UserIcon} label="Display Name">
+                  <input type="text" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} placeholder="Not set" className="text-right text-[13px] bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] w-full min-w-0 border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors" />
+                </EditableRow>
+                <EditableRow icon={Cake} label="Birth Date">
+                  <input type="date" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} className="text-right text-[13px] bg-transparent text-[var(--text-primary)] focus:outline-none w-full min-w-0 border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors [color-scheme:dark]" />
+                </EditableRow>
+                <EditableRow icon={Ruler} label="Height (cm)">
+                  <input type="number" value={formData.height_cm} onChange={(e) => setFormData({ ...formData, height_cm: e.target.value })} placeholder="180" className="text-right text-[13px] bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] w-full min-w-0 border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors" />
+                </EditableRow>
+                <EditableRow icon={Scale} label="Weight (kg)">
+                  <input type="number" step="0.1" value={formData.weight_kg} onChange={(e) => setFormData({ ...formData, weight_kg: e.target.value })} placeholder="75.0" className="text-right text-[13px] bg-transparent text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-muted)] w-full min-w-0 border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors" />
+                </EditableRow>
+                <EditableRow icon={Settings} label="Email" isLast>
+                  <span className="text-[13px] text-[var(--text-muted)]">{user?.email || 'Not set'}</span>
+                </EditableRow>
+                <EditableRow icon={Clock} label="Timezone" isLast>
+                  <select value={formData.timezone} onChange={(e) => setFormData({ ...formData, timezone: e.target.value })} className="text-right text-[13px] bg-transparent text-[var(--text-primary)] focus:outline-none w-full min-w-0 border-b border-[rgba(255,255,255,0.15)] focus:border-[var(--accent-blue)] pb-0.5 transition-colors appearance-none [color-scheme:dark]">
+                    {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
+                  </select>
+                </EditableRow>
               </>
             ) : (
               <>
@@ -407,27 +419,6 @@ export default function ProfilePage() {
           </div>
         </Link>
 
-        {/* Personal Frameworks */}
-        <Link
-          href="/personal-framework"
-          className="block section-card p-0 hover:bg-[var(--surface-2)] transition-colors"
-        >
-          <div className="px-[var(--space-card)] py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[var(--radius-button)] bg-[rgba(59,130,246,0.12)] flex items-center justify-center">
-                <Target className="h-4 w-4 text-[#3b82f6]" />
-              </div>
-              <div>
-                <h3 className="text-label">Personal Frameworks</h3>
-                <p className="text-[11px] font-normal text-[var(--text-tertiary)] mt-0.5">
-                  Build and manage your own discipline systems
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
-
         {/* Fitness Programmes */}
         <Link
           href="/programmes"
@@ -492,6 +483,20 @@ function ProfileRow({ icon: Icon, label, value, isLast }: { icon: typeof UserIco
         <span className="text-[12px] text-[var(--text-tertiary)]">{label}</span>
       </div>
       <span className="text-[13px] text-[var(--text-primary)]">{value}</span>
+    </div>
+  )
+}
+
+function EditableRow({ icon: Icon, label, children, isLast }: { icon: typeof UserIcon; label: string; children: React.ReactNode; isLast?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between py-2 gap-3 ${isLast ? '' : 'border-b border-[var(--border-subtle)]'}`}>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="h-6 w-6 rounded-[var(--radius-chip)] bg-[rgba(255,255,255,0.04)] flex items-center justify-center flex-shrink-0">
+          <Icon className="h-3 w-3 text-[var(--text-muted)]" />
+        </div>
+        <span className="text-[12px] text-[var(--text-tertiary)]">{label}</span>
+      </div>
+      <div className="flex-1 min-w-0 flex justify-end">{children}</div>
     </div>
   )
 }
