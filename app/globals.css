@@ -220,37 +220,36 @@ body {
 }
 
 /* AppShell — full-viewport flex column.
-   Height cascade: --shell-h (React JS) → --app-height (inline <script>) → 100dvh.
-   We do NOT use bottom:0 because on iOS PWA standalone, the browser can
-   resolve bottom:0 to the safe-area boundary instead of the physical screen
-   edge, leaving a gap below the nav. Explicit height from window.innerHeight
-   (set by JS) always matches the true viewport including safe areas. */
+   --app-height is set by:
+     1. Inline <script> in layout.tsx (before first paint)
+     2. PWARegister.tsx (on resize / orientationchange / visualViewport.resize)
+   Uses visualViewport.height (iOS PWA accurate) with innerHeight fallback.
+   position:fixed + top:0 + explicit height avoids the iOS bug where
+   bottom:0 resolves to the safe-area boundary instead of screen edge. */
 .app-shell {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 100dvh;
   height: var(--app-height, 100dvh);
-  height: var(--shell-h, var(--app-height, 100dvh));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 0;
 }
 .app-shell-content {
-  flex: 1 1 0%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: none;
 }
 
-/* Page container with bottom nav clearance */
+/* Page container — available if needed, but most pages use AppShell flex layout */
 .page-container {
   min-height: var(--app-height, 100dvh);
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: var(--bottom-nav-total);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
@@ -296,9 +295,9 @@ body {
   opacity: 0.5;
 }
 
-/* Fixed bottom element safe area utility */
+/* Fixed bottom element — positioned above nav + safe area */
 .fixed-bottom-safe {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--bottom-nav-height));
+  bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 input[type="number"]::-webkit-inner-spin-button,
