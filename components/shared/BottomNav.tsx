@@ -45,8 +45,6 @@ export function BottomNav() {
           )
         })}
       </div>
-      {/* Background extension for iOS PWA home indicator area */}
-      <div className="absolute left-0 right-0 -bottom-[120px] h-[120px] bg-[#07090d]" />
     </nav>
   )
 }
