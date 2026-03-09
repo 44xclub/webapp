@@ -11,12 +11,8 @@ import type { UseFormRegister } from 'react-hook-form'
  *   - Add block step 1 (read-only date, editable start time, computed end time)
  *   - Edit block step 2 (editable date, start, end)
  *
- * Rules:
- *   - Date row is always full width, never truncated
- *   - Time row: two equal-width cells with clean inner divider
- *   - Consistent outer border, radius, padding
- *   - Missing end_time shows "—"
- *   - Works on iPhone SE through desktop
+ * Display mode: single compact row with date · start time · end time
+ * Edit mode: two rows (date row + time row) for comfortable tap targets
  */
 
 interface DateTimeCardProps {
@@ -47,32 +43,58 @@ export function DateTimeCard({
 }: DateTimeCardProps) {
   const resolvedStartLabel = startLabel || (pointInTime ? 'Time' : 'Start')
 
+  // Display mode — single compact row: 📅 Date  ·  🕐 Start – End
+  if (mode === 'display') {
+    return (
+      <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] px-2.5 py-2 flex items-center gap-3">
+        {/* Date */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Calendar className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
+          <span className="text-[11px] text-[#eef2ff] font-medium truncate">{dateDisplay}</span>
+        </div>
+
+        <div className="w-px h-4 bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
+
+        {/* Time */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <Clock className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
+          <Input
+            type="time"
+            {...register('start_time')}
+            className="w-[90px] text-[11px] !h-[28px] !px-1.5"
+          />
+          {!pointInTime && endTimeDisplay && (
+            <>
+              <span className="text-[10px] text-[rgba(238,242,255,0.3)]">–</span>
+              <span className="text-[11px] text-[#eef2ff] font-medium">{endTimeDisplay}</span>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Edit mode — two rows for comfortable editing
   return (
     <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
       {/* Date row */}
-      <div className="flex items-center gap-2 px-2.5 py-2 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.06)]">
         <Calendar className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
-        {mode === 'display' ? (
-          <span className="text-[11px] text-[#eef2ff] font-medium truncate min-w-0">
-            {dateDisplay}
-          </span>
-        ) : (
-          <div className="flex-1 min-w-0">
-            <Input
-              type="date"
-              {...register('date')}
-              className="w-full text-[11px] !h-[30px] !px-2"
-            />
-          </div>
-        )}
+        <div className="flex-1 min-w-0">
+          <Input
+            type="date"
+            {...register('date')}
+            className="w-full text-[11px] !h-[28px] !px-2"
+          />
+        </div>
       </div>
 
       {/* Time row */}
-      <div className="flex items-center gap-2 px-2.5 py-2">
+      <div className="flex items-center gap-2 px-2.5 py-1.5">
         <Clock className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
 
-        <div className="flex-1 min-w-0 flex items-end gap-2.5">
-          {/* Start time — always editable */}
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {/* Start time */}
           <div className="flex-1 min-w-0">
             <label className="block text-[9px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
               {resolvedStartLabel}
@@ -80,31 +102,23 @@ export function DateTimeCard({
             <Input
               type="time"
               {...register('start_time')}
-              className="w-full text-[11px] !h-[30px] !px-2"
+              className="w-full text-[11px] !h-[28px] !px-2"
             />
           </div>
 
-          {/* End time / display */}
+          {/* End time */}
           {!pointInTime && (
             <>
-              {/* Thin vertical divider */}
-              <div className="w-px h-6 bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
-
+              <div className="w-px h-5 bg-[rgba(255,255,255,0.06)] flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <label className="block text-[9px] font-medium text-[rgba(238,242,255,0.4)] mb-0.5 leading-none">
                   End
                 </label>
-                {mode === 'edit' ? (
-                  <Input
-                    type="time"
-                    {...register('end_time')}
-                    className="w-full text-[11px] !h-[30px] !px-2"
-                  />
-                ) : (
-                  <p className="text-[11px] text-[#eef2ff] font-semibold h-[30px] flex items-center">
-                    {endTimeDisplay || '—'}
-                  </p>
-                )}
+                <Input
+                  type="time"
+                  {...register('end_time')}
+                  className="w-full text-[11px] !h-[28px] !px-2"
+                />
               </div>
             </>
           )}

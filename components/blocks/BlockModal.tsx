@@ -571,27 +571,26 @@ export function BlockModal({
     return !isScheduledFuture
   }, [blockType, editingBlock, isScheduledFuture])
 
-  // Step 1 footer - Premium Continue button
+  // Step 1 footer - Continue button
   const step1Footer = (
     <Button
       type="button"
       onClick={handleContinue}
-      className="w-full h-12 text-[14px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_4px_12px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
-      size="lg"
+      className="w-full h-10 text-[13px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_2px_8px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
     >
       Continue
-      <ChevronRight className="h-5 w-5 ml-1" />
+      <ChevronRight className="h-4 w-4 ml-1" />
     </Button>
   )
 
-  // Step 2 footer - Cancel/Save buttons
+  // Step 2 footer - Cancel/Save buttons (compact)
   const step2Footer = (
-    <div className="flex gap-3">
+    <div className="flex gap-2">
       <Button
         type="button"
         variant="outline"
         onClick={handleClose}
-        className="flex-1 h-12 text-[14px] font-semibold bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)]"
+        className="flex-1 h-10 text-[13px] font-semibold bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)]"
       >
         Cancel
       </Button>
@@ -599,7 +598,7 @@ export function BlockModal({
         type="submit"
         form="block-form"
         loading={isSubmitting}
-        className="flex-1 h-12 text-[14px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_4px_12px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
+        className="flex-1 h-10 text-[13px] font-semibold bg-gradient-to-b from-[#4f8ef7] to-[#3b7ce6] hover:from-[#5a96f8] hover:to-[#4585ed] shadow-[0_2px_8px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] border-0"
       >
         {editingBlock ? 'Save Changes' : 'Create Block'}
       </Button>
@@ -770,25 +769,18 @@ export function BlockModal({
       {/* Step 2: Details - Premium UI */}
       {(step === 2 || editingBlock) && (
         <form id="block-form" onSubmit={form.handleSubmit(handleSubmit, handleValidationError)} className="p-4 space-y-3">
-          {/* Summary Header for new blocks — compact */}
+          {/* Summary strip for new blocks */}
           {!editingBlock && (
-            <div className="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-[rgba(59,130,246,0.05)] rounded-[12px] border border-[rgba(59,130,246,0.15)] px-3 py-2.5">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-[10px] flex items-center justify-center bg-gradient-to-b from-[rgba(59,130,246,0.25)] to-[rgba(59,130,246,0.15)] border border-[rgba(59,130,246,0.2)] flex-shrink-0">
-                  <Clock className="h-4 w-4 text-[#60a5fa]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-[rgba(238,242,255,0.5)] font-medium truncate">
-                    {(blockType === 'checkin' || blockType === 'nutrition')
-                      ? formatDisplayTime(startTime)
-                      : `${formatDisplayTime(startTime)} – ${endTime ? formatDisplayTime(endTime) : '--:--'} · ${actualDuration} min`
-                    }
-                  </p>
-                  <p className="text-[14px] font-semibold text-[#eef2ff] truncate">
-                    {titleValue || blockTypeLabels[blockType]}
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between gap-2 bg-[rgba(59,130,246,0.08)] rounded-[10px] border border-[rgba(59,130,246,0.12)] px-3 py-2">
+              <p className="text-[13px] font-semibold text-[#eef2ff] truncate">
+                {titleValue || blockTypeLabels[blockType]}
+              </p>
+              <span className="text-[11px] text-[rgba(238,242,255,0.5)] font-medium whitespace-nowrap flex-shrink-0">
+                {(blockType === 'checkin' || blockType === 'nutrition')
+                  ? formatDisplayTime(startTime)
+                  : `${formatDisplayTime(startTime)} · ${actualDuration}m`
+                }
+              </span>
             </div>
           )}
 

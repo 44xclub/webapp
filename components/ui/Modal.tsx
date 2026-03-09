@@ -279,11 +279,11 @@ export function Modal({
           {children}
         </div>
 
-        {/* Sticky footer */}
+        {/* Sticky footer — compact */}
         {footer && (
           <div
-            className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 pt-4"
-            style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
+            className="flex-shrink-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(13,16,20,0.98)] px-4 pt-2.5"
+            style={{ paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))' }}
           >
             {footer}
           </div>
