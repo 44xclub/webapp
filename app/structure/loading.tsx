@@ -6,7 +6,7 @@ export default function EventsLoading() {
       <div className="animate-pulse px-4 pt-16 space-y-3">
         {[1, 2, 3].map((i) => (
           <div key={i} className="section-card p-0 overflow-hidden">
-            <div className="aspect-[2.2/1] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)]" />
+            <div className="h-[120px] bg-gradient-to-br from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.02)]" />
             <div className="px-3.5 py-3 space-y-2">
               <div className="h-4 w-3/4 bg-[rgba(255,255,255,0.06)] rounded" />
               <div className="h-3 w-1/2 bg-[rgba(255,255,255,0.04)] rounded" />

@@ -231,8 +231,7 @@ body {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  /* No overflow:hidden here — body already has it, and we need the
-     nav's background extension div to paint below the shell edge */
+  overflow: hidden;
   z-index: 0;
 }
 .app-shell-content {
