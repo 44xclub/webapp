@@ -153,11 +153,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
-  /* Belt-and-suspenders full height: chain from html, plus WebKit fill */
+  /* Full viewport height — 100dvh is the dynamic viewport on modern mobile.
+     We intentionally omit 100vh (which is the LARGE viewport on iOS and
+     causes the body to be taller than the visible area when the URL bar is
+     showing) and -webkit-fill-available (which can resolve inconsistently
+     on different iOS versions). The shell uses position:fixed anyway, so
+     body height is just a backdrop. */
   height: 100%;
-  min-height: 100vh;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior-y: none;
 }
@@ -217,18 +220,19 @@ body {
 }
 
 /* AppShell — full-viewport flex column.
-   IMPORTANT: Do NOT add explicit height declarations here!
-   When a fixed element has top + bottom + height, CSS treats it as
-   over-constrained and IGNORES bottom. On iOS PWA standalone,
-   -webkit-fill-available / 100dvh can be smaller than the actual
-   screen (excludes home indicator), causing a gap at the bottom.
-   position:fixed + inset:0 alone correctly fills the true viewport. */
+   Height cascade: --shell-h (React JS) → --app-height (inline <script>) → 100dvh.
+   We do NOT use bottom:0 because on iOS PWA standalone, the browser can
+   resolve bottom:0 to the safe-area boundary instead of the physical screen
+   edge, leaving a gap below the nav. Explicit height from window.innerHeight
+   (set by JS) always matches the true viewport including safe areas. */
 .app-shell {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 100dvh;
+  height: var(--app-height, 100dvh);
+  height: var(--shell-h, var(--app-height, 100dvh));
   display: flex;
   flex-direction: column;
   overflow: hidden;
