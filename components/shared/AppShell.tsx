@@ -7,17 +7,15 @@ import { BottomNav } from './BottomNav'
  * AppShell — single layout contract for all routes with bottom navigation.
  *
  * Structure:
- *   ┌─────────────────────────┐  ← position:fixed, height = var(--app-height)
+ *   ┌─────────────────────────┐  ← position:fixed, inset:0 (fills full viewport)
  *   │  flex-1 overflow-y-auto │  ← scrollable content area
  *   │  (children rendered here)│
  *   ├─────────────────────────┤
  *   │  BottomNav (flex child) │  ← flex-shrink:0, padding-bottom: env(safe-area-inset-bottom)
  *   └─────────────────────────┘
  *
- * --app-height is set by:
- *   1. Inline <script> in layout.tsx (before first paint, prevents flash)
- *   2. PWARegister.tsx (on resize, orientationchange, visualViewport.resize)
- * Both use: visualViewport?.height ?? innerHeight
+ * Shell uses inset:0 (not height) to guarantee full-screen coverage.
+ * --app-height is still set by JS for other consumers (.min-h-app, modals).
  *
  * BottomNav is the ONLY element that applies env(safe-area-inset-bottom).
  */
