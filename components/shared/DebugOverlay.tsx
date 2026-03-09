@@ -118,13 +118,18 @@ export function DebugOverlay() {
 
   const refresh = useCallback(() => setMetrics(getMetrics()), [])
 
-  // Activate via ?debug=1, localStorage, or env var
+  // Activate via ?debug=1, localStorage, env var, or auto-enable in standalone
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as any).standalone === true
+
     const debugOn =
       params.get('debug') === '1' ||
       localStorage.getItem('44club-debug') === '1' ||
-      process.env.NEXT_PUBLIC_DEBUG_UI === '1'
+      process.env.NEXT_PUBLIC_DEBUG_UI === '1' ||
+      isStandalone // auto-enable in installed PWA for debugging
 
     if (debugOn) {
       localStorage.setItem('44club-debug', '1')
@@ -132,11 +137,12 @@ export function DebugOverlay() {
     }
   }, [])
 
-  // Triple-tap in top-left 60x60px area to toggle debug
+  // Triple-tap in top-left corner to toggle debug.
+  // Zone is 120x120 to account for iOS status bar (~47px) in standalone mode.
   useEffect(() => {
     const handler = (e: TouchEvent) => {
       const touch = e.touches[0]
-      if (!touch || touch.clientX > 60 || touch.clientY > 60) return
+      if (!touch || touch.clientX > 120 || touch.clientY > 120) return
 
       tapCountRef.current++
       if (tapTimerRef.current) clearTimeout(tapTimerRef.current)

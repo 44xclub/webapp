@@ -220,18 +220,17 @@ body {
 }
 
 /* AppShell — full-viewport flex column.
-   --app-height is set by:
-     1. Inline <script> in layout.tsx (before first paint)
-     2. PWARegister.tsx (on resize / orientationchange / visualViewport.resize)
-   Uses visualViewport.height (iOS PWA accurate) with innerHeight fallback.
-   position:fixed + top:0 + explicit height avoids the iOS bug where
-   bottom:0 resolves to the safe-area boundary instead of screen edge. */
+   Uses inset:0 to guarantee the shell always fills the entire screen,
+   regardless of what --app-height resolves to. With viewport-fit=cover
+   in the meta tag, bottom:0 goes to the true screen edge (not the
+   safe-area boundary). --app-height is still set by JS for other
+   consumers (.min-h-app, modals, etc). */
 .app-shell {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--app-height, 100dvh);
+  bottom: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
