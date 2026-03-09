@@ -341,17 +341,19 @@ export default function AppPage() {
         onViewModeChange={handleViewModeChange}
       />
 
-      {/* Framework card */}
-      <div className="px-4 pt-2">
-        <MyFrameworkCard
-          activeFramework={activeFramework}
-          todayItems={todayItems}
-          completionCount={frameworkCompletionCount}
-          onToggleItem={toggleFrameworkItem}
-          onUpdateCriteria={personalFramework && activeFramework?.framework_template_id === personalFramework.id ? handleUpdateFrameworkCriteria : undefined}
-          loading={frameworkLoading}
-        />
-      </div>
+      {/* Framework card - day view only */}
+      {viewMode === 'day' && (
+        <div className="px-4 pt-2">
+          <MyFrameworkCard
+            activeFramework={activeFramework}
+            todayItems={todayItems}
+            completionCount={frameworkCompletionCount}
+            onToggleItem={toggleFrameworkItem}
+            onUpdateCriteria={personalFramework && activeFramework?.framework_template_id === personalFramework.id ? handleUpdateFrameworkCriteria : undefined}
+            loading={frameworkLoading}
+          />
+        </div>
+      )}
 
       <main className="flex-1 pb-4">
         {blocksLoading ? (
