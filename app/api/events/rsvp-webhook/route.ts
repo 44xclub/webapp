@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const [{ data: event }, { data: profile }] = await Promise.all([
       supabase.from('events').select('id, title, starts_at, ends_at, timezone, location_type, location_text, meeting_url, city, capacity, rsvp_going_count').eq('id', eventId).single(),
-      supabase.from('profiles').select('id, full_name, email').eq('id', userId).single(),
+      supabase.from('profiles').select('id, display_name, whop_email').eq('id', userId).single(),
     ])
 
     if (!event || !profile) {
@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
         },
         user: {
           id: profile.id,
-          name: profile.full_name,
-          email: profile.email,
+          name: profile.display_name,
+          email: profile.whop_email,
         },
         timestamp: new Date().toISOString(),
       }),
