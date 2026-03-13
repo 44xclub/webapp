@@ -51,8 +51,8 @@ export function MyFrameworkCard({
     setTogglingKey(criteriaKey)
     try {
       await onToggleItem(criteriaKey, !currentValue)
-    } catch (err) {
-      console.error('[MyFrameworkCard] Toggle failed:', err)
+    } catch {
+      // Toggle failed
     } finally {
       setTogglingKey(null)
     }
@@ -100,8 +100,8 @@ export function MyFrameworkCard({
       await onUpdateCriteria(items)
       setEditing(false)
       setEditCriteria([])
-    } catch (err) {
-      console.error('[MyFrameworkCard] Save failed:', err)
+    } catch {
+      // Save failed
     } finally {
       setSaving(false)
     }

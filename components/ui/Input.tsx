@@ -11,7 +11,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, error, label, id, ...props }, ref) => {
     return (
-      <div className="w-full min-w-0 overflow-hidden">
+      <div className="w-full min-w-0">
         {label && (
           <label htmlFor={id} className="block text-[11px] font-medium text-[rgba(238,242,255,0.72)] mb-1.5">
             {label}

@@ -66,19 +66,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log incoming audio metadata for debugging
     const contentType = audioFile.type || 'unknown'
     const fileName = whisperFilename(contentType, audioFile.name)
-    console.log(
-      '[VoiceTranscribe] Incoming audio:',
-      JSON.stringify({
-        userId: user.id,
-        contentType,
-        originalName: audioFile.name,
-        mappedName: fileName,
-        size: audioFile.size,
-      })
-    )
 
     // 3. Send to OpenAI Whisper API
     const whisperForm = new FormData()
@@ -117,14 +106,12 @@ export async function POST(request: NextRequest) {
     const transcript = data.text?.trim()
 
     if (!transcript) {
-      console.log('[VoiceTranscribe] No speech detected:', { userId: user.id, contentType, fileSize: audioFile.size })
       return NextResponse.json(
         { error: 'No speech detected in audio', code: 'NO_SPEECH' },
         { status: 422 }
       )
     }
 
-    console.log('[VoiceTranscribe] Success:', { userId: user.id, transcriptLength: transcript.length })
     return NextResponse.json({ transcript })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'

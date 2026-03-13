@@ -60,6 +60,13 @@ export function usePersonalFramework(
     setError(null)
 
     try {
+      // Ensure personal framework exists (idempotent RPC)
+      try {
+        await supabase.rpc('ensure_personal_framework')
+      } catch {
+        // RPC may not exist yet — fall back to direct query
+      }
+
       // Fetch personal framework (user's own)
       const { data: frameworks, error: frameworkError } = await supabase
         .from('framework_templates')
@@ -71,7 +78,30 @@ export function usePersonalFramework(
 
       if (frameworkError) throw frameworkError
 
-      setPersonalFramework(frameworks?.[0] as PersonalFramework || null)
+      const fw = frameworks?.[0] as PersonalFramework || null
+
+      // Load criteria from framework_template_criteria table (source of truth)
+      if (fw) {
+        const { data: criteriaRows } = await supabase
+          .from('framework_template_criteria')
+          .select('*')
+          .eq('framework_template_id', fw.id)
+          .order('sort_order')
+
+        if (criteriaRows && criteriaRows.length > 0) {
+          // Override JSONB criteria with table rows
+          fw.criteria = {
+            items: criteriaRows.map((row: any) => ({
+              key: row.key,
+              label: row.label,
+              description: row.description || undefined,
+              type: 'boolean' as const,
+            })),
+          }
+        }
+      }
+
+      setPersonalFramework(fw)
 
       // Fetch active framework
       const { data: active, error: activeError } = await supabase
@@ -82,9 +112,28 @@ export function usePersonalFramework(
 
       if (activeError) throw activeError
 
+      // Also load criteria from table for the active framework template
+      if (active?.framework_template) {
+        const { data: activeCriteriaRows } = await supabase
+          .from('framework_template_criteria')
+          .select('*')
+          .eq('framework_template_id', active.framework_template_id)
+          .order('sort_order')
+
+        if (activeCriteriaRows && activeCriteriaRows.length > 0) {
+          (active as any).framework_template.criteria = {
+            items: activeCriteriaRows.map((row: any) => ({
+              key: row.key,
+              label: row.label,
+              description: row.description || undefined,
+              type: 'boolean' as const,
+            })),
+          }
+        }
+      }
+
       setActiveFramework(active as UserFramework || null)
     } catch (err) {
-      console.error('[usePersonalFramework] Fetch error:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch framework')
     } finally {
       setLoading(false)
@@ -122,6 +171,20 @@ export function usePersonalFramework(
 
         if (error) throw error
 
+        // Sync criteria to framework_template_criteria table
+        if (data.criteria.length > 0) {
+          const criteriaRows = data.criteria.map((item, idx) => ({
+            framework_template_id: framework.id,
+            key: item.key || `criterion_${idx}`,
+            label: item.label,
+            description: item.description || null,
+            sort_order: idx,
+          }))
+          await supabase
+            .from('framework_template_criteria')
+            .insert(criteriaRows)
+        }
+
         // Add to admin review queue (silent notification)
         await supabase.from('admin_review_queue').insert({
           entity_type: 'framework',
@@ -132,7 +195,6 @@ export function usePersonalFramework(
         await fetchData()
         return framework as PersonalFramework
       } catch (err) {
-        console.error('[usePersonalFramework] Create error:', err)
         setError(err instanceof Error ? err.message : 'Failed to create framework')
         return null
       }
@@ -163,10 +225,75 @@ export function usePersonalFramework(
 
         if (error) throw error
 
+        // Sync criteria to framework_template_criteria table (source of truth)
+        if (data.criteria !== undefined) {
+          // Delete existing criteria rows
+          await supabase
+            .from('framework_template_criteria')
+            .delete()
+            .eq('framework_template_id', id)
+
+          // Insert new criteria rows
+          const newKeys: string[] = []
+          if (data.criteria.length > 0) {
+            const criteriaRows = data.criteria.map((item, idx) => {
+              const key = item.key || `criterion_${idx}`
+              newKeys.push(key)
+              return {
+                framework_template_id: id,
+                key,
+                label: item.label,
+                description: item.description || null,
+                sort_order: idx,
+              }
+            })
+            await supabase
+              .from('framework_template_criteria')
+              .insert(criteriaRows)
+          }
+
+          // Sync daily_framework_items for today
+          if (userId) {
+            const today = new Date().toISOString().slice(0, 10)
+
+            // Delete items for criteria that no longer exist
+            if (newKeys.length > 0) {
+              await supabase
+                .from('daily_framework_items')
+                .delete()
+                .eq('user_id', userId)
+                .eq('framework_template_id', id)
+                .eq('date', today)
+                .not('criteria_key', 'in', `(${newKeys.join(',')})`)
+            } else {
+              // All criteria removed — delete all items for today
+              await supabase
+                .from('daily_framework_items')
+                .delete()
+                .eq('user_id', userId)
+                .eq('framework_template_id', id)
+                .eq('date', today)
+            }
+
+            // Insert missing items for new criteria (preserve existing check state)
+            for (const key of newKeys) {
+              await supabase
+                .from('daily_framework_items')
+                .upsert({
+                  user_id: userId,
+                  date: today,
+                  framework_template_id: id,
+                  criteria_key: key,
+                  checked: false,
+                  checked_at: null,
+                }, { onConflict: 'user_id,date,framework_template_id,criteria_key', ignoreDuplicates: true })
+            }
+          }
+        }
+
         await fetchData()
         return true
       } catch (err) {
-        console.error('[usePersonalFramework] Update error:', err)
         setError(err instanceof Error ? err.message : 'Failed to update framework')
         return false
       }
@@ -189,7 +316,7 @@ export function usePersonalFramework(
         await fetchData()
         return true
       } catch (err) {
-        console.error('[usePersonalFramework] Delete error:', err)
+        // Delete error
         setError(err instanceof Error ? err.message : 'Failed to delete framework')
         return false
       }
@@ -219,7 +346,7 @@ export function usePersonalFramework(
         await fetchData()
         return true
       } catch (err) {
-        console.error('[usePersonalFramework] Activate error:', err)
+        // Activate error
         setError(err instanceof Error ? err.message : 'Failed to activate framework')
         return false
       }

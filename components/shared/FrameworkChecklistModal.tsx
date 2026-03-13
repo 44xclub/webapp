@@ -42,13 +42,6 @@ export function FrameworkChecklistModal({
       key: item.key || item.id || '',
     }))
 
-    if (items.length === 0 && framework) {
-      console.warn('[FrameworkChecklist] Empty criteria:', {
-        framework_template_id: framework.id,
-        criteria_raw: framework.criteria,
-      })
-    }
-
     return items
   }, [framework])
 
@@ -60,11 +53,9 @@ export function FrameworkChecklistModal({
   const handleToggle = async (criteriaKey: string, currentValue: boolean) => {
     setTogglingKey(criteriaKey)
     try {
-      console.log('[FrameworkChecklist] Toggling:', { criteriaKey, newValue: !currentValue })
       await onToggleItem(criteriaKey, !currentValue)
-      console.log('[FrameworkChecklist] Toggle success')
     } catch (err) {
-      console.error('[FrameworkChecklist] Toggle failed:', err)
+      // Toggle failed — silently handled
     } finally {
       setTogglingKey(null)
     }
@@ -76,8 +67,8 @@ export function FrameworkChecklistModal({
     try {
       await onDeactivate()
       onClose()
-    } catch (err) {
-      console.error('Failed to deactivate:', err)
+    } catch {
+      // Deactivation failed — silently handled
     } finally {
       setDeactivating(false)
     }

@@ -40,7 +40,7 @@ export function useCommunityChallenge(userId: string | undefined) {
           activeChallengeId = rpcData
         }
       } catch {
-        console.warn('[Challenge] fn_active_challenge_id RPC not available')
+        // RPC not available — fall back to direct query
       }
 
       // Fetch challenge data
@@ -53,7 +53,7 @@ export function useCommunityChallenge(userId: string | undefined) {
           .single()
         if (!error) challengeData = data as CommunityChallenge
       } else {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('community_challenges')
           .select('*')
           .lte('start_date', today)
@@ -61,7 +61,6 @@ export function useCommunityChallenge(userId: string | undefined) {
           .limit(1)
           .maybeSingle()
 
-        if (error) console.error('Failed to fetch challenge:', error)
         challengeData = (data as CommunityChallenge) ?? null
       }
 
@@ -95,52 +94,47 @@ export function useCommunityChallenge(userId: string | undefined) {
     const now = new Date()
     const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')}`
 
-    try {
-      const { data: blockId, error: rpcError } = await supabase.rpc('fn_create_challenge_block', {
-        p_user_id: userId,
-        p_day: today,
-        p_start_time: startTime,
-        p_title: challenge.title,
-      })
+    const { data: blockId, error: rpcError } = await supabase.rpc('fn_create_challenge_block', {
+      p_user_id: userId,
+      p_day: today,
+      p_start_time: startTime,
+      p_title: challenge.title,
+    })
 
-      if (rpcError) {
-        console.warn('[Challenge] RPC not available, using direct insert:', rpcError)
-        const { data: insertedBlock, error } = await supabase
-          .from('blocks')
-          .insert({
-            user_id: userId,
-            date: today,
-            start_time: startTime,
-            block_type: 'challenge',
-            title: challenge.title,
-            challenge_id: challenge.id,
-            payload: { challenge_id: challenge.id },
-            is_planned: false,
-            completed_at: now.toISOString(),
-            performed_at: now.toISOString(),
-            shared_to_feed: true,
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-        mutate({ ...data, todayBlock: insertedBlock as Block }, false)
-        return insertedBlock as Block
-      }
-
-      const { data: newBlock, error: fetchError } = await supabase
+    if (rpcError) {
+      // RPC not available — direct insert fallback
+      const { data: insertedBlock, error } = await supabase
         .from('blocks')
-        .select('*')
-        .eq('id', blockId)
+        .insert({
+          user_id: userId,
+          date: today,
+          start_time: startTime,
+          block_type: 'challenge',
+          title: challenge.title,
+          challenge_id: challenge.id,
+          payload: { challenge_id: challenge.id },
+          is_planned: false,
+          completed_at: now.toISOString(),
+          performed_at: now.toISOString(),
+          shared_to_feed: true,
+        })
+        .select()
         .single()
 
-      if (fetchError) throw fetchError
-      mutate({ ...data, todayBlock: newBlock as Block }, false)
-      return newBlock as Block
-    } catch (err) {
-      console.error('[Challenge] Failed to create challenge block:', err)
-      throw err
+      if (error) throw error
+      mutate({ ...data, todayBlock: insertedBlock as Block }, false)
+      return insertedBlock as Block
     }
+
+    const { data: newBlock, error: fetchError } = await supabase
+      .from('blocks')
+      .select('*')
+      .eq('id', blockId)
+      .single()
+
+    if (fetchError) throw fetchError
+    mutate({ ...data, todayBlock: newBlock as Block }, false)
+    return newBlock as Block
   }, [userId, data, supabase, mutate])
 
   const refetch = useCallback(() => { mutate() }, [mutate])
@@ -187,16 +181,35 @@ export function useFrameworks(userId: string | undefined) {
       if (templatesResult.error) throw templatesResult.error
 
       const frameworks = templatesResult.data as FrameworkTemplate[]
-
-      if (userFrameworkResult.error) {
-        console.error('[Frameworks] Failed to fetch user framework:', userFrameworkResult.error)
-      }
-
       const activeFramework = userFrameworkResult.data as UserFramework | null
+
+      // Load criteria from framework_template_criteria table (source of truth)
+      if (activeFramework?.framework_template) {
+        const { data: criteriaRows } = await supabase
+          .from('framework_template_criteria')
+          .select('*')
+          .eq('framework_template_id', activeFramework.framework_template_id)
+          .order('sort_order')
+
+        if (criteriaRows && criteriaRows.length > 0) {
+          ;(activeFramework as any).framework_template.criteria = {
+            items: criteriaRows.map((row: any) => ({
+              key: row.key,
+              label: row.label,
+              description: row.description || undefined,
+              type: 'boolean' as const,
+            })),
+          }
+        }
+      }
 
       // Ensure daily framework items exist (depends on activeFramework)
       if (activeFramework) {
-        await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+        try {
+          await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+        } catch {
+          // RPC may not exist yet
+        }
       }
 
       // Parallelize: fetch today's submission + today's framework items
@@ -242,7 +255,11 @@ export function useFrameworks(userId: string | undefined) {
       if (error) throw error
 
       const today = formatDateForApi(new Date())
-      await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+      try {
+        await supabase.rpc('fn_ensure_daily_framework_items', { p_date: today })
+      } catch {
+        // RPC may not exist yet
+      }
 
       const { data: itemsData } = await supabase
         .from('daily_framework_items')
@@ -360,17 +377,13 @@ export function useFrameworks(userId: string | undefined) {
   const deactivateFramework = useCallback(async () => {
     if (!userId) throw new Error('Not authenticated')
 
-    const { data: deletedRows, error } = await supabase
+    const { error } = await supabase
       .from('user_frameworks')
       .delete()
       .eq('user_id', userId)
       .select()
 
     if (error) throw error
-
-    if (!deletedRows || deletedRows.length === 0) {
-      console.warn('[Frameworks] No rows deleted - check RLS policies')
-    }
 
     mutate(
       (prev) => prev ? { ...prev, activeFramework: null, todayItems: [] } : prev,

@@ -89,13 +89,6 @@ export async function POST(request: NextRequest) {
     // 4. Mark as uploaded
     await db.from('voice_capture_sessions').update({ status: 'uploaded' }).eq('id', sessionId)
 
-    console.log('[VoiceUpload] Received audio:', {
-      userId: user.id,
-      sessionId,
-      contentType: audioFile.type,
-      size: audioFile.size,
-    })
-
     // 5. Transcribe via Whisper
     const fileName = whisperFilename(audioFile.type || '', audioFile.name)
     const whisperForm = new FormData()
@@ -184,8 +177,6 @@ export async function POST(request: NextRequest) {
     await db.from('voice_capture_sessions')
       .update({ status: 'parsed', parse_result: parseResult })
       .eq('id', sessionId)
-
-    console.log('[VoiceUpload] Success:', { sessionId, commandId: logRow.id, intent: action.intent })
 
     return NextResponse.json({
       status: 'parsed',

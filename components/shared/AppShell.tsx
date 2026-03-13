@@ -55,46 +55,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname])
 
-  // Debug logging for standalone PWA — prints viewport metrics to console
-  useEffect(() => {
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as any).standalone === true
-
-    if (!isStandalone && !localStorage.getItem('44club-debug')) return
-
-    const logMetrics = () => {
-      const shell = document.querySelector('.app-shell') as HTMLElement | null
-      const nav = document.querySelector('.app-shell nav') as HTMLElement | null
-      const navRect = nav?.getBoundingClientRect()
-      const viewportH = window.visualViewport?.height ?? window.innerHeight
-
-      console.log('[AppShell Debug]', {
-        visualViewportHeight: window.visualViewport?.height ?? 'N/A',
-        innerHeight: window.innerHeight,
-        appHeight_css: getComputedStyle(document.documentElement).getPropertyValue('--app-height'),
-        shellHeight: shell?.offsetHeight,
-        shellBoundingHeight: shell?.getBoundingClientRect().height,
-        navBottom: navRect?.bottom,
-        navPaddingBottom: nav ? getComputedStyle(nav).paddingBottom : 'N/A',
-        gapBelowNav: navRect ? Math.round(viewportH - navRect.bottom) : 'N/A',
-        standalone: isStandalone,
-      })
-    }
-
-    // Log after initial render
-    const t = setTimeout(logMetrics, 500)
-    // Log on resize
-    window.addEventListener('resize', logMetrics)
-    window.visualViewport?.addEventListener('resize', logMetrics)
-
-    return () => {
-      clearTimeout(t)
-      window.removeEventListener('resize', logMetrics)
-      window.visualViewport?.removeEventListener('resize', logMetrics)
-    }
-  }, [])
-
   return (
     <div className="app-shell">
       <div ref={scrollRef} className="app-shell-content">

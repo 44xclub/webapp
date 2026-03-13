@@ -61,7 +61,7 @@ export function DateTimeCard({
           <Input
             type="time"
             {...register('start_time')}
-            className="w-[90px] text-[11px] !h-[28px] !px-1.5"
+            className="w-[90px] text-[11px] !h-[28px] !px-1.5 !rounded-[8px]"
           />
           {!pointInTime && endTimeDisplay && (
             <>
@@ -76,7 +76,7 @@ export function DateTimeCard({
 
   // Edit mode — two rows for comfortable editing
   return (
-    <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+    <div className="bg-[rgba(255,255,255,0.03)] rounded-[10px] border border-[rgba(255,255,255,0.06)]">
       {/* Date row */}
       <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-[rgba(255,255,255,0.06)]">
         <Calendar className="h-3.5 w-3.5 text-[#60a5fa] flex-shrink-0" />
@@ -84,7 +84,7 @@ export function DateTimeCard({
           <Input
             type="date"
             {...register('date')}
-            className="w-full text-[11px] !h-[28px] !px-2"
+            className="w-full text-[11px] !h-[28px] !px-2 !rounded-[8px]"
           />
         </div>
       </div>
@@ -102,7 +102,7 @@ export function DateTimeCard({
             <Input
               type="time"
               {...register('start_time')}
-              className="w-full text-[11px] !h-[28px] !px-2"
+              className="w-full text-[11px] !h-[28px] !px-2 !rounded-[8px]"
             />
           </div>
 
@@ -117,7 +117,7 @@ export function DateTimeCard({
                 <Input
                   type="time"
                   {...register('end_time')}
-                  className="w-full text-[11px] !h-[28px] !px-2"
+                  className="w-full text-[11px] !h-[28px] !px-2 !rounded-[8px]"
                 />
               </div>
             </>

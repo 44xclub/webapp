@@ -22,7 +22,6 @@ import {
   checkBreakoutReturn,
   type SessionPollResult,
 } from '@/lib/voice/service'
-import { logVoiceDiagnosticError } from '@/components/blocks/voice/VoiceDebugOverlay'
 
 export type VoiceState =
   | 'idle'
@@ -137,7 +136,6 @@ export function useVoiceScheduling(
       setProposal(data)
       setVoiceState('confirming')
     } catch (err) {
-      logVoiceDiagnosticError('parseTranscript', err)
       const msg = err instanceof Error ? err.message : 'Parse failed'
       setError(msg)
       setVoiceState('error')
@@ -181,7 +179,6 @@ export function useVoiceScheduling(
 
       await parseTranscript(transcript)
     } catch (err) {
-      logVoiceDiagnosticError('transcribeAndParse', err)
       const msg = err instanceof Error ? err.message : 'Transcription failed'
       setError(msg)
       setVoiceState('error')
@@ -262,7 +259,6 @@ export function useVoiceScheduling(
       // Start polling for result
       startSessionPolling(session.session_id)
     } catch (err) {
-      logVoiceDiagnosticError('breakoutCapture', err)
       const msg = err instanceof Error ? err.message : 'Failed to start external capture'
       setError(msg)
       // Last resort — text input
@@ -311,7 +307,6 @@ export function useVoiceScheduling(
           startSessionPolling(sessionId)
         }
       } catch (err) {
-        logVoiceDiagnosticError('sessionReturn', err)
         const msg = err instanceof Error ? err.message : 'Failed to load capture result'
         setError(msg)
         setVoiceState('error')
@@ -367,7 +362,6 @@ export function useVoiceScheduling(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognition.onerror = (event: any) => {
         if (event.error === 'no-speech') return
-        logVoiceDiagnosticError('speechRecognition', new Error(event.error))
         setError(`Speech recognition error: ${event.error}`)
         setVoiceState('error')
       }
@@ -400,8 +394,6 @@ export function useVoiceScheduling(
       } catch (err) {
         const duration = performance.now() - start
         const captureErr = err as VoiceCaptureError
-        logVoiceDiagnosticError('getUserMedia', err)
-
         // Instant rejection (<100ms) or policy block → breakout (NOT "try again")
         const isInstantReject = duration < 100 && (
           captureErr.code === 'permission_denied' || captureErr.code === 'blocked_by_policy'
@@ -443,7 +435,6 @@ export function useVoiceScheduling(
         const result = await handle.stop()
         await transcribeAndParse(result)
       } catch (err) {
-        logVoiceDiagnosticError('mediaRecorderStop', err)
         const captureErr = err as VoiceCaptureError
         setError(captureErrorMessage(captureErr))
         setVoiceState('error')
@@ -483,7 +474,6 @@ export function useVoiceScheduling(
       onSuccess?.(data)
       return data
     } catch (err) {
-      logVoiceDiagnosticError('execute', err)
       const msg = err instanceof Error ? err.message : 'Execution failed'
       setError(msg)
       setVoiceState('error')
