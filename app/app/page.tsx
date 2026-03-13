@@ -173,14 +173,20 @@ export default function AppPage() {
     completionCount: frameworkCompletionCount,
     toggleFrameworkItem,
     loading: frameworkLoading,
+    refetch: refetchFrameworks,
   } = useFrameworks(user?.id)
   const { personalFramework, updatePersonalFramework } = usePersonalFramework({ userId: user?.id })
 
   // Handle updating framework criteria from inline edit
   const handleUpdateFrameworkCriteria = useCallback(async (criteria: import('@/lib/types').FrameworkCriteriaItem[]) => {
     if (!personalFramework) return false
-    return await updatePersonalFramework(personalFramework.id, { criteria })
-  }, [personalFramework, updatePersonalFramework])
+    const result = await updatePersonalFramework(personalFramework.id, { criteria })
+    if (result) {
+      // Refresh the frameworks SWR cache so the UI updates immediately
+      await refetchFrameworks()
+    }
+    return result
+  }, [personalFramework, updatePersonalFramework, refetchFrameworks])
 
   // Voice scheduling
   const voice = useVoiceScheduling(
