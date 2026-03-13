@@ -203,8 +203,7 @@ export function SharePromptModal({
         if (postError) {
           // Handle unique constraint (already posted)
           if (postError.code === '23505') {
-            // Already posted, that's fine
-            console.log('Block already shared to feed')
+            // Already posted — ignore duplicate
           } else {
             throw new Error(`Failed to create post: ${postError.message}`)
           }

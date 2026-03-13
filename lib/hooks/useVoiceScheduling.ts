@@ -22,7 +22,8 @@ import {
   checkBreakoutReturn,
   type SessionPollResult,
 } from '@/lib/voice/service'
-import { logVoiceDiagnosticError } from '@/components/blocks/voice/VoiceDebugOverlay'
+// Voice diagnostic logging — noop after debug overlay removal
+function logVoiceDiagnosticError(_context: string, _err: unknown) { /* removed */ }
 
 export type VoiceState =
   | 'idle'

@@ -541,7 +541,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
     return (
       <>
         <div className="rounded-[10px] overflow-hidden mb-3 cursor-pointer h-[160px]" onClick={handleTap(imageUrl)}>
-          <img src={imageUrl} alt="Post media" className="w-full h-full object-cover" loading="lazy" />
+          <img src={imageUrl} alt="Post media" className="w-full h-full object-contain bg-black/20" loading="lazy" />
         </div>
         {lightboxElement}
       </>
@@ -558,7 +558,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
             if (!imageUrl) return null
             return (
               <div key={idx} className="relative cursor-pointer h-full" onClick={handleTap(imageUrl)}>
-                <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-contain bg-black/20" loading="lazy" />
               </div>
             )
           })}
@@ -576,14 +576,14 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
       <>
         <div className="grid grid-cols-3 gap-1 rounded-[10px] overflow-hidden mb-3 h-[120px]">
           <div className="col-span-2 relative h-full cursor-pointer" onClick={handleTap(urls[0])}>
-            <img src={urls[0]} alt="Post media 1" className="w-full h-full object-cover" loading="lazy" />
+            <img src={urls[0]} alt="Post media 1" className="w-full h-full object-contain bg-black/20" loading="lazy" />
           </div>
           <div className="flex flex-col gap-1 h-full">
             <div className="relative flex-1 cursor-pointer" onClick={handleTap(urls[1])}>
-              <img src={urls[1]} alt="Post media 2" className="w-full h-full object-cover" loading="lazy" />
+              <img src={urls[1]} alt="Post media 2" className="w-full h-full object-contain bg-black/20" loading="lazy" />
             </div>
             <div className="relative flex-1 cursor-pointer" onClick={handleTap(urls[2])}>
-              <img src={urls[2]} alt="Post media 3" className="w-full h-full object-cover" loading="lazy" />
+              <img src={urls[2]} alt="Post media 3" className="w-full h-full object-contain bg-black/20" loading="lazy" />
             </div>
           </div>
         </div>
@@ -602,7 +602,7 @@ function MediaDisplay({ payload, mediaPath }: { payload: FeedPostPayload; mediaP
           if (!imageUrl) return null
           return (
             <div key={idx} className="relative cursor-pointer h-full" onClick={handleTap(imageUrl)}>
-              <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+              <img src={imageUrl} alt={`Post media ${idx + 1}`} className="w-full h-full object-contain bg-black/20" loading="lazy" />
               {idx === 3 && allMedia.length > 4 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                   <span className="text-white text-[14px] font-semibold">+{allMedia.length - 4}</span>

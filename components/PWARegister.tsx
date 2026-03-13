@@ -59,8 +59,6 @@ export function PWARegister() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker registered:', registration.scope)
-
           // Check for updates on page load
           registration.update()
 
@@ -80,8 +78,8 @@ export function PWARegister() {
             })
           })
         })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error)
+        .catch(() => {
+          // SW registration failed — non-critical
         })
 
       // Reload when new service worker takes over

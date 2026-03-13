@@ -60,6 +60,14 @@ export function usePersonalFramework(
     setError(null)
 
     try {
+      // Ensure personal framework exists (idempotent RPC)
+      const { data: ensured, error: ensureError } = await supabase
+        .rpc('ensure_personal_framework')
+
+      if (ensureError) {
+        // RPC may not exist yet — fall back to direct query
+      }
+
       // Fetch personal framework (user's own)
       const { data: frameworks, error: frameworkError } = await supabase
         .from('framework_templates')
@@ -162,6 +170,29 @@ export function usePersonalFramework(
           .eq('owner_user_id', userId)
 
         if (error) throw error
+
+        // Sync criteria to framework_template_criteria table
+        if (data.criteria !== undefined) {
+          // Delete existing criteria rows
+          await supabase
+            .from('framework_template_criteria')
+            .delete()
+            .eq('framework_template_id', id)
+
+          // Insert new criteria rows
+          if (data.criteria.length > 0) {
+            const criteriaRows = data.criteria.map((item, idx) => ({
+              framework_template_id: id,
+              key: item.key || `criterion_${idx}`,
+              label: item.label,
+              description: item.description || null,
+              sort_order: idx,
+            }))
+            await supabase
+              .from('framework_template_criteria')
+              .insert(criteriaRows)
+          }
+        }
 
         await fetchData()
         return true

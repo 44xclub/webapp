@@ -220,9 +220,6 @@ export function WorkoutForm({
       // Transform and populate exercise matrix from session payload
       const sessionPayload = selectedSession.payload as any
 
-      // Debug: Log the payload structure
-      console.log('[WorkoutForm] Session payload:', sessionPayload)
-
       // Extract exercises from various possible payload structures
       const exercises = extractExercisesFromPayload(sessionPayload)
 
@@ -231,7 +228,6 @@ export function WorkoutForm({
         const matrix = transformProgrammeExercisesToMatrix(exercises)
         if (matrix.length > 0) {
           setValue('payload.exercise_matrix', matrix)
-          console.log('[WorkoutForm] Populated matrix with', matrix.length, 'exercises')
         } else {
           // Transformation failed, initialize empty matrix
           setValue('payload.exercise_matrix', [
@@ -240,7 +236,6 @@ export function WorkoutForm({
         }
       } else {
         // No exercises found - initialize empty matrix
-        console.log('[WorkoutForm] No exercises found in payload, initializing empty matrix')
         setValue('payload.exercise_matrix', [
           { exercise: '', sets: [{ set: 1, reps: '', weight: '' }], notes: '' }
         ])
