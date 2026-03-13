@@ -61,9 +61,19 @@ export function FrameworkChecklistModal({
         const newCompleted = completionCount.completed + 1
         if (newCompleted === completionCount.total && completionCount.total > 0) {
           showToast('success', 'Framework completed — all items checked off today!')
+          // Notify server for deduplicated completion notification
+          const today = new Date().toISOString().slice(0, 10)
+          fetch('/api/framework/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: todayItems[0]?.user_id,
+              date: today,
+            }),
+          }).catch(() => { /* fire-and-forget */ })
         }
       }
-    } catch (err) {
+    } catch {
       // Toggle failed — silently handled
     } finally {
       setTogglingKey(null)

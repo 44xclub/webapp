@@ -23,6 +23,9 @@ import { AppShell } from '@/components/shared/AppShell'
 import { FadeImage } from '@/components/ui/FadeImage'
 import type { Event, EventRsvp, SortOption, RsvpFilter, EventFilters } from '@/lib/hooks/useEvents'
 
+type RsvpActionFn = (eventId: string) => Promise<{ ok: boolean; response: string; error?: string }>
+type CancelRsvpFn = (eventId: string) => Promise<{ ok: boolean; response: string; error?: string }>
+
 // ── Helpers ──────────────────────────────────────────────
 
 function getStorageUrl(path: string | null): string | null {
@@ -105,6 +108,7 @@ function EventsPageContent() {
     eventTypes,
     cities,
     rsvpAction,
+    cancelRsvp,
   } = useEvents(user?.id)
 
   const [detailEvent, setDetailEvent] = useState<Event | null>(null)
@@ -210,6 +214,7 @@ function EventsPageContent() {
                 rsvp={rsvps.get(event.id) || null}
                 onTap={() => setDetailEvent(event)}
                 onRsvp={rsvpAction}
+                onCancel={cancelRsvp}
               />
             ))
           )}
@@ -223,6 +228,7 @@ function EventsPageContent() {
           rsvp={rsvps.get(detailEvent.id) || null}
           onClose={() => setDetailEvent(null)}
           onRsvp={rsvpAction}
+          onCancel={cancelRsvp}
         />
       )}
 
@@ -257,11 +263,13 @@ function EventCard({
   rsvp,
   onTap,
   onRsvp,
+  onCancel,
 }: {
   event: Event
   rsvp: EventRsvp | null
   onTap: () => void
-  onRsvp: (eventId: string, response: 'going' | 'not_going' | 'waitlist' | 'cancelled') => Promise<boolean>
+  onRsvp: RsvpActionFn
+  onCancel: CancelRsvpFn
 }) {
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const bannerUrl = getStorageUrl(event.banner_image_path)
@@ -276,14 +284,20 @@ function EventCard({
     setRsvpLoading(true)
 
     if (rsvp?.response === 'going' || rsvp?.response === 'waitlist') {
-      const ok = await onRsvp(event.id, 'cancelled')
-      if (ok) showToast('info', 'RSVP cancelled')
-    } else if (isFull && event.waitlist_enabled) {
-      const ok = await onRsvp(event.id, 'waitlist')
-      if (ok) showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
+      const result = await onCancel(event.id)
+      if (result.ok) showToast('info', 'RSVP cancelled')
     } else {
-      const ok = await onRsvp(event.id, 'going')
-      if (ok) showToast('success', 'You\'re in! RSVP confirmed')
+      // Server decides going vs waitlist
+      const result = await onRsvp(event.id)
+      if (result.ok) {
+        if (result.response === 'waitlist') {
+          showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
+        } else {
+          showToast('success', 'You\'re in! RSVP confirmed')
+        }
+      } else if (result.error) {
+        showToast('error', result.error)
+      }
     }
 
     setRsvpLoading(false)
@@ -439,11 +453,13 @@ function EventDetailModal({
   rsvp,
   onClose,
   onRsvp,
+  onCancel,
 }: {
   event: Event
   rsvp: EventRsvp | null
   onClose: () => void
-  onRsvp: (eventId: string, response: 'going' | 'not_going' | 'waitlist' | 'cancelled') => Promise<boolean>
+  onRsvp: RsvpActionFn
+  onCancel: CancelRsvpFn
 }) {
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const bannerUrl = getStorageUrl(event.banner_image_path)
@@ -457,14 +473,20 @@ function EventDetailModal({
   const handleRsvp = async () => {
     setRsvpLoading(true)
     if (rsvp?.response === 'going' || rsvp?.response === 'waitlist') {
-      const ok = await onRsvp(event.id, 'cancelled')
-      if (ok) showToast('info', 'RSVP cancelled')
-    } else if (isFull && event.waitlist_enabled) {
-      const ok = await onRsvp(event.id, 'waitlist')
-      if (ok) showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
+      const result = await onCancel(event.id)
+      if (result.ok) showToast('info', 'RSVP cancelled')
     } else {
-      const ok = await onRsvp(event.id, 'going')
-      if (ok) showToast('success', 'You\'re in! RSVP confirmed')
+      // Server decides going vs waitlist
+      const result = await onRsvp(event.id)
+      if (result.ok) {
+        if (result.response === 'waitlist') {
+          showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
+        } else {
+          showToast('success', 'You\'re in! RSVP confirmed')
+        }
+      } else if (result.error) {
+        showToast('error', result.error)
+      }
     }
     setRsvpLoading(false)
   }
