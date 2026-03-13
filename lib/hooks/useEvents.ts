@@ -288,7 +288,12 @@ export function useEvents(userId?: string): UseEventsReturn {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ eventId, userId, response }),
-          }).catch(() => {})
+          })
+            .then(async (res) => {
+              const data = await res.json().catch(() => null)
+              console.log('[rsvp-webhook] Response:', res.status, data)
+            })
+            .catch((err) => console.error('[rsvp-webhook] Client error:', err))
         }
 
         // Background reconcile with server data
