@@ -118,7 +118,7 @@ export function useEvents(userId?: string): UseEventsReturn {
         setRsvpMap(map)
       }
     } catch (err) {
-      console.error('[useEvents] Fetch error:', err)
+      // Fetch error
       setError(err instanceof Error ? err.message : 'Failed to fetch events')
     } finally {
       setLoading(false)
@@ -282,12 +282,20 @@ export function useEvents(userId?: string): UseEventsReturn {
           if (error) throw error
         }
 
+        // Fire RSVP webhook for confirmation email (fire-and-forget)
+        if (response === 'going' || response === 'waitlist') {
+          fetch('/api/events/rsvp-webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId, userId, response }),
+          }).catch(() => {})
+        }
+
         // Background reconcile with server data
         fetchData()
         return true
       } catch (err) {
         // Rollback on failure
-        console.error('[useEvents] RSVP error:', err)
         setRsvpMap(previousRsvpMap)
         setAllEvents(previousEvents)
         setError(err instanceof Error ? err.message : 'Failed to update RSVP')
