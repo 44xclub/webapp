@@ -46,6 +46,13 @@ export interface EventFilters {
   rsvpFilter: RsvpFilter
 }
 
+interface RsvpApiResult {
+  ok: boolean
+  response: 'going' | 'waitlist' | 'cancelled' | 'full'
+  error?: string
+  waitlistPosition?: number
+}
+
 interface UseEventsReturn {
   events: Event[]
   rsvps: Map<string, EventRsvp>
@@ -59,7 +66,8 @@ interface UseEventsReturn {
   setSortBy: (s: SortOption) => void
   eventTypes: string[]
   cities: string[]
-  rsvpAction: (eventId: string, response: 'going' | 'not_going' | 'waitlist' | 'cancelled') => Promise<boolean>
+  rsvpAction: (eventId: string) => Promise<RsvpApiResult>
+  cancelRsvp: (eventId: string) => Promise<RsvpApiResult>
   refetch: () => Promise<void>
 }
 
@@ -118,7 +126,6 @@ export function useEvents(userId?: string): UseEventsReturn {
         setRsvpMap(map)
       }
     } catch (err) {
-      // Fetch error
       setError(err instanceof Error ? err.message : 'Failed to fetch events')
     } finally {
       setLoading(false)
@@ -210,23 +217,24 @@ export function useEvents(userId?: string): UseEventsReturn {
     return filtered
   }, [allEvents, pastMode, filters, sortBy, rsvpMap])
 
-  // RSVP action with optimistic updates
+  // RSVP action — calls server-side state machine
+  // Server decides whether user gets 'going' or 'waitlist'
   const rsvpAction = useCallback(
-    async (eventId: string, response: 'going' | 'not_going' | 'waitlist' | 'cancelled'): Promise<boolean> => {
-      if (!userId) return false
+    async (eventId: string): Promise<RsvpApiResult> => {
+      if (!userId) return { ok: false, response: 'full', error: 'Not authenticated' }
 
-      const existing = rsvpMap.get(eventId)
       const previousRsvpMap = new Map(rsvpMap)
       const previousEvents = [...allEvents]
 
-      // Optimistic update: update RSVP map immediately
+      // Optimistic: show going immediately (server may change to waitlist)
+      const existing = rsvpMap.get(eventId)
       const optimisticRsvp: EventRsvp = existing
-        ? { ...existing, response, updated_at: new Date().toISOString() }
+        ? { ...existing, response: 'going', updated_at: new Date().toISOString() }
         : {
             id: `optimistic_${Date.now()}`,
             event_id: eventId,
             user_id: userId,
-            response,
+            response: 'going',
             waitlist_position: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -236,78 +244,90 @@ export function useEvents(userId?: string): UseEventsReturn {
       newRsvpMap.set(eventId, optimisticRsvp)
       setRsvpMap(newRsvpMap)
 
-      // Optimistic update: adjust going/waitlist counts on the event
+      // Optimistic count update
       setAllEvents((prev) =>
         prev.map((event) => {
           if (event.id !== eventId) return event
-          let goingDelta = 0
-          let waitlistDelta = 0
-
-          // Remove previous response count
-          if (existing?.response === 'going') goingDelta -= 1
-          if (existing?.response === 'waitlist') waitlistDelta -= 1
-
-          // Add new response count
-          if (response === 'going') goingDelta += 1
-          if (response === 'waitlist') waitlistDelta += 1
-
           return {
             ...event,
-            rsvp_going_count: Math.max(0, event.rsvp_going_count + goingDelta),
-            rsvp_waitlist_count: Math.max(0, event.rsvp_waitlist_count + waitlistDelta),
+            rsvp_going_count: event.rsvp_going_count + 1,
           }
         })
       )
 
       try {
-        if (existing) {
-          const { error } = await supabase
-            .from('event_rsvps')
-            .update({
-              response,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id)
+        const res = await fetch('/api/events/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId, userId }),
+        })
 
-          if (error) throw error
-        } else {
-          const { error } = await supabase
-            .from('event_rsvps')
-            .insert({
-              event_id: eventId,
-              user_id: userId,
-              response,
-            })
+        const result: RsvpApiResult = await res.json()
 
-          if (error) throw error
-        }
-
-        // Fire RSVP webhook for confirmation email (fire-and-forget)
-        if (response === 'going' || response === 'waitlist') {
-          fetch('/api/events/rsvp-webhook', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ eventId, userId, response }),
-          })
-            .then(async (res) => {
-              const data = await res.json().catch(() => null)
-              console.log('[rsvp-webhook] Response:', res.status, data)
-            })
-            .catch((err) => console.error('[rsvp-webhook] Client error:', err))
-        }
-
-        // Background reconcile with server data
+        // Reconcile with server response
         fetchData()
-        return true
+        return result
       } catch (err) {
-        // Rollback on failure
+        // Rollback
         setRsvpMap(previousRsvpMap)
         setAllEvents(previousEvents)
-        setError(err instanceof Error ? err.message : 'Failed to update RSVP')
-        return false
+        setError(err instanceof Error ? err.message : 'Failed to RSVP')
+        return { ok: false, response: 'full', error: 'Network error' }
       }
     },
-    [userId, supabase, rsvpMap, allEvents, fetchData]
+    [userId, rsvpMap, allEvents, fetchData]
+  )
+
+  // Cancel RSVP — calls server-side cancel + auto-promote
+  const cancelRsvp = useCallback(
+    async (eventId: string): Promise<RsvpApiResult> => {
+      if (!userId) return { ok: false, response: 'cancelled', error: 'Not authenticated' }
+
+      const previousRsvpMap = new Map(rsvpMap)
+      const previousEvents = [...allEvents]
+      const existing = rsvpMap.get(eventId)
+
+      // Optimistic: show cancelled immediately
+      if (existing) {
+        const newRsvpMap = new Map(rsvpMap)
+        newRsvpMap.set(eventId, { ...existing, response: 'cancelled', updated_at: new Date().toISOString() })
+        setRsvpMap(newRsvpMap)
+      }
+
+      // Optimistic count update
+      setAllEvents((prev) =>
+        prev.map((event) => {
+          if (event.id !== eventId) return event
+          if (existing?.response === 'going') {
+            return { ...event, rsvp_going_count: Math.max(0, event.rsvp_going_count - 1) }
+          }
+          if (existing?.response === 'waitlist') {
+            return { ...event, rsvp_waitlist_count: Math.max(0, event.rsvp_waitlist_count - 1) }
+          }
+          return event
+        })
+      )
+
+      try {
+        const res = await fetch('/api/events/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId, userId }),
+        })
+
+        const result: RsvpApiResult = await res.json()
+
+        // Reconcile with server response
+        fetchData()
+        return result
+      } catch (err) {
+        setRsvpMap(previousRsvpMap)
+        setAllEvents(previousEvents)
+        setError(err instanceof Error ? err.message : 'Failed to cancel RSVP')
+        return { ok: false, response: 'cancelled', error: 'Network error' }
+      }
+    },
+    [userId, rsvpMap, allEvents, fetchData]
   )
 
   return {
@@ -324,6 +344,7 @@ export function useEvents(userId?: string): UseEventsReturn {
     eventTypes,
     cities,
     rsvpAction,
+    cancelRsvp,
     refetch: fetchData,
   }
 }

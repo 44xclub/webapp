@@ -1596,15 +1596,77 @@ export type NotificationType =
   | 'team_update'
   | 'respect_received'
   | 'framework_completed'
+  | 'event_rsvp_confirmed'
+  | 'event_waitlist_confirmed'
+  | 'event_waitlist_promoted'
+  | 'event_new_published'
+  | 'daily_summary_available'
 
 export interface Notification {
   id: string
   user_id: string
-  type: NotificationType
-  title: string
+  type: string
+  severity: 'info' | 'status' | 'warning' | 'critical'
+  title: string | null
+  body: string
+  meta: Json
+  delivery: Json
+  read_at: string | null
+  dismissed_at: string | null
+  created_at: string
+}
+
+// ============================================
+// Notification Dispatch Queue
+// ============================================
+
+export type DispatchStatus = 'pending' | 'processing' | 'sent' | 'failed'
+
+export interface NotificationDispatchRow {
+  id: string
+  user_id: string
+  channel: 'email' | 'push'
+  event_key: string
+  subject: string | null
   body: string | null
   payload: Json
-  read_at: string | null
+  dedupe_key: string | null
+  status: DispatchStatus
+  attempts: number
+  max_attempts: number
+  error_message: string | null
+  sent_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============================================
+// Event Broadcasts
+// ============================================
+
+export interface EventBroadcast {
+  id: string
+  event_id: string
+  broadcast_type: string
+  user_count: number
+  broadcasted_at: string
+  created_at: string
+}
+
+// ============================================
+// Daily Summary Runs
+// ============================================
+
+export type SummaryRunStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
+export interface DailySummaryRun {
+  id: string
+  summary_date: string
+  status: SummaryRunStatus
+  user_count: number
+  started_at: string | null
+  completed_at: string | null
+  error_message: string | null
   created_at: string
 }
 

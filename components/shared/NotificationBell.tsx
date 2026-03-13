@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bell, Check, Trash2, X, Dumbbell, Target, Flame, Award, Trophy, FileText, Users, Heart } from 'lucide-react'
+import { Bell, Check, Trash2, X, Dumbbell, Target, Flame, Award, Trophy, FileText, Users, Heart, CalendarDays, Clock, BarChart3 } from 'lucide-react'
 import { useNotifications } from '@/lib/hooks/useNotifications'
 import type { Notification, NotificationType } from '@/lib/types'
 
@@ -9,7 +9,7 @@ interface NotificationBellProps {
   userId?: string
 }
 
-const notificationIcons: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
+const notificationIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   programme_approved: Dumbbell,
   programme_rejected: Dumbbell,
   framework_approved: Target,
@@ -21,9 +21,14 @@ const notificationIcons: Record<NotificationType, React.ComponentType<{ classNam
   team_update: Users,
   respect_received: Heart,
   framework_completed: Check,
+  event_rsvp_confirmed: CalendarDays,
+  event_waitlist_confirmed: Clock,
+  event_waitlist_promoted: CalendarDays,
+  event_new_published: CalendarDays,
+  daily_summary_available: BarChart3,
 }
 
-const notificationColors: Record<NotificationType, string> = {
+const notificationColors: Record<string, string> = {
   programme_approved: 'text-emerald-400 bg-emerald-500/20',
   programme_rejected: 'text-rose-400 bg-rose-500/20',
   framework_approved: 'text-emerald-400 bg-emerald-500/20',
@@ -35,6 +40,11 @@ const notificationColors: Record<NotificationType, string> = {
   team_update: 'text-cyan-400 bg-cyan-500/20',
   respect_received: 'text-pink-400 bg-pink-500/20',
   framework_completed: 'text-emerald-400 bg-emerald-500/20',
+  event_rsvp_confirmed: 'text-emerald-400 bg-emerald-500/20',
+  event_waitlist_confirmed: 'text-amber-400 bg-amber-500/20',
+  event_waitlist_promoted: 'text-emerald-400 bg-emerald-500/20',
+  event_new_published: 'text-blue-400 bg-blue-500/20',
+  daily_summary_available: 'text-cyan-400 bg-cyan-500/20',
 }
 
 export function NotificationBell({ userId }: NotificationBellProps) {
