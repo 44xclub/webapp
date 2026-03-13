@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { Check, Loader2, Pencil, X, Plus, Trash2, Target } from 'lucide-react'
+import { useToast } from '@/components/shared/Toast'
 import Link from 'next/link'
 import type {
   UserFramework,
@@ -27,6 +28,7 @@ export function MyFrameworkCard({
   onUpdateCriteria,
   loading = false,
 }: MyFrameworkCardProps) {
+  const { showToast } = useToast()
   const [editing, setEditing] = useState(false)
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
   const [editCriteria, setEditCriteria] = useState<{ key: string; label: string }[]>([])
@@ -51,6 +53,14 @@ export function MyFrameworkCard({
     setTogglingKey(criteriaKey)
     try {
       await onToggleItem(criteriaKey, !currentValue)
+      // If we just checked an item (not unchecked), check if framework is now complete
+      if (!currentValue) {
+        // After this toggle, completed count will be current completed + 1
+        const newCompleted = completionCount.completed + 1
+        if (newCompleted === completionCount.total && completionCount.total > 0) {
+          showToast('success', 'Framework completed — all items checked off today!')
+        }
+      }
     } catch {
       // Toggle failed
     } finally {

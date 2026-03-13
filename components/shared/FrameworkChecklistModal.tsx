@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Modal, Button } from '@/components/ui'
 import { Check, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/shared/Toast'
 import type {
   FrameworkTemplate,
   FrameworkCriteria,
@@ -29,6 +30,7 @@ export function FrameworkChecklistModal({
   onToggleItem,
   onDeactivate,
 }: FrameworkChecklistModalProps) {
+  const { showToast } = useToast()
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
   const [deactivating, setDeactivating] = useState(false)
 
@@ -54,6 +56,13 @@ export function FrameworkChecklistModal({
     setTogglingKey(criteriaKey)
     try {
       await onToggleItem(criteriaKey, !currentValue)
+      // If we just checked an item, check if framework is now complete
+      if (!currentValue) {
+        const newCompleted = completionCount.completed + 1
+        if (newCompleted === completionCount.total && completionCount.total > 0) {
+          showToast('success', 'Framework completed — all items checked off today!')
+        }
+      }
     } catch (err) {
       // Toggle failed — silently handled
     } finally {

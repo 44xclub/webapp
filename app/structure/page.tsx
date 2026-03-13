@@ -17,6 +17,7 @@ import {
   Building2,
 } from 'lucide-react'
 import { useAuth, useProfile, useRank, useEvents } from '@/lib/hooks'
+import { useToast } from '@/components/shared/Toast'
 import { HeaderStrip } from '@/components/shared/HeaderStrip'
 import { AppShell } from '@/components/shared/AppShell'
 import { FadeImage } from '@/components/ui/FadeImage'
@@ -268,16 +269,21 @@ function EventCard({
   const spots = spotsLeft(event)
   const isFull = spots !== null && spots <= 0
 
+  const { showToast } = useToast()
+
   const handleRsvp = async (e: React.MouseEvent) => {
     e.stopPropagation()
     setRsvpLoading(true)
 
     if (rsvp?.response === 'going' || rsvp?.response === 'waitlist') {
-      await onRsvp(event.id, 'cancelled')
+      const ok = await onRsvp(event.id, 'cancelled')
+      if (ok) showToast('info', 'RSVP cancelled')
     } else if (isFull && event.waitlist_enabled) {
-      await onRsvp(event.id, 'waitlist')
+      const ok = await onRsvp(event.id, 'waitlist')
+      if (ok) showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
     } else {
-      await onRsvp(event.id, 'going')
+      const ok = await onRsvp(event.id, 'going')
+      if (ok) showToast('success', 'You\'re in! RSVP confirmed')
     }
 
     setRsvpLoading(false)
@@ -446,14 +452,19 @@ function EventDetailModal({
   const isFull = spots !== null && spots <= 0
   const ctaInfo = getRsvpCta(rsvp, event)
 
+  const { showToast } = useToast()
+
   const handleRsvp = async () => {
     setRsvpLoading(true)
     if (rsvp?.response === 'going' || rsvp?.response === 'waitlist') {
-      await onRsvp(event.id, 'cancelled')
+      const ok = await onRsvp(event.id, 'cancelled')
+      if (ok) showToast('info', 'RSVP cancelled')
     } else if (isFull && event.waitlist_enabled) {
-      await onRsvp(event.id, 'waitlist')
+      const ok = await onRsvp(event.id, 'waitlist')
+      if (ok) showToast('success', 'Joined waitlist — we\'ll notify you if a spot opens')
     } else {
-      await onRsvp(event.id, 'going')
+      const ok = await onRsvp(event.id, 'going')
+      if (ok) showToast('success', 'You\'re in! RSVP confirmed')
     }
     setRsvpLoading(false)
   }
