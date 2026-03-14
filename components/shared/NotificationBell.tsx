@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bell, Check, Trash2, X, Dumbbell, Target, Flame, Award, Trophy, FileText, Users, Heart, CalendarDays, Clock, BarChart3 } from 'lucide-react'
 import { useNotifications } from '@/lib/hooks/useNotifications'
+import { useNotificationPopup, NotificationPopup } from './NotificationPopup'
 import type { Notification, NotificationType } from '@/lib/types'
 
 interface NotificationBellProps {
@@ -50,6 +51,11 @@ const notificationColors: Record<string, string> = {
 export function NotificationBell({ userId }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const { popups, showPopup, dismissPopup } = useNotificationPopup()
+
+  const handleNewNotification = useCallback((notification: Notification) => {
+    showPopup(notification)
+  }, [showPopup])
 
   const {
     notifications,
@@ -58,7 +64,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-  } = useNotifications({ userId })
+  } = useNotifications({ userId, onNewNotification: handleNewNotification })
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -100,6 +106,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           </span>
         )}
       </button>
+
+      {/* Popup notifications over header */}
+      <NotificationPopup popups={popups} onDismiss={dismissPopup} />
 
       {/* Dropdown Panel */}
       {isOpen && (

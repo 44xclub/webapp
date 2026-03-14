@@ -8,10 +8,11 @@ interface UseNotificationsOptions {
   userId?: string
   limit?: number
   pollInterval?: number // in milliseconds, 0 to disable polling
+  onNewNotification?: (notification: Notification) => void
 }
 
 export function useNotifications(options: UseNotificationsOptions = {}) {
-  const { userId, limit = 50, pollInterval = 30000 } = options
+  const { userId, limit = 50, pollInterval = 30000, onNewNotification } = options
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -80,6 +81,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
           const newNotification = payload.new as Notification
           setNotifications(prev => [newNotification, ...prev.slice(0, limit - 1)])
           setUnreadCount(prev => prev + 1)
+          onNewNotification?.(newNotification)
         }
       )
       .on(
@@ -107,7 +109,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase, userId, limit])
+  }, [supabase, userId, limit, onNewNotification])
 
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
