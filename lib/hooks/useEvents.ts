@@ -265,7 +265,7 @@ export function useEvents(userId?: string): UseEventsReturn {
         const result: RsvpApiResult = await res.json()
 
         // Reconcile with server response
-        fetchData()
+        await fetchData()
         return result
       } catch (err) {
         // Rollback
@@ -318,7 +318,7 @@ export function useEvents(userId?: string): UseEventsReturn {
         const result: RsvpApiResult = await res.json()
 
         // Reconcile with server response
-        fetchData()
+        await fetchData()
         return result
       } catch (err) {
         setRsvpMap(previousRsvpMap)
