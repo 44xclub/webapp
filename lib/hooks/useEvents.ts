@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface Event {
@@ -51,6 +51,10 @@ interface RsvpApiResult {
   response: 'going' | 'waitlist' | 'cancelled' | 'full'
   error?: string
   waitlistPosition?: number
+  eventId?: string
+  rsvpGoingCount?: number
+  rsvpWaitlistCount?: number
+  capacity?: number | null
 }
 
 interface UseEventsReturn {
@@ -86,6 +90,7 @@ export function useEvents(userId?: string): UseEventsReturn {
   const [sortBy, setSortBy] = useState<SortOption>('closest')
 
   const supabase = useMemo(() => createClient(), [])
+  const hasLoadedOnce = useRef(false)
 
   const fetchData = useCallback(async () => {
     if (!userId) {
@@ -93,7 +98,10 @@ export function useEvents(userId?: string): UseEventsReturn {
       return
     }
 
-    setLoading(true)
+    // Only show loading spinner on initial load — never blank the page on refetch
+    if (!hasLoadedOnce.current) {
+      setLoading(true)
+    }
     setError(null)
 
     try {
@@ -125,6 +133,8 @@ export function useEvents(userId?: string): UseEventsReturn {
         })
         setRsvpMap(map)
       }
+
+      hasLoadedOnce.current = true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch events')
     } finally {
@@ -217,6 +227,22 @@ export function useEvents(userId?: string): UseEventsReturn {
     return filtered
   }, [allEvents, pastMode, filters, sortBy, rsvpMap])
 
+  // Helper: patch a single event's counts from server response
+  const patchEventCounts = useCallback((result: RsvpApiResult, eventId: string) => {
+    if (result.rsvpGoingCount != null || result.rsvpWaitlistCount != null) {
+      setAllEvents((prev) =>
+        prev.map((event) => {
+          if (event.id !== eventId) return event
+          return {
+            ...event,
+            rsvp_going_count: result.rsvpGoingCount ?? event.rsvp_going_count,
+            rsvp_waitlist_count: result.rsvpWaitlistCount ?? event.rsvp_waitlist_count,
+          }
+        })
+      )
+    }
+  }, [])
+
   // RSVP action — calls server-side state machine
   // Server decides whether user gets 'going' or 'waitlist'
   const rsvpAction = useCallback(
@@ -264,18 +290,41 @@ export function useEvents(userId?: string): UseEventsReturn {
 
         const result: RsvpApiResult = await res.json()
 
-        // Reconcile with server response
-        await fetchData()
+        if (result.ok) {
+          // Reconcile with server truth — patch only the affected card
+          patchEventCounts(result, eventId)
+
+          // If server says waitlist but we optimistically showed going, fix RSVP state
+          if (result.response === 'waitlist') {
+            setRsvpMap((prev) => {
+              const map = new Map(prev)
+              const rsvp = map.get(eventId)
+              if (rsvp) {
+                map.set(eventId, {
+                  ...rsvp,
+                  response: 'waitlist',
+                  waitlist_position: result.waitlistPosition ?? null,
+                })
+              }
+              return map
+            })
+          }
+        } else {
+          // Server rejected — rollback
+          setRsvpMap(previousRsvpMap)
+          setAllEvents(previousEvents)
+        }
+
         return result
       } catch (err) {
-        // Rollback
+        // Network error — rollback
         setRsvpMap(previousRsvpMap)
         setAllEvents(previousEvents)
         setError(err instanceof Error ? err.message : 'Failed to RSVP')
         return { ok: false, response: 'full', error: 'Network error' }
       }
     },
-    [userId, rsvpMap, allEvents, fetchData]
+    [userId, rsvpMap, allEvents, patchEventCounts]
   )
 
   // Cancel RSVP — calls server-side cancel + auto-promote
@@ -317,8 +366,15 @@ export function useEvents(userId?: string): UseEventsReturn {
 
         const result: RsvpApiResult = await res.json()
 
-        // Reconcile with server response
-        await fetchData()
+        if (result.ok) {
+          // Reconcile with server truth — patch only the affected card
+          patchEventCounts(result, eventId)
+        } else {
+          // Server rejected — rollback
+          setRsvpMap(previousRsvpMap)
+          setAllEvents(previousEvents)
+        }
+
         return result
       } catch (err) {
         setRsvpMap(previousRsvpMap)
@@ -327,7 +383,7 @@ export function useEvents(userId?: string): UseEventsReturn {
         return { ok: false, response: 'cancelled', error: 'Network error' }
       }
     },
-    [userId, rsvpMap, allEvents, fetchData]
+    [userId, rsvpMap, allEvents, patchEventCounts]
   )
 
   return {

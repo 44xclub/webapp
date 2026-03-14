@@ -87,8 +87,8 @@ export function NotificationPopup({ popups, onDismiss }: NotificationPopupProps)
   if (popups.length === 0) return null
 
   return (
-    <div className="fixed left-0 right-0 z-[200] pointer-events-none safe-top" style={{ top: '0.5rem' }}>
-      <div className="flex flex-col items-center gap-2 px-3 pt-[3.25rem]">
+    <div className="fixed left-0 right-0 z-[200] pointer-events-none" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+      <div className="flex flex-col items-center gap-2 px-3">
         {popups.map((popup) => (
           <PopupItem
             key={popup.id}

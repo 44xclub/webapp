@@ -22,6 +22,10 @@ export interface RsvpResult {
   response: 'going' | 'waitlist' | 'cancelled' | 'full'
   error?: string
   waitlistPosition?: number
+  eventId?: string
+  rsvpGoingCount?: number
+  rsvpWaitlistCount?: number
+  capacity?: number | null
 }
 
 // ============================================================================
@@ -58,7 +62,14 @@ export async function rsvpToEvent(
     .maybeSingle()
 
   if (existingRsvp && (existingRsvp.response === 'going' || existingRsvp.response === 'waitlist')) {
-    return { ok: true, response: existingRsvp.response as 'going' | 'waitlist' }
+    return {
+      ok: true,
+      response: existingRsvp.response as 'going' | 'waitlist',
+      eventId,
+      rsvpGoingCount: event.rsvp_going_count,
+      rsvpWaitlistCount: event.rsvp_waitlist_count,
+      capacity: event.capacity,
+    }
   }
 
   // Determine capacity state
@@ -125,7 +136,15 @@ export async function rsvpToEvent(
       title: event.title,
     })
 
-    return { ok: true, response: 'waitlist', waitlistPosition: nextPosition }
+    return {
+      ok: true,
+      response: 'waitlist',
+      waitlistPosition: nextPosition,
+      eventId,
+      rsvpGoingCount: event.rsvp_going_count,
+      rsvpWaitlistCount: event.rsvp_waitlist_count + 1,
+      capacity: event.capacity,
+    }
   }
 
   // Not full or no capacity limit — confirm as going
@@ -208,7 +227,15 @@ export async function rsvpToEvent(
           title: event.title,
         })
 
-        return { ok: true, response: 'waitlist', waitlistPosition: nextWaitPos }
+        return {
+          ok: true,
+          response: 'waitlist',
+          waitlistPosition: nextWaitPos,
+          eventId,
+          rsvpGoingCount: freshEvent.rsvp_going_count,
+          rsvpWaitlistCount: event.rsvp_waitlist_count + 1,
+          capacity: freshEvent.capacity,
+        }
       }
     }
 
@@ -226,7 +253,21 @@ export async function rsvpToEvent(
     timezone: event.timezone,
   })
 
-  return { ok: true, response: 'going' }
+  // Re-read final counts to return to client
+  const { data: finalEvent } = await supabase
+    .from('events')
+    .select('rsvp_going_count, rsvp_waitlist_count, capacity')
+    .eq('id', eventId)
+    .single()
+
+  return {
+    ok: true,
+    response: 'going',
+    eventId,
+    rsvpGoingCount: finalEvent?.rsvp_going_count ?? (freshEvent ? freshEvent.rsvp_going_count + 1 : event.rsvp_going_count + 1),
+    rsvpWaitlistCount: finalEvent?.rsvp_waitlist_count ?? event.rsvp_waitlist_count,
+    capacity: finalEvent?.capacity ?? event.capacity,
+  }
 }
 
 // ============================================================================
@@ -274,7 +315,7 @@ export async function cancelEventRsvp(
     .single()
 
   if (!event) {
-    return { ok: true, response: 'cancelled' }
+    return { ok: true, response: 'cancelled', eventId }
   }
 
   if (previousResponse === 'going') {
@@ -295,7 +336,21 @@ export async function cancelEventRsvp(
       .eq('id', eventId)
   }
 
-  return { ok: true, response: 'cancelled' }
+  // Re-read final counts after all updates (including waitlist promotion)
+  const { data: finalEvent } = await supabase
+    .from('events')
+    .select('rsvp_going_count, rsvp_waitlist_count, capacity')
+    .eq('id', eventId)
+    .single()
+
+  return {
+    ok: true,
+    response: 'cancelled',
+    eventId,
+    rsvpGoingCount: finalEvent?.rsvp_going_count ?? Math.max(0, event.rsvp_going_count - (previousResponse === 'going' ? 1 : 0)),
+    rsvpWaitlistCount: finalEvent?.rsvp_waitlist_count ?? Math.max(0, event.rsvp_waitlist_count - (previousResponse === 'waitlist' ? 1 : 0)),
+    capacity: finalEvent?.capacity ?? event.capacity,
+  }
 }
 
 // ============================================================================

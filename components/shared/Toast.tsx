@@ -55,7 +55,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: string) => void }) {
   return (
-    <div className="fixed top-4 left-4 right-4 z-[100] flex flex-col items-center gap-2 pointer-events-none">
+    <div className="fixed left-4 right-4 z-[100] flex flex-col items-center gap-2 pointer-events-none" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
