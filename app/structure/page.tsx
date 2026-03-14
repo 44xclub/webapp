@@ -359,16 +359,16 @@ function EventCard({
         </div>
 
         <div className="flex items-center gap-2.5 mt-0.5 text-[11px] text-[var(--text-secondary)]">
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 min-w-0 truncate">
             {event.location_type === 'online' ? (
-              <Video className="h-3 w-3 text-[var(--text-muted)]" />
+              <Video className="h-3 w-3 text-[var(--text-muted)] flex-shrink-0" />
             ) : (
-              <MapPin className="h-3 w-3 text-[var(--text-muted)]" />
+              <MapPin className="h-3 w-3 text-[var(--text-muted)] flex-shrink-0" />
             )}
-            {event.location_text || event.city || (event.location_type === 'online' ? 'Online' : 'In Person')}
+            <span className="truncate">{event.location_text || event.city || (event.location_type === 'online' ? 'Online' : 'In Person')}</span>
           </span>
           {event.rsvp_going_count > 0 && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
               <Users className="h-3 w-3 text-[var(--text-muted)]" />
               {event.rsvp_going_count} going
             </span>
