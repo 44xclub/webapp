@@ -4,8 +4,9 @@
  * All RSVP state transitions are handled here.
  * Frontend must call the API route, not decide going/waitlist.
  *
- * Concurrency: Uses SELECT ... FOR UPDATE on events row to prevent
- * two users from taking the last spot simultaneously.
+ * Counts are always derived from actual row counts in event_rsvps,
+ * never from incrementing/decrementing a cached counter. This prevents
+ * double-counting from database triggers or race conditions.
  *
  * This module is server-side only — never import in client components.
  */
@@ -28,6 +29,42 @@ export interface RsvpResult {
   capacity?: number | null
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Count actual RSVP rows and sync the cached counters on the events table.
+ * Returns the true counts. This is the single source of truth.
+ */
+async function syncEventCounts(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<{ goingCount: number; waitlistCount: number }> {
+  // Count going
+  const { count: goingCount } = await supabase
+    .from('event_rsvps')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .eq('response', 'going')
+
+  // Count waitlist
+  const { count: waitlistCount } = await supabase
+    .from('event_rsvps')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .eq('response', 'waitlist')
+
+  const going = goingCount ?? 0
+  const waitlist = waitlistCount ?? 0
+
+  // Sync the cached counters on events table
+  await supabase
+    .from('events')
+    .update({ rsvp_going_count: going, rsvp_waitlist_count: waitlist })
+    .eq('id', eventId)
+
+  return { goingCount: going, waitlistCount: waitlist }
+}
+
 // ============================================================================
 // Action A: RSVP to event
 // ============================================================================
@@ -37,11 +74,10 @@ export async function rsvpToEvent(
   eventId: string,
   userId: string
 ): Promise<RsvpResult> {
-  // Use RPC to perform atomic RSVP with row-level lock
-  // Fetch event with lock (use admin client — no RLS bypass needed for events read)
+  // Fetch event
   const { data: event, error: eventErr } = await supabase
     .from('events')
-    .select('id, title, starts_at, timezone, capacity, waitlist_enabled, rsvp_going_count, rsvp_waitlist_count, status')
+    .select('id, title, starts_at, timezone, capacity, waitlist_enabled, status')
     .eq('id', eventId)
     .single()
 
@@ -62,19 +98,28 @@ export async function rsvpToEvent(
     .maybeSingle()
 
   if (existingRsvp && (existingRsvp.response === 'going' || existingRsvp.response === 'waitlist')) {
+    // Already active — return current counts
+    const counts = await syncEventCounts(supabase, eventId)
     return {
       ok: true,
       response: existingRsvp.response as 'going' | 'waitlist',
       eventId,
-      rsvpGoingCount: event.rsvp_going_count,
-      rsvpWaitlistCount: event.rsvp_waitlist_count,
+      rsvpGoingCount: counts.goingCount,
+      rsvpWaitlistCount: counts.waitlistCount,
       capacity: event.capacity,
     }
   }
 
-  // Determine capacity state
+  // Get current going count from actual rows to decide capacity
+  const { count: currentGoingCount } = await supabase
+    .from('event_rsvps')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .eq('response', 'going')
+
+  const goingNow = currentGoingCount ?? 0
   const hasCapacity = event.capacity !== null
-  const isFull = hasCapacity && event.rsvp_going_count >= event.capacity
+  const isFull = hasCapacity && goingNow >= event.capacity!
 
   if (isFull && !event.waitlist_enabled) {
     return { ok: false, response: 'full', error: 'Event is full' }
@@ -82,10 +127,15 @@ export async function rsvpToEvent(
 
   if (isFull && event.waitlist_enabled) {
     // Add to waitlist
-    const nextPosition = event.rsvp_waitlist_count + 1
+    const { count: currentWaitlistCount } = await supabase
+      .from('event_rsvps')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('response', 'waitlist')
+
+    const nextPosition = (currentWaitlistCount ?? 0) + 1
 
     if (existingRsvp) {
-      // Update existing RSVP to waitlist
       const { error } = await supabase
         .from('event_rsvps')
         .update({
@@ -97,7 +147,6 @@ export async function rsvpToEvent(
 
       if (error) return { ok: false, response: 'full', error: error.message }
     } else {
-      // Get user snapshot for RSVP record
       const { data: profile } = await supabase
         .from('profiles')
         .select('display_name, whop_email')
@@ -116,7 +165,6 @@ export async function rsvpToEvent(
         })
 
       if (error) {
-        // Handle unique constraint violation (concurrent RSVP)
         if (error.code === '23505') {
           return { ok: false, response: 'full', error: 'Already RSVPed' }
         }
@@ -124,13 +172,9 @@ export async function rsvpToEvent(
       }
     }
 
-    // Update waitlist count
-    await supabase
-      .from('events')
-      .update({ rsvp_waitlist_count: event.rsvp_waitlist_count + 1 })
-      .eq('id', eventId)
+    // Sync counts from actual rows
+    const counts = await syncEventCounts(supabase, eventId)
 
-    // Queue notifications
     await notifyEventWaitlisted(supabase, userId, {
       id: event.id,
       title: event.title,
@@ -141,8 +185,8 @@ export async function rsvpToEvent(
       response: 'waitlist',
       waitlistPosition: nextPosition,
       eventId,
-      rsvpGoingCount: event.rsvp_going_count,
-      rsvpWaitlistCount: event.rsvp_waitlist_count + 1,
+      rsvpGoingCount: counts.goingCount,
+      rsvpWaitlistCount: counts.waitlistCount,
       capacity: event.capacity,
     }
   }
@@ -185,64 +229,52 @@ export async function rsvpToEvent(
     }
   }
 
-  // Update going count — use atomic increment to handle concurrency
-  // Re-read to get latest count and verify we didn't exceed capacity
-  const { data: freshEvent } = await supabase
-    .from('events')
-    .select('rsvp_going_count, capacity')
-    .eq('id', eventId)
-    .single()
+  // Sync counts from actual rows — this is the single source of truth
+  const counts = await syncEventCounts(supabase, eventId)
 
-  if (freshEvent) {
-    const newCount = freshEvent.rsvp_going_count + 1
+  // Concurrency check: if we actually exceeded capacity, rollback to waitlist
+  if (event.capacity !== null && counts.goingCount > event.capacity!) {
+    const { data: rsvpRow } = await supabase
+      .from('event_rsvps')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .single()
 
-    // Concurrency check: if count now exceeds capacity, rollback
-    if (freshEvent.capacity !== null && newCount > freshEvent.capacity) {
-      // Roll back — update RSVP to waitlist instead
-      const { data: rsvpRow } = await supabase
+    if (rsvpRow) {
+      const { count: wlCount } = await supabase
         .from('event_rsvps')
-        .select('id')
+        .select('*', { count: 'exact', head: true })
         .eq('event_id', eventId)
-        .eq('user_id', userId)
-        .single()
+        .eq('response', 'waitlist')
 
-      if (rsvpRow) {
-        const nextWaitPos = event.rsvp_waitlist_count + 1
-        await supabase
-          .from('event_rsvps')
-          .update({
-            response: 'waitlist',
-            waitlist_position: nextWaitPos,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', rsvpRow.id)
-
-        await supabase
-          .from('events')
-          .update({ rsvp_waitlist_count: event.rsvp_waitlist_count + 1 })
-          .eq('id', eventId)
-
-        await notifyEventWaitlisted(supabase, userId, {
-          id: event.id,
-          title: event.title,
-        })
-
-        return {
-          ok: true,
+      const nextWaitPos = (wlCount ?? 0) + 1
+      await supabase
+        .from('event_rsvps')
+        .update({
           response: 'waitlist',
-          waitlistPosition: nextWaitPos,
-          eventId,
-          rsvpGoingCount: freshEvent.rsvp_going_count,
-          rsvpWaitlistCount: event.rsvp_waitlist_count + 1,
-          capacity: freshEvent.capacity,
-        }
+          waitlist_position: nextWaitPos,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', rsvpRow.id)
+
+      const updatedCounts = await syncEventCounts(supabase, eventId)
+
+      await notifyEventWaitlisted(supabase, userId, {
+        id: event.id,
+        title: event.title,
+      })
+
+      return {
+        ok: true,
+        response: 'waitlist',
+        waitlistPosition: nextWaitPos,
+        eventId,
+        rsvpGoingCount: updatedCounts.goingCount,
+        rsvpWaitlistCount: updatedCounts.waitlistCount,
+        capacity: event.capacity,
       }
     }
-
-    await supabase
-      .from('events')
-      .update({ rsvp_going_count: newCount })
-      .eq('id', eventId)
   }
 
   // Queue notifications
@@ -253,20 +285,13 @@ export async function rsvpToEvent(
     timezone: event.timezone,
   })
 
-  // Re-read final counts to return to client
-  const { data: finalEvent } = await supabase
-    .from('events')
-    .select('rsvp_going_count, rsvp_waitlist_count, capacity')
-    .eq('id', eventId)
-    .single()
-
   return {
     ok: true,
     response: 'going',
     eventId,
-    rsvpGoingCount: finalEvent?.rsvp_going_count ?? (freshEvent ? freshEvent.rsvp_going_count + 1 : event.rsvp_going_count + 1),
-    rsvpWaitlistCount: finalEvent?.rsvp_waitlist_count ?? event.rsvp_waitlist_count,
-    capacity: finalEvent?.capacity ?? event.capacity,
+    rsvpGoingCount: counts.goingCount,
+    rsvpWaitlistCount: counts.waitlistCount,
+    capacity: event.capacity,
   }
 }
 
@@ -307,49 +332,28 @@ export async function cancelEventRsvp(
     return { ok: false, response: 'cancelled', error: updateErr.message }
   }
 
-  // Update event counts
+  // Fetch event for notification data and waitlist promotion
   const { data: event } = await supabase
     .from('events')
-    .select('id, title, starts_at, timezone, rsvp_going_count, rsvp_waitlist_count, capacity, waitlist_enabled')
+    .select('id, title, starts_at, timezone, capacity, waitlist_enabled')
     .eq('id', eventId)
     .single()
 
-  if (!event) {
-    return { ok: true, response: 'cancelled', eventId }
+  // Waitlist promotion if a confirmed user cancelled
+  if (previousResponse === 'going' && event?.waitlist_enabled) {
+    await promoteNextFromWaitlist(supabase, event)
   }
 
-  if (previousResponse === 'going') {
-    const newGoingCount = Math.max(0, event.rsvp_going_count - 1)
-    await supabase
-      .from('events')
-      .update({ rsvp_going_count: newGoingCount })
-      .eq('id', eventId)
-
-    // Waitlist promotion: if a confirmed user cancelled, promote next waitlisted
-    if (event.waitlist_enabled) {
-      await promoteNextFromWaitlist(supabase, event)
-    }
-  } else if (previousResponse === 'waitlist') {
-    await supabase
-      .from('events')
-      .update({ rsvp_waitlist_count: Math.max(0, event.rsvp_waitlist_count - 1) })
-      .eq('id', eventId)
-  }
-
-  // Re-read final counts after all updates (including waitlist promotion)
-  const { data: finalEvent } = await supabase
-    .from('events')
-    .select('rsvp_going_count, rsvp_waitlist_count, capacity')
-    .eq('id', eventId)
-    .single()
+  // Sync counts from actual rows — always correct after all mutations
+  const counts = await syncEventCounts(supabase, eventId)
 
   return {
     ok: true,
     response: 'cancelled',
     eventId,
-    rsvpGoingCount: finalEvent?.rsvp_going_count ?? Math.max(0, event.rsvp_going_count - (previousResponse === 'going' ? 1 : 0)),
-    rsvpWaitlistCount: finalEvent?.rsvp_waitlist_count ?? Math.max(0, event.rsvp_waitlist_count - (previousResponse === 'waitlist' ? 1 : 0)),
-    capacity: finalEvent?.capacity ?? event.capacity,
+    rsvpGoingCount: counts.goingCount,
+    rsvpWaitlistCount: counts.waitlistCount,
+    capacity: event?.capacity ?? null,
   }
 }
 
@@ -364,8 +368,6 @@ async function promoteNextFromWaitlist(
     title: string
     starts_at: string
     timezone: string
-    rsvp_going_count: number
-    rsvp_waitlist_count: number
   }
 ): Promise<void> {
   // Find the next waitlisted user (lowest waitlist_position)
@@ -395,23 +397,7 @@ async function promoteNextFromWaitlist(
     return
   }
 
-  // Update event counts: going +1, waitlist -1
-  // Re-read to get latest
-  const { data: freshEvent } = await supabase
-    .from('events')
-    .select('rsvp_going_count, rsvp_waitlist_count')
-    .eq('id', event.id)
-    .single()
-
-  if (freshEvent) {
-    await supabase
-      .from('events')
-      .update({
-        rsvp_going_count: freshEvent.rsvp_going_count + 1,
-        rsvp_waitlist_count: Math.max(0, freshEvent.rsvp_waitlist_count - 1),
-      })
-      .eq('id', event.id)
-  }
+  // No manual count update needed — syncEventCounts in the caller handles it
 
   // Notify promoted user
   await notifyEventWaitlistPromoted(supabase, nextInLine.user_id, {
